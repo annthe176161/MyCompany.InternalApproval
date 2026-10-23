@@ -1,0 +1,451 @@
+<div class="identity-page-container">
+  <!-- HEADER TRANG QUẢN LÝ TÀI KHOẢN -->
+  <div class="page-header">
+    <div class="header-left">
+      <div class="header-icon-box">
+        <span nz-icon nzType="team" nzTheme="outline"></span>
+      </div>
+      <div>
+        <div class="header-title-row">
+          <h2>Quản lý Tài khoản người dùng</h2>
+          <span class="count-badge">{{ totalCount }} tài khoản</span>
+        </div>
+        <p class="header-subtitle">
+          Quản lý tài khoản đăng nhập của nhân sự, cấp lại mật khẩu, gán vai trò chức danh hoặc khóa tài khoản nghỉ việc
+        </p>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <nz-input-group [nzSuffix]="suffixIconSearch" class="search-input">
+        <input
+          type="text"
+          nz-input
+          placeholder="Tìm theo tên, tài khoản, email, SĐT..."
+          [(ngModel)]="filterText"
+          (keyup.enter)="onSearch()"
+        />
+      </nz-input-group>
+      <ng-template #suffixIconSearch>
+        <span
+          nz-icon
+          nzType="search"
+          (click)="onSearch()"
+          style="cursor: pointer; color: #64748b;"
+        ></span>
+      </ng-template>
+
+      <button nz-button nzType="default" (click)="loadUsers()" nz-tooltip nzTooltipTitle="Làm mới danh sách">
+        <span nz-icon nzType="reload"></span>
+      </button>
+
+      <button
+        *ngIf="canCreate"
+        nz-button
+        nzType="primary"
+        class="btn-primary-dark"
+        (click)="openCreateModal()"
+      >
+        <span nz-icon nzType="user-add"></span>
+        Thêm tài khoản mới
+      </button>
+    </div>
+  </div>
+
+  <!-- BẢNG DANH SÁCH TÀI KHOẢN -->
+  <div class="table-card">
+    <nz-table
+      #userTable
+      [nzData]="users"
+      [nzLoading]="isLoading"
+      [nzFrontPagination]="false"
+      [nzTotal]="totalCount"
+      [nzPageIndex]="pageIndex"
+      [nzPageSize]="pageSize"
+      [nzShowSizeChanger]="true"
+      (nzPageIndexChange)="onPageIndexChange($event)"
+      (nzPageSizeChange)="onPageSizeChange($event)"
+      nzSize="middle"
+    >
+      <thead>
+        <tr>
+          <th nzWidth="60px" nzAlign="center">STT</th>
+          <th nzWidth="280px">Thông tin nhân sự & Tài khoản</th>
+          <th nzWidth="260px">Email & Số điện thoại</th>
+          <th nzWidth="170px" nzAlign="center">Trạng thái hoạt động</th>
+          <th nzWidth="150px" nzAlign="center">Ngày tạo</th>
+          <th nzWidth="280px" nzAlign="center">Thao tác quản lý</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let user of userTable.data; let i = index">
+          <td nzAlign="center" class="text-secondary">
+            {{ (pageIndex - 1) * pageSize + i + 1 }}
+          </td>
+
+          <!-- Cột Thông tin tài khoản -->
+          <td>
+            <div class="user-profile-cell">
+              <div
+                class="user-avatar"
+                [class.avatar-admin]="user.userName?.toLowerCase() === 'admin'"
+                [class.avatar-inactive]="!user.isActive"
+              >
+                {{ getAvatarInitial(user) }}
+              </div>
+              <div class="user-info-text">
+                <div class="user-fullname-row">
+                  <span class="user-fullname">{{ getFullName(user) }}</span>
+                  <span
+                    *ngIf="user.userName?.toLowerCase() === 'admin'"
+                    class="admin-tag"
+                    nz-tooltip
+                    nzTooltipTitle="Tài khoản Quản trị viên gốc của hệ thống"
+                  >
+                    Admin gốc
+                  </span>
+                </div>
+                <span class="user-username">&#64;{{ user.userName }}</span>
+              </div>
+            </div>
+          </td>
+
+          <!-- Cột Liên hệ -->
+          <td>
+            <div class="contact-cell">
+              <div class="contact-line">
+                <span nz-icon nzType="mail" class="contact-icon"></span>
+                <span>{{ user.email || '—' }}</span>
+              </div>
+              <div class="contact-line sub-contact" *ngIf="user.phoneNumber">
+                <span nz-icon nzType="phone" class="contact-icon"></span>
+                <span>{{ user.phoneNumber }}</span>
+              </div>
+            </div>
+          </td>
+
+          <!-- Cột Trạng thái -->
+          <td nzAlign="center">
+            <span
+              class="status-pill"
+              [class.status-active]="user.isActive"
+              [class.status-locked]="!user.isActive"
+            >
+              <span class="status-dot"></span>
+              {{ user.isActive ? 'Đang hoạt động' : 'Đã khóa đăng nhập' }}
+            </span>
+          </td>
+
+          <!-- Cột Ngày tạo -->
+          <td nzAlign="center" class="text-secondary">
+            {{ user.creationTime ? (user.creationTime | date: 'dd/MM/yyyy') : '—' }}
+          </td>
+
+          <!-- Cột Thao tác -->
+          <td nzAlign="center">
+            <div class="action-buttons">
+              <button
+                *ngIf="canEdit && canManageRoles"
+                nz-button
+                nzType="default"
+                nzSize="small"
+                class="btn-role-assign"
+                (click)="openEditModal(user, 1)"
+                nz-tooltip
+                nzTooltipTitle="Gán hoặc thay đổi vai trò chức danh cho tài khoản này"
+              >
+                <span nz-icon nzType="idcard"></span>
+                <span>Vai trò</span>
+              </button>
+
+              <button
+                *ngIf="canManagePermissions"
+                nz-button
+                nzType="default"
+                nzSize="small"
+                class="btn-perm-action"
+                (click)="openPermissionsModal(user)"
+                nz-tooltip
+                nzTooltipTitle="Cấp quyền riêng biệt cho cá nhân này"
+              >
+                <span nz-icon nzType="safety-certificate"></span>
+                <span>Quyền riêng</span>
+              </button>
+
+              <button
+                *ngIf="canEdit"
+                nz-button
+                nzType="text"
+                nzSize="small"
+                class="btn-action-edit"
+                (click)="openEditModal(user, 0)"
+                nz-tooltip
+                nzTooltipTitle="Sửa thông tin & Đổi mật khẩu"
+              >
+                <span nz-icon nzType="edit"></span>
+              </button>
+
+              <button
+                *ngIf="canDelete && user.userName?.toLowerCase() !== 'admin'"
+                nz-button
+                nzType="text"
+                nzDanger
+                nzSize="small"
+                class="btn-action-delete"
+                nz-popconfirm
+                [nzPopconfirmTitle]="'Bạn có chắc chắn muốn xóa tài khoản [' + user.userName + '] không? Hành động này không thể hoàn tác.'"
+                nzOkText="Xóa tài khoản"
+                nzCancelText="Hủy"
+                [nzOkDanger]="true"
+                (nzOnConfirm)="deleteUser(user)"
+                nz-tooltip
+                nzTooltipTitle="Xóa tài khoản"
+              >
+                <span nz-icon nzType="delete"></span>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </nz-table>
+  </div>
+</div>
+
+<!-- =========================================================================
+     MODAL THÊM MỚI / CHỈNH SỬA TÀI KHOẢN & GÁN VAI TRÒ
+     ========================================================================= -->
+<nz-modal
+  [(nzVisible)]="isUserModalVisible"
+  [nzTitle]="userModalTitleTpl"
+  [nzFooter]="userModalFooterTpl"
+  (nzOnCancel)="closeUserModal()"
+  [nzWidth]="660"
+  [nzMaskClosable]="false"
+>
+  <ng-template #userModalTitleTpl>
+    <div class="modal-custom-header">
+      <div class="modal-header-icon">
+        <span nz-icon [nzType]="isEditMode ? 'user-switch' : 'user-add'"></span>
+      </div>
+      <div>
+        <div class="modal-header-title">
+          {{ isEditMode ? 'Cập nhật Tài khoản & Vai trò' : 'Tạo Tài khoản nhân viên mới' }}
+        </div>
+        <div class="modal-header-sub">
+          {{
+            isEditMode
+              ? 'Đang chỉnh sửa tài khoản: ' + getFullName(selectedUser!) + ' (@' + selectedUser?.userName + ')'
+              : 'Điền thông tin đăng nhập và chọn vai trò chức danh cho nhân viên'
+          }}
+        </div>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-container *nzModalContent>
+    <nz-tabset [(nzSelectedIndex)]="activeTabIndex" nzAnimated="false">
+      <!-- TAB 1: THÔNG TIN TÀI KHOẢN -->
+      <nz-tab [nzTitle]="tabInfoTpl">
+        <ng-template #tabInfoTpl>
+          <span nz-icon nzType="user"></span>
+          Thông tin tài khoản
+        </ng-template>
+
+        <form nz-form [formGroup]="userForm" nzLayout="vertical" class="user-custom-form">
+          <div class="form-grid-2">
+            <!-- Tên đăng nhập -->
+            <nz-form-item>
+              <nz-form-label nzRequired>Tên đăng nhập (Username)</nz-form-label>
+              <nz-form-control nzErrorTip="Vui lòng nhập tên đăng nhập!">
+                <input
+                  nz-input
+                  formControlName="userName"
+                  placeholder="VD: nguyenvana, kế_toán_01..."
+                  [readonly]="isEditMode && selectedUser?.userName?.toLowerCase() === 'admin'"
+                />
+              </nz-form-control>
+            </nz-form-item>
+
+            <!-- Mật khẩu -->
+            <nz-form-item>
+              <nz-form-label [nzRequired]="!isEditMode">
+                {{ isEditMode ? 'Mật khẩu mới (Để trống nếu giữ nguyên)' : 'Mật khẩu đăng nhập' }}
+              </nz-form-label>
+              <nz-form-control nzErrorTip="Vui lòng nhập mật khẩu (tối thiểu 6 ký tự)!">
+                <nz-input-group [nzSuffix]="suffixPwdTpl">
+                  <input
+                    [type]="passwordVisible ? 'text' : 'password'"
+                    nz-input
+                    formControlName="password"
+                    [placeholder]="isEditMode ? 'Nhập mật khẩu mới nếu muốn cấp lại...' : 'VD: Abc@123456'"
+                  />
+                </nz-input-group>
+                <ng-template #suffixPwdTpl>
+                  <span
+                    nz-icon
+                    [nzType]="passwordVisible ? 'eye-invisible' : 'eye'"
+                    (click)="passwordVisible = !passwordVisible"
+                    style="cursor: pointer; color: #64748b;"
+                  ></span>
+                </ng-template>
+              </nz-form-control>
+            </nz-form-item>
+          </div>
+
+          <div class="form-grid-2">
+            <!-- Họ & Tên đệm -->
+            <nz-form-item>
+              <nz-form-label>Họ và tên đệm</nz-form-label>
+              <nz-form-control>
+                <input nz-input formControlName="surname" placeholder="VD: Nguyễn Văn" />
+              </nz-form-control>
+            </nz-form-item>
+
+            <!-- Tên gọi -->
+            <nz-form-item>
+              <nz-form-label>Tên gọi</nz-form-label>
+              <nz-form-control>
+                <input nz-input formControlName="name" placeholder="VD: An" />
+              </nz-form-control>
+            </nz-form-item>
+          </div>
+
+          <div class="form-grid-2">
+            <!-- Email -->
+            <nz-form-item>
+              <nz-form-label nzRequired>Địa chỉ Email công ty</nz-form-label>
+              <nz-form-control nzErrorTip="Vui lòng nhập địa chỉ Email hợp lệ!">
+                <input nz-input formControlName="email" placeholder="VD: annv@mycompany.com" />
+              </nz-form-control>
+            </nz-form-item>
+
+            <!-- Số điện thoại -->
+            <nz-form-item>
+              <nz-form-label>Số điện thoại liên hệ</nz-form-label>
+              <nz-form-control>
+                <input nz-input formControlName="phoneNumber" placeholder="VD: 0901234567" />
+              </nz-form-control>
+            </nz-form-item>
+          </div>
+
+          <!-- Thiết lập trạng thái tài khoản dễ hiểu -->
+          <div class="options-section-label">Trạng thái & Bảo mật đăng nhập:</div>
+
+          <div
+            class="option-card"
+            [class.option-active]="userForm.get('isActive')?.value"
+            (click)="toggleUserOption('isActive')"
+          >
+            <div class="option-card-icon active-icon">
+              <span nz-icon nzType="check-circle"></span>
+            </div>
+            <div class="option-card-body">
+              <div class="option-title">Cho phép tài khoản hoạt động</div>
+              <p class="option-desc">
+                Khi bật, nhân viên có thể đăng nhập vào hệ thống bình thường. Hãy <b>tắt công tắc này</b> nếu nhân viên đã nghỉ việc hoặc tạm ngừng công tác.
+              </p>
+            </div>
+            <div class="option-card-switch" (click)="$event.stopPropagation()">
+              <nz-switch formControlName="isActive"></nz-switch>
+            </div>
+          </div>
+
+          <div
+            class="option-card"
+            [class.option-active]="userForm.get('lockoutEnabled')?.value"
+            (click)="toggleUserOption('lockoutEnabled')"
+          >
+            <div class="option-card-icon security-icon">
+              <span nz-icon nzType="safety"></span>
+            </div>
+            <div class="option-card-body">
+              <div class="option-title">Tự động khóa bảo vệ khi nhập sai mật khẩu nhiều lần</div>
+              <p class="option-desc">
+                Bảo vệ tài khoản khỏi việc bị dò mật khẩu trái phép. Hệ thống sẽ tạm khóa ít phút nếu phát hiện đăng nhập sai liên tiếp.
+              </p>
+            </div>
+            <div class="option-card-switch" (click)="$event.stopPropagation()">
+              <nz-switch formControlName="lockoutEnabled"></nz-switch>
+            </div>
+          </div>
+        </form>
+      </nz-tab>
+
+      <!-- TAB 2: VAI TRÒ ĐẢM NHIỆM -->
+      <nz-tab [nzTitle]="tabRolesTpl" *ngIf="canManageRoles || !isEditMode">
+        <ng-template #tabRolesTpl>
+          <span nz-icon nzType="idcard"></span>
+          Vai trò đảm nhiệm
+          <span class="tab-role-counter">{{ selectedRoleNames.size }}</span>
+        </ng-template>
+
+        <div class="roles-selection-container">
+          <div class="roles-helper-banner">
+            <span nz-icon nzType="info-circle" nzTheme="fill"></span>
+            <span>
+              Chọn một hoặc nhiều vai trò bên dưới. Tài khoản này sẽ <b>tự động được hưởng toàn bộ quyền hạn</b> của các vai trò mà bạn tích chọn.
+            </span>
+          </div>
+
+          <div class="roles-cards-list">
+            <div
+              *ngFor="let role of assignableRoles"
+              class="role-select-card"
+              [class.role-selected]="isRoleSelected(role.name)"
+              (click)="toggleRoleSelection(role.name)"
+            >
+              <div class="role-card-check" (click)="$event.stopPropagation()">
+                <label
+                  nz-checkbox
+                  [ngModel]="isRoleSelected(role.name)"
+                  (ngModelChange)="toggleRoleSelection(role.name)"
+                ></label>
+              </div>
+              <div class="role-card-info">
+                <div class="role-card-top">
+                  <span class="role-card-name">{{ role.name }}</span>
+                  <span class="role-mini-badge static" *ngIf="role.isStatic">Hệ thống</span>
+                  <span class="role-mini-badge default" *ngIf="role.isDefault">Mặc định</span>
+                </div>
+                <p class="role-card-desc">
+                  {{
+                    role.isStatic
+                      ? 'Toàn quyền quản trị hệ thống, cấu hình phòng ban, tài khoản và phê duyệt.'
+                      : 'Nhóm quyền nghiệp vụ được cấu hình tại mục Vai trò & Quyền hạn.'
+                  }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nz-tab>
+    </nz-tabset>
+  </ng-container>
+
+  <ng-template #userModalFooterTpl>
+    <div class="modal-footer-btns">
+      <button nz-button nzType="default" (click)="closeUserModal()" [disabled]="isSubmitting">
+        Hủy bỏ
+      </button>
+      <button
+        nz-button
+        nzType="primary"
+        class="btn-primary-dark"
+        (click)="saveUser()"
+        [nzLoading]="isSubmitting"
+      >
+        <span nz-icon nzType="check"></span>
+        {{ isEditMode ? 'Lưu cập nhật' : 'Tạo tài khoản' }}
+      </button>
+    </div>
+  </ng-template>
+</nz-modal>
+
+<!-- POPUP PHÂN QUYỀN RIÊNG CHO TÀI KHOẢN -->
+<app-permission-modal
+  [(visible)]="isPermModalVisible"
+  providerName="U"
+  [providerKey]="permTargetKey"
+  [entityTitle]="permTargetTitle"
+></app-permission-modal>
+
