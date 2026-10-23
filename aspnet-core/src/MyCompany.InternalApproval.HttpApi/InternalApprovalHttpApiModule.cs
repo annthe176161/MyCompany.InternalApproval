@@ -1,4 +1,4 @@
-﻿using Localization.Resources.AbpUi;
+using Localization.Resources.AbpUi;
 using MyCompany.InternalApproval.Localization;
 using Volo.Abp.Account;
 using Volo.Abp.FeatureManagement;
@@ -36,6 +36,10 @@ public class InternalApprovalHttpApiModule : AbpModule
                 .AddBaseTypes(
                     typeof(AbpUiResource)
                 );
+
+            options.Resources
+                .Get<AbpUiResource>()
+                .AddVirtualJson("/Localization/AbpUi");
         });
     }
 }

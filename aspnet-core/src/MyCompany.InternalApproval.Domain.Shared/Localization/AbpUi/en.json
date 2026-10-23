@@ -1,0 +1,7 @@
+{
+  "culture": "en",
+  "texts": {
+    "DefaultErrorMessage": "System Notification",
+    "DefaultErrorMessageDetail": "An error occurred while processing your request. Please try again later or contact the administrator."
+  }
+}

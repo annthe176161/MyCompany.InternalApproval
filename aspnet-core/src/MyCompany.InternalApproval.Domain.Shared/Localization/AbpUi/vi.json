@@ -1,0 +1,7 @@
+{
+  "culture": "vi",
+  "texts": {
+    "DefaultErrorMessage": "Thông báo lỗi hệ thống",
+    "DefaultErrorMessageDetail": "Đã xảy ra sự cố trong quá trình xử lý yêu cầu. Vui lòng thử lại sau hoặc liên hệ quản trị viên."
+  }
+}
