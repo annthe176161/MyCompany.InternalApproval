@@ -3,7 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { PermissionService } from '@abp/ng.core';
 import { DepartmentService } from '../proxy/departments/department.service';
-import type {
+import {
   DepartmentDto,
   DepartmentMemberDto,
   DepartmentUserLookupDto,

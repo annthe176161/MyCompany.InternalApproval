@@ -5,7 +5,7 @@ import { ConfigStateService, PermissionService } from '@abp/ng.core';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzTableQueryParams } from 'ng-zorro-antd/table';
 import { EmployeeService } from '../proxy/employees/employee.service';
-import type {
+import {
   EmployeeListItemDto,
   EmployeeLeaveReportItemDto,
   GetEmployeeListInput,
@@ -13,7 +13,7 @@ import type {
   HrAnalyticsDto,
 } from '../proxy/employees/models';
 import { DepartmentService } from '../proxy/departments/department.service';
-import type { DepartmentDto } from '../proxy/departments/models';
+import { DepartmentDto } from '../proxy/departments/models';
 import { EmployeeDetailDrawerComponent } from '../shared/components/employee-detail-drawer/employee-detail-drawer.component';
 import { ExcelExportService } from '../shared/services/excel-export.service';
 
@@ -88,7 +88,7 @@ export class EmployeeComponent implements OnInit, OnDestroy {
     private configState: ConfigStateService,
     private permissionService: PermissionService,
     private excelExportService: ExcelExportService,
-    private message: NzMessageService
+    private message: NzMessageService,
   ) {}
 
   ngOnInit(): void {
@@ -131,18 +131,16 @@ export class EmployeeComponent implements OnInit, OnDestroy {
 
   loadDepartments(): void {
     this.loadingDepartments = true;
-    this.departmentService
-      .getList({ skipCount: 0, maxResultCount: 100 })
-      .subscribe({
-        next: res => {
-          this.departments = res.items || [];
-          this.evaluateDepartmentPermissions();
-          this.loadingDepartments = false;
-        },
-        error: () => {
-          this.loadingDepartments = false;
-        },
-      });
+    this.departmentService.getList({ skipCount: 0, maxResultCount: 100 }).subscribe({
+      next: res => {
+        this.departments = res.items || [];
+        this.evaluateDepartmentPermissions();
+        this.loadingDepartments = false;
+      },
+      error: () => {
+        this.loadingDepartments = false;
+      },
+    });
   }
 
   private initLeaveSearchSubscription(): void {
@@ -157,9 +155,7 @@ export class EmployeeComponent implements OnInit, OnDestroy {
   private evaluateDepartmentPermissions(): void {
     if (this.currentUserId) {
       this.managedDepartments = this.departments.filter(
-        d =>
-          d.managerId &&
-          d.managerId.toLowerCase() === this.currentUserId?.toLowerCase()
+        d => d.managerId && d.managerId.toLowerCase() === this.currentUserId?.toLowerCase(),
       );
     } else {
       this.managedDepartments = [];
@@ -173,8 +169,8 @@ export class EmployeeComponent implements OnInit, OnDestroy {
       this.availableDepartments = this.managedDepartments;
       // Tự động chọn nếu chỉ quản lý đúng 1 phòng ban
       if (this.managedDepartments.length === 1) {
-        this.selectedDepartmentId = this.managedDepartments[0].id;
-        this.selectedLeaveDepartmentId = this.managedDepartments[0].id;
+        this.selectedDepartmentId = this.managedDepartments[0].id ?? null;
+        this.selectedLeaveDepartmentId = this.managedDepartments[0].id ?? null;
       }
     } else {
       // Nhân viên thông thường: chỉ xem cá nhân
@@ -243,9 +239,7 @@ export class EmployeeComponent implements OnInit, OnDestroy {
 
     this.pageIndex = pageIndex;
     this.pageSize = pageSize;
-    this.sorting = sortField
-      ? `${sortField} ${sortOrder === 'ascend' ? 'asc' : 'desc'}`
-      : '';
+    this.sorting = sortField ? `${sortField} ${sortOrder === 'ascend' ? 'asc' : 'desc'}` : '';
 
     this.loadEmployees();
   }
@@ -319,9 +313,7 @@ export class EmployeeComponent implements OnInit, OnDestroy {
 
     this.leavePageIndex = pageIndex;
     this.leavePageSize = pageSize;
-    this.leaveSorting = sortField
-      ? `${sortField} ${sortOrder === 'ascend' ? 'asc' : 'desc'}`
-      : '';
+    this.leaveSorting = sortField ? `${sortField} ${sortOrder === 'ascend' ? 'asc' : 'desc'}` : '';
 
     this.loadLeaveReport();
   }
@@ -353,17 +345,16 @@ export class EmployeeComponent implements OnInit, OnDestroy {
           scopeName = 'Cá nhân';
         }
 
-        const exporter =
-          this.currentUserFullName || this.currentUserName || 'Người dùng';
+        const exporter = this.currentUserFullName || this.currentUserName || 'Người dùng';
         this.excelExportService.exportLeaveStatistics(
           items,
           exporter,
           scopeName,
           this.selectedLeaveYear,
-          this.leaveSearchTerm ? this.leaveSearchTerm.trim() : undefined
+          this.leaveSearchTerm ? this.leaveSearchTerm.trim() : undefined,
         );
         this.message.success(
-          `Xuất file Excel báo cáo ngày nghỉ phép thành công! (${items.length} bản ghi)`
+          `Xuất file Excel báo cáo ngày nghỉ phép thành công! (${items.length} bản ghi)`,
         );
         this.isExportingLeaveExcel = false;
       },
@@ -464,4 +455,3 @@ export class EmployeeComponent implements OnInit, OnDestroy {
     return item.id || item.userName || String(index);
   }
 }
-

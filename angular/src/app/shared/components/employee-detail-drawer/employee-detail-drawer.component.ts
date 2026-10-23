@@ -2,7 +2,7 @@ import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { ConfigStateService, PermissionService } from '@abp/ng.core';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { EmployeeService } from '../../../proxy/employees/employee.service';
-import type {
+import {
   EmployeeProfileDto,
   EmployeeYearlyStatsDto,
   LeaveTimelineItemDto,

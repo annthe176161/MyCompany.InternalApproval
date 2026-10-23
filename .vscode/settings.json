@@ -1,0 +1,5 @@
+{
+  "typescript.tsdk": "angular/node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "angular.legacy-view-engine": false
+}
