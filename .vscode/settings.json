@@ -3,5 +3,6 @@
   "typescript.enablePromptUseWorkspaceTsdk": true,
   "eslint.workingDirectories": [
     "./angular"
-  ]
+  ],
+  "dotnet.defaultSolution": "aspnet-core/MyCompany.InternalApproval.sln"
 }
