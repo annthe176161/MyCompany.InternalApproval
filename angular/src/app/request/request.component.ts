@@ -348,7 +348,7 @@ export class RequestComponent implements OnInit {
   }
 
   trackById(_: number, item: RequestDto): string {
-    return item.id;
+    return item.id ?? '';
   }
 
   hasOtherActions(data: RequestDto): boolean {

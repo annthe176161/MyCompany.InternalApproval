@@ -24,6 +24,7 @@
         "src/app/proxy/*"
       ]
     },
+    "skipLibCheck": true,
     "useDefineForClassFields": false
   },
   "angularCompilerOptions": {

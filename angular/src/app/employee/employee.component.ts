@@ -453,11 +453,11 @@ export class EmployeeComponent implements OnInit, OnDestroy {
   }
 
   trackById(_: number, item: EmployeeListItemDto): string {
-    return item.id;
+    return item.id ?? '';
   }
 
   trackDeptById(_: number, item: DepartmentDto): string {
-    return item.id;
+    return item.id ?? '';
   }
 
   trackByLeaveItem(index: number, item: EmployeeLeaveReportItemDto): string {
