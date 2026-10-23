@@ -48,7 +48,7 @@
           <th nzWidth="60px" nzAlign="center">STT</th>
           <th nzWidth="260px">Tên vai trò</th>
           <th>Thiết lập</th>
-          <th nzWidth="220px" nzAlign="center">Thao tác</th>
+          <th nzWidth="180px" nzAlign="center">Thao tác</th>
         </tr>
       </thead>
       <tbody>
@@ -69,14 +69,41 @@
           </td>
 
           <td nzAlign="center">
-            <div class="action-links">
-              <a *ngIf="canManagePermissions" (click)="permModal.open('R', role.name!, role.name)">
-                Phân quyền
-              </a>
-              <a *ngIf="canEdit" (click)="openEditModal(role)">Sửa</a>
-              <a
+            <div class="action-btn-group">
+              <button
+                *ngIf="canManagePermissions"
+                nz-button
+                nzType="text"
+                nzShape="circle"
+                class="action-icon-btn perm"
+                nz-tooltip
+                nzTooltipTitle="Phân quyền"
+                (click)="permModal.open('R', role.name!, role.name)"
+              >
+                <span nz-icon nzType="safety-certificate"></span>
+              </button>
+
+              <button
+                *ngIf="canEdit"
+                nz-button
+                nzType="text"
+                nzShape="circle"
+                class="action-icon-btn edit"
+                nz-tooltip
+                nzTooltipTitle="Chỉnh sửa"
+                (click)="openEditModal(role)"
+              >
+                <span nz-icon nzType="edit"></span>
+              </button>
+
+              <button
                 *ngIf="canDelete && !role.isStatic"
-                class="text-danger"
+                nz-button
+                nzType="text"
+                nzShape="circle"
+                class="action-icon-btn delete"
+                nz-tooltip
+                nzTooltipTitle="Xóa vai trò"
                 nz-popconfirm
                 [nzPopconfirmTitle]="'Bạn có chắc chắn muốn xóa vai trò ' + role.name + ' không?'"
                 nzOkText="Xóa"
@@ -84,8 +111,8 @@
                 [nzOkDanger]="true"
                 (nzOnConfirm)="deleteRole(role)"
               >
-                Xóa
-              </a>
+                <span nz-icon nzType="delete"></span>
+              </button>
             </div>
           </td>
         </tr>

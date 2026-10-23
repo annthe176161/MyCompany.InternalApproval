@@ -51,7 +51,7 @@
           <th>Email</th>
           <th nzWidth="140px">Số điện thoại</th>
           <th nzWidth="130px" nzAlign="center">Trạng thái</th>
-          <th nzWidth="200px" nzAlign="center">Thao tác</th>
+          <th nzWidth="180px" nzAlign="center">Thao tác</th>
         </tr>
       </thead>
       <tbody>
@@ -75,17 +75,41 @@
           </td>
 
           <td nzAlign="center">
-            <div class="action-links">
-              <a
+            <div class="action-btn-group">
+              <button
                 *ngIf="canManagePermissions"
+                nz-button
+                nzType="text"
+                nzShape="circle"
+                class="action-icon-btn perm"
+                nz-tooltip
+                nzTooltipTitle="Phân quyền"
                 (click)="permModal.open('U', user.id!, user.userName)"
               >
-                Phân quyền
-              </a>
-              <a *ngIf="canEdit" (click)="openEditModal(user)">Sửa</a>
-              <a
+                <span nz-icon nzType="safety-certificate"></span>
+              </button>
+
+              <button
+                *ngIf="canEdit"
+                nz-button
+                nzType="text"
+                nzShape="circle"
+                class="action-icon-btn edit"
+                nz-tooltip
+                nzTooltipTitle="Chỉnh sửa"
+                (click)="openEditModal(user)"
+              >
+                <span nz-icon nzType="edit"></span>
+              </button>
+
+              <button
                 *ngIf="canDelete && user.userName?.toLowerCase() !== 'admin'"
-                class="text-danger"
+                nz-button
+                nzType="text"
+                nzShape="circle"
+                class="action-icon-btn delete"
+                nz-tooltip
+                nzTooltipTitle="Xóa tài khoản"
                 nz-popconfirm
                 [nzPopconfirmTitle]="'Bạn có chắc chắn muốn xóa tài khoản ' + user.userName + ' không?'"
                 nzOkText="Xóa"
@@ -93,8 +117,8 @@
                 [nzOkDanger]="true"
                 (nzOnConfirm)="deleteUser(user)"
               >
-                Xóa
-              </a>
+                <span nz-icon nzType="delete"></span>
+              </button>
             </div>
           </td>
         </tr>
