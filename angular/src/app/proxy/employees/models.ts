@@ -2,6 +2,7 @@ import type { EntityDto, PagedAndSortedResultRequestDto } from '@abp/ng.core';
 import type { RequestDto, RequestStatus, RequestType } from '../requests';
 
 export interface EmployeeListItemDto extends EntityDto<string> {
+  id: string;
   userName: string;
   fullName: string;
   email: string;

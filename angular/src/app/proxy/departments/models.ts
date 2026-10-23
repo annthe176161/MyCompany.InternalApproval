@@ -1,6 +1,7 @@
 import type { FullAuditedEntityDto } from '@abp/ng.core';
 
 export interface DepartmentDto extends FullAuditedEntityDto<string> {
+  id: string;
   code: string;
   name: string;
   description?: string;

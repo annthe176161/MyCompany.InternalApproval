@@ -35,6 +35,7 @@ export interface RequestCommentDto extends CreationAuditedEntityDto<string> {
 }
 
 export interface RequestDto extends FullAuditedEntityDto<string> {
+  id: string;
   title?: string;
   description?: string;
   type: RequestType;
