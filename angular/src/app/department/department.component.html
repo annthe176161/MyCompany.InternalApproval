@@ -1,19 +1,14 @@
 <div class="department-page-container">
   <!-- HEADER TRANG -->
   <div class="page-header">
-    <div class="header-left">
-      <div>
-        <div class="header-title-row">
-          <h2>Quản lý Cơ cấu Phòng ban</h2>
-          <span class="dept-count-badge">{{ filteredDepartments.length }} phòng ban</span>
-        </div>
-        <p class="header-subtitle">
-          Quản lý danh mục phòng ban, bổ nhiệm trưởng phòng và phân chia vị trí nhân sự trong công ty
-        </p>
-      </div>
+    <div>
+      <h2>Quản lý Cơ cấu Phòng ban</h2>
+      <p class="text-muted mb-0">
+        Quản lý danh mục phòng ban, bổ nhiệm trưởng phòng và phân chia vị trí nhân sự trong công ty
+      </p>
     </div>
 
-    <div class="header-right">
+    <div class="header-actions">
       <nz-input-group [nzPrefix]="searchPrefix" class="search-input">
         <input
           type="text"
@@ -27,19 +22,17 @@
         </ng-template>
       </nz-input-group>
 
+      <button nz-button nzType="default" (click)="loadDepartments()" [nzLoading]="loading">
+        Làm mới
+      </button>
+
       <button
         *ngIf="canCreate"
         nz-button
         nzType="primary"
-        class="btn-create-dept"
         (click)="openCreateModal()"
       >
-        <span nz-icon nzType="plus"></span>
-        Thêm phòng ban mới
-      </button>
-
-      <button nz-button nzType="default" (click)="loadDepartments()" [nzLoading]="loading" nz-tooltip="Tải lại dữ liệu">
-        <span nz-icon nzType="reload"></span>
+        Thêm phòng ban
       </button>
     </div>
   </div>
@@ -102,17 +95,18 @@
             {{ dept.description || 'Chưa có mô tả' }}
           </td>
           <td nzAlign="center">
-            <div class="action-buttons">
+            <div class="action-btn-group">
               <!-- Nút Quản lý nhân sự & chức vụ -->
               <button
                 nz-button
-                nzType="default"
-                nzSize="small"
-                class="btn-members"
+                nzType="text"
+                nzShape="circle"
+                class="action-icon-btn members"
                 (click)="openMembersDrawer(dept)"
-                nz-tooltip="Phân chia nhân sự & chức vụ"
+                nz-tooltip
+                nzTooltipTitle="Phân chia nhân sự & chức vụ"
               >
-                <span>Nhân sự</span>
+                <span nz-icon nzType="team"></span>
               </button>
 
               <!-- Nút Sửa -->
@@ -120,10 +114,11 @@
                 *ngIf="canEdit"
                 nz-button
                 nzType="text"
-                nzSize="small"
-                class="btn-action-edit"
+                nzShape="circle"
+                class="action-icon-btn edit"
                 (click)="openEditModal(dept)"
-                nz-tooltip="Chỉnh sửa thông tin phòng ban"
+                nz-tooltip
+                nzTooltipTitle="Chỉnh sửa phòng ban"
               >
                 <span nz-icon nzType="edit"></span>
               </button>
@@ -133,16 +128,16 @@
                 *ngIf="canDelete"
                 nz-button
                 nzType="text"
-                nzDanger
-                nzSize="small"
-                class="btn-action-delete"
+                nzShape="circle"
+                class="action-icon-btn delete"
                 nz-popconfirm
                 nzPopconfirmTitle="Bạn có chắc chắn muốn xóa phòng ban này? Tất cả dữ liệu liên quan sẽ bị xóa!"
                 nzOkText="Xóa phòng ban"
                 nzCancelText="Hủy"
-                nzOkDanger
+                [nzOkDanger]="true"
                 (nzOnConfirm)="deleteDepartment(dept)"
-                nz-tooltip="Xóa phòng ban"
+                nz-tooltip
+                nzTooltipTitle="Xóa phòng ban"
               >
                 <span nz-icon nzType="delete"></span>
               </button>
