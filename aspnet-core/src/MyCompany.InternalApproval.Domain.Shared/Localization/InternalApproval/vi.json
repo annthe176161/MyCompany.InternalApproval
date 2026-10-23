@@ -43,6 +43,8 @@
     "InternalApproval:00010": "Chỉ có đề xuất ở trạng thái Nháp mới được phép xóa.",
     "InternalApproval:00011": "Chỉ người tạo đề xuất mới có quyền xóa.",
     "InternalApproval:00012": "Không thể xử lý dữ liệu do lỗi ánh xạ đối tượng (Mapping Error). Vui lòng kiểm tra cấu hình hệ thống.",
+    "DefaultErrorMessage": "Thông báo lỗi hệ thống",
+    "DefaultErrorMessageDetail": "Đã xảy ra sự cố trong quá trình xử lý yêu cầu. Vui lòng thử lại sau hoặc liên hệ quản trị viên.",
     "Permission:InternalApproval": "Quản lý Đề xuất Nội bộ",
     "Permission:Requests": "Quản lý Đề xuất",
     "Permission:Requests.Create": "Tạo đề xuất mới",

@@ -43,6 +43,8 @@
     "InternalApproval:00010": "Only draft requests can be deleted.",
     "InternalApproval:00011": "Only the creator can delete this request.",
     "InternalApproval:00012": "Failed to process data due to an object mapping error. Please check system configuration.",
+    "DefaultErrorMessage": "System Notification",
+    "DefaultErrorMessageDetail": "An error occurred while processing your request. Please try again later or contact the administrator.",
     "Permission:InternalApproval": "Internal Approval Management",
     "Permission:Requests": "Request Management",
     "Permission:Requests.Create": "Create Request",
