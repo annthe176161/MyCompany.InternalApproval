@@ -206,6 +206,9 @@ public class InternalApprovalHttpApiHostModule : AbpModule
             app.UseErrorPage();
         }
 
+        // Middleware chuẩn hóa exception của các API nghiệp vụ (/api/app/...) về HTTP 200 dạng Result Wrapper
+        app.UseMiddleware<MyCompany.InternalApproval.Middleware.UnifiedApiResponseMiddleware>();
+
         app.UseCorrelationId();
         app.UseStaticFiles();
         app.UseRouting();
