@@ -622,21 +622,18 @@
    - Chỉ cuộn bên trong dữ liệu của bảng (nz-table)
    ========================================================================== */
 body:has(.request-page-container),
-body:has(.dashboard-page-container),
-body:has(.employee-page-container) {
+body:has(.dashboard-page-container) {
   overflow: hidden !important;
 }
 
 .lpx-content-container:has(.request-page-container),
-.lpx-content-container:has(.dashboard-page-container),
-.lpx-content-container:has(.employee-page-container) {
+.lpx-content-container:has(.dashboard-page-container) {
   overflow: hidden !important;
   height: 100vh !important;
   max-height: 100vh !important;
 }
 
-.lpx-content:has(.request-page-container),
-.lpx-content:has(.employee-page-container) {
+.lpx-content:has(.request-page-container) {
   padding: 12px 24px 8px !important;
   overflow: hidden !important;
   height: calc(100vh - 72px) !important;

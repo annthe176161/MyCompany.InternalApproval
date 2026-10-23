@@ -29,11 +29,10 @@
     <!-- ================= TAB 1: DANH SÁCH NHÂN VIÊN ================= -->
     <nz-tab nzTitle="Danh sách nhân viên">
       <div class="tab-pane-container">
-        <!-- CHỈ SỐ TỔNG QUAN (ĐƠN GIẢN, KHÔNG ICON MÀU MÈ) -->
+        <!-- CHỈ SỐ TỔNG QUAN -->
         <div class="analytics-section">
           <nz-spin [nzSpinning]="loadingAnalytics">
             <div class="kpi-grid">
-              <!-- Card 1 -->
               <div class="kpi-card">
                 <div class="kpi-label">Tổng nhân sự</div>
                 <div class="kpi-value">{{ analytics?.companySummary?.totalEmployees ?? 0 }}</div>
@@ -42,7 +41,6 @@
                 </div>
               </div>
 
-              <!-- Card 2 -->
               <div class="kpi-card">
                 <div class="kpi-label">Thâm niên trung bình</div>
                 <div class="kpi-value">
@@ -51,7 +49,6 @@
                 <div class="kpi-subtext">Bình quân toàn công ty</div>
               </div>
 
-              <!-- Card 3 -->
               <div class="kpi-card">
                 <div class="kpi-label">Tổng đề xuất năm {{ currentYear }}</div>
                 <div class="kpi-value">{{ analytics?.companySummary?.totalRequestsThisYear ?? 0 }}</div>
@@ -60,7 +57,6 @@
                 </div>
               </div>
 
-              <!-- Card 4 -->
               <div class="kpi-card department-distribution-card">
                 <div class="dept-dist-header">
                   <div class="kpi-label">Phân bổ phòng ban</div>
@@ -148,22 +144,21 @@
             [nzShowSizeChanger]="true"
             [nzPageSizeOptions]="[10, 20, 50]"
             [nzFrontPagination]="false"
-            [nzScroll]="{ y: 'calc(100vh - 410px)', x: '1100px' }"
             nzSize="middle"
             (nzQueryParams)="onQueryParamsChange($event)"
           >
             <thead>
               <tr>
-                <th nzWidth="60px" nzAlign="center">STT</th>
-                <th nzWidth="250px" nzColumnKey="fullName" [nzSortFn]="true">Họ và tên</th>
-                <th nzWidth="190px" nzColumnKey="departmentName">Phòng ban</th>
-                <th nzWidth="170px" nzColumnKey="position">Chức vụ</th>
-                <th nzWidth="140px" nzColumnKey="joinDate" [nzSortFn]="true">Ngày vào làm</th>
-                <th nzWidth="170px" nzColumnKey="tenureMonths" [nzSortFn]="true">Thâm niên</th>
-                <th nzWidth="120px" nzAlign="center" nzColumnKey="currentYearRequestCount" [nzSortFn]="true">
+                <th nzWidth="55px" nzAlign="center">STT</th>
+                <th nzWidth="260px" nzColumnKey="fullName" [nzSortFn]="true">Họ và tên</th>
+                <th nzWidth="210px" nzColumnKey="departmentName">Phòng ban</th>
+                <th nzWidth="210px" nzColumnKey="position">Chức vụ</th>
+                <th nzWidth="120px" nzColumnKey="joinDate" [nzSortFn]="true">Ngày vào làm</th>
+                <th nzWidth="150px" nzColumnKey="tenureMonths" [nzSortFn]="true">Thâm niên</th>
+                <th nzWidth="115px" nzAlign="center" nzColumnKey="currentYearRequestCount" [nzSortFn]="true">
                   Đề xuất {{ currentYear }}
                 </th>
-                <th nzWidth="100px" nzAlign="center" nzRight>Thao tác</th>
+                <th nzWidth="90px" nzAlign="center">Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -172,35 +167,34 @@
                   {{ (pageIndex - 1) * pageSize + idx + 1 }}
                 </td>
 
-                <!-- Họ tên & Email (Không dùng avatar màu mè) -->
+                <!-- Họ tên & Email -->
                 <td>
-                  <a
-                    class="employee-name-link"
-                    (click)="openEmployeeDrawer(emp.id)"
-                  >
+                  <a class="employee-name-link" (click)="openEmployeeDrawer(emp.id)">
                     {{ emp.fullName }}
                   </a>
-                  <div class="employee-submeta">
+                  <div class="cell-subtext">
                     <span>&#64;{{ emp.userName }}</span>
                     <span *ngIf="emp.email"> • {{ emp.email }}</span>
                   </div>
                 </td>
 
-                <!-- Phòng ban -->
+                <!-- Phòng ban (2 dòng đồng nhất) -->
                 <td>
                   <ng-container *ngIf="emp.departmentName; else noDept">
-                    <span class="dept-name">{{ emp.departmentName }}</span>
-                    <span class="text-muted" *ngIf="emp.departmentCode"> ({{ emp.departmentCode }})</span>
+                    <div class="cell-maintext">{{ emp.departmentName }}</div>
+                    <div class="cell-subtext" *ngIf="emp.departmentCode">Mã: {{ emp.departmentCode }}</div>
                   </ng-container>
                   <ng-template #noDept>
                     <span class="text-muted">Chưa phân bổ</span>
                   </ng-template>
                 </td>
 
-                <!-- Chức vụ -->
+                <!-- Chức vụ (Đồng nhất cấu trúc 2 dòng, không bị cái thò cái thụt) -->
                 <td>
-                  <span>{{ emp.position || 'Nhân viên' }}</span>
-                  <nz-tag *ngIf="emp.isManager" nzColor="default" class="ms-1">Trưởng phòng</nz-tag>
+                  <div class="cell-maintext">{{ emp.position || 'Nhân viên' }}</div>
+                  <div class="cell-subtext">
+                    {{ emp.isManager ? 'Quản lý / Trưởng bộ phận' : 'Thành viên' }}
+                  </div>
                 </td>
 
                 <!-- Ngày vào làm -->
@@ -210,8 +204,8 @@
 
                 <!-- Thâm niên -->
                 <td>
-                  <div class="fw-500">{{ emp.tenureFormatted }}</div>
-                  <div class="text-muted" style="font-size: 11.5px;">
+                  <div class="cell-maintext">{{ emp.tenureFormatted }}</div>
+                  <div class="cell-subtext">
                     {{ getTenureBadgeStatus(emp.tenureMonths).label }}
                   </div>
                 </td>
@@ -222,7 +216,7 @@
                 </td>
 
                 <!-- Thao tác -->
-                <td nzAlign="center" nzRight>
+                <td nzAlign="center">
                   <button
                     nz-button
                     nzType="text"
@@ -323,7 +317,7 @@
           </div>
         </div>
 
-        <!-- THANH TỔNG HỢP SỐ LIỆU (ĐƠN GIẢN, KHÔNG ICON MÀU) -->
+        <!-- THANH TỔNG HỢP SỐ LIỆU -->
         <div class="summary-metrics-bar">
           <div class="summary-metric-item">
             <span class="metric-label">Tổng số nhân sự:</span>
@@ -352,7 +346,7 @@
           </div>
         </div>
 
-        <!-- BẢNG BÁO CÁO NGHỈ PHÉP -->
+        <!-- BẢNG BÁO CÁO NGHỈ PHÉP (GỌN GÀNG, KHÔNG TRÀN NGANG, PHÂN TRANG RÕ RÀNG) -->
         <div class="table-container">
           <nz-table
             #leaveTable
@@ -364,26 +358,23 @@
             [nzShowSizeChanger]="true"
             [nzPageSizeOptions]="[10, 20, 50]"
             [nzFrontPagination]="false"
-            [nzScroll]="{ y: 'calc(100vh - 350px)', x: '1220px' }"
             nzSize="middle"
             (nzQueryParams)="onLeaveQueryParamsChange($event)"
           >
             <thead>
               <tr>
-                <th nzWidth="60px" nzAlign="center">STT</th>
-                <th nzWidth="140px" nzColumnKey="userName" [nzSortFn]="true">Tài khoản</th>
-                <th nzWidth="200px" nzColumnKey="fullName" [nzSortFn]="true">Họ và tên</th>
-                <th nzWidth="200px" nzColumnKey="email">Email</th>
-                <th nzWidth="180px" nzColumnKey="departmentName">Phòng ban</th>
-                <th nzWidth="140px" nzColumnKey="position">Chức vụ</th>
-                <th nzWidth="150px" nzAlign="center" nzColumnKey="totalApprovedLeaveDays" [nzSortFn]="true">
+                <th nzWidth="55px" nzAlign="center">STT</th>
+                <th nzWidth="260px" nzColumnKey="fullName" [nzSortFn]="true">Nhân viên</th>
+                <th nzWidth="200px" nzColumnKey="departmentName">Phòng ban</th>
+                <th nzWidth="200px" nzColumnKey="position">Chức vụ</th>
+                <th nzWidth="140px" nzAlign="center" nzColumnKey="totalApprovedLeaveDays" [nzSortFn]="true">
                   Ngày nghỉ đã duyệt
                 </th>
-                <th nzWidth="140px" nzAlign="center" nzColumnKey="totalApprovedLeaveRequests" [nzSortFn]="true">
+                <th nzWidth="135px" nzAlign="center" nzColumnKey="totalApprovedLeaveRequests" [nzSortFn]="true">
                   Đã duyệt / Đã gửi
                 </th>
-                <th nzWidth="200px">Đợt nghỉ gần nhất</th>
-                <th nzWidth="100px" nzAlign="center" nzRight>Thao tác</th>
+                <th>Đợt nghỉ gần nhất</th>
+                <th nzWidth="90px" nzAlign="center">Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -392,26 +383,30 @@
                   {{ (leavePageIndex - 1) * leavePageSize + idx + 1 }}
                 </td>
 
-                <td>{{ item.userName }}</td>
-
+                <!-- Gộp Họ tên + Tài khoản + Email trên 2 dòng gọn gàng như Tab 1 -->
                 <td>
                   <a class="employee-name-link" (click)="openEmployeeDrawer(item.id, 0)">
                     {{ item.fullName }}
                   </a>
+                  <div class="cell-subtext">
+                    <span>&#64;{{ item.userName }}</span>
+                    <span *ngIf="item.email"> • {{ item.email }}</span>
+                  </div>
                 </td>
 
-                <td>{{ item.email || '—' }}</td>
-
                 <td>
-                  <span *ngIf="item.departmentName; else noDeptLeave">
-                    {{ item.departmentName }}
-                  </span>
+                  <ng-container *ngIf="item.departmentName; else noDeptLeave">
+                    <div class="cell-maintext">{{ item.departmentName }}</div>
+                    <div class="cell-subtext" *ngIf="item.departmentCode">Mã: {{ item.departmentCode }}</div>
+                  </ng-container>
                   <ng-template #noDeptLeave>
                     <span class="text-muted">Chưa phân bổ</span>
                   </ng-template>
                 </td>
 
-                <td>{{ item.position || 'Nhân viên' }}</td>
+                <td>
+                  <div class="cell-maintext">{{ item.position || 'Nhân viên' }}</div>
+                </td>
 
                 <td nzAlign="center">
                   <strong>{{ item.totalApprovedLeaveDays }} ngày</strong>
@@ -430,7 +425,7 @@
                   </ng-template>
                 </td>
 
-                <td nzAlign="center" nzRight>
+                <td nzAlign="center">
                   <button
                     nz-button
                     nzType="text"
