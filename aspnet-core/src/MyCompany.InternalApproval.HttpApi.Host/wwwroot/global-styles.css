@@ -159,6 +159,19 @@ body.abp-account-layout .form-control:focus {
   outline: none !important;
 }
 
+/* Chrome / Edge Autofill fix - Giữ nền đen chữ trắng khi trình duyệt tự điền mật khẩu / tài khoản */
+body.abp-account-layout input:-webkit-autofill,
+body.abp-account-layout input:-webkit-autofill:hover, 
+body.abp-account-layout input:-webkit-autofill:focus, 
+body.abp-account-layout input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #09090b inset !important;
+  box-shadow: 0 0 0 1000px #09090b inset !important;
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #ffffff !important;
+  border: 1px solid #27272a !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
 /* Nút ẩn/hiện mật khẩu */
 body.abp-account-layout .input-group .form-control {
   border-top-right-radius: 0 !important;
@@ -223,12 +236,16 @@ body.abp-account-layout .form-check .form-check-input {
   cursor: pointer !important;
   flex-shrink: 0 !important;
   position: static !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: 70% 70% !important;
 }
 
 body.abp-account-layout .form-check-input:checked,
 body.abp-account-layout .form-check .form-check-input:checked {
-  background-color: #ffffff !important;
+  background-color: #18181b !important;
   border-color: #ffffff !important;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m6 10 3 3 6-6'/%3e%3c/svg%3e") !important;
 }
 
 body.abp-account-layout .form-check-label,
