@@ -16,13 +16,11 @@ using Volo.Abp.Domain.Entities;
 using Volo.Abp.Domain.Repositories;
 using Volo.Abp.Identity;
 using Volo.Abp.PermissionManagement;
+using Volo.Abp.Validation;
 
 namespace MyCompany.InternalApproval.Employees;
 
-/// <summary>
-/// Dịch vụ ứng dụng quản lý Hồ sơ Nhân viên, Thâm niên làm việc,
-/// Timeline nghỉ phép và Thống kê & Phân tích nhân sự.
-/// </summary>
+// Dịch vụ quản lý Hồ sơ Nhân viên, Thâm niên làm việc, Timeline nghỉ phép và Thống kê nhân sự
 [Authorize(InternalApprovalPermissions.Employees.Default)]
 [RemoteService(IsEnabled = false)]
 public class EmployeeAppService : InternalApprovalAppService, IEmployeeAppService
@@ -63,9 +61,7 @@ public class EmployeeAppService : InternalApprovalAppService, IEmployeeAppServic
         }
     }
 
-    /// <summary>
-    /// Đánh giá phạm vi quyền hạn dữ liệu của người dùng hiện tại (Admin / Trưởng phòng / Nhân viên).
-    /// </summary>
+    // Đánh giá phạm vi quyền hạn dữ liệu của người dùng hiện tại (Admin / Trưởng phòng / Nhân viên)
     protected virtual async Task<EmployeeAccessScope> EvaluateCurrentUserAccessScopeAsync()
     {
         var currentUserId = CurrentUser.Id;
@@ -74,7 +70,6 @@ public class EmployeeAppService : InternalApprovalAppService, IEmployeeAppServic
 
         if (!isGlobal && currentUserId.HasValue)
         {
-            // Kiểm tra phân quyền Employees.ViewAll trực tiếp cho user hoặc qua role
             var userGrant = await _permissionManager.GetAsync(
                 InternalApprovalPermissions.Employees.ViewAll,
                 UserPermissionValueProvider.ProviderName,
@@ -86,19 +81,14 @@ public class EmployeeAppService : InternalApprovalAppService, IEmployeeAppServic
             }
             else if (CurrentUser.Roles != null && CurrentUser.Roles.Length > 0)
             {
-                foreach (var role in CurrentUser.Roles)
-                {
-                    var roleGrant = await _permissionManager.GetAsync(
-                        InternalApprovalPermissions.Employees.ViewAll,
-                        RolePermissionValueProvider.ProviderName,
-                        role);
-
-                    if (roleGrant?.IsGranted == true)
-                    {
-                        isGlobal = true;
-                        break;
-                    }
-                }
+                var roleGrants = await Task.WhenAll(
+                    CurrentUser.Roles.Select(role =>
+                        _permissionManager.GetAsync(
+                            InternalApprovalPermissions.Employees.ViewAll,
+                            RolePermissionValueProvider.ProviderName,
+                            role))
+                );
+                isGlobal = roleGrants.Any(g => g?.IsGranted == true);
             }
         }
 
@@ -124,10 +114,7 @@ public class EmployeeAppService : InternalApprovalAppService, IEmployeeAppServic
         return new EmployeeAccessScope(false, false, currentUserId, new HashSet<Guid>());
     }
 
-    /// <summary>
-    /// Kiểm tra quyền truy cập thông tin của một nhân sự mục tiêu theo cấu trúc phân quyền phân cấp.
-    /// Ném AbpAuthorizationException nếu truy cập trái phép.
-    /// </summary>
+    // Kiểm tra quyền truy cập thông tin của một nhân sự mục tiêu theo cấu trúc phân quyền phân cấp
     protected virtual async Task CheckCanAccessEmployeeAsync(Guid targetUserId)
     {
         var currentUserId = CurrentUser.Id;
@@ -136,7 +123,6 @@ public class EmployeeAppService : InternalApprovalAppService, IEmployeeAppServic
             throw new AbpAuthorizationException("Người dùng chưa đăng nhập.");
         }
 
-        // 1. Luôn cho phép truy cập thông tin của chính mình
         if (targetUserId == currentUserId.Value)
         {
             return;
@@ -144,13 +130,11 @@ public class EmployeeAppService : InternalApprovalAppService, IEmployeeAppServic
 
         var scope = await EvaluateCurrentUserAccessScopeAsync();
 
-        // 2. Quyền toàn hệ thống (Admin / Employees.ViewAll)
         if (scope.IsGlobal)
         {
             return;
         }
 
-        // 3. Trưởng phòng: cho phép nếu nhân viên thuộc phòng ban mình quản lý
         if (scope.IsManager)
         {
             var targetMember = await _memberRepository.FirstOrDefaultAsync(m => m.UserId == targetUserId);
@@ -160,70 +144,143 @@ public class EmployeeAppService : InternalApprovalAppService, IEmployeeAppServic
             }
         }
 
-        // 4. Bị chặn truy cập chéo phòng ban / cán bộ khác
         throw new AbpAuthorizationException("Bạn không có quyền truy cập thông tin của nhân sự này.");
     }
 
-    /// <summary>
-    /// Lấy danh sách nhân viên có phân trang, tìm kiếm họ tên/email/vị trí và lọc theo phòng ban, thâm niên.
-    /// </summary>
+    // Lấy danh sách nhân viên có phân trang, tìm kiếm họ tên/email/vị trí và lọc theo phòng ban, thâm niên
     public virtual async Task<PagedResultDto<EmployeeListItemDto>> GetListAsync(GetEmployeeListInput input)
     {
-        var scope = await EvaluateCurrentUserAccessScopeAsync();
-
-        // Nếu là Manager và chọn lọc theo phòng ban không thuộc quyền quản lý -> throw AbpAuthorizationException
-        if (scope.IsManager && input.DepartmentId.HasValue && !scope.ManagedDeptIds.Contains(input.DepartmentId.Value))
+        try
         {
-            throw new AbpAuthorizationException("Bạn không có quyền truy cập dữ liệu của phòng ban này.");
-        }
+            var scope = await EvaluateCurrentUserAccessScopeAsync();
 
-        var users = await _userRepository.GetListAsync();
-        var members = await _memberRepository.GetListAsync();
-        var departments = await _departmentRepository.GetListAsync();
-
-        var currentYear = DateTime.UtcNow.Year;
-        var requestQuery = await _requestRepository.GetQueryableAsync();
-        var currentYearRequests = await AsyncExecuter.ToListAsync(
-            requestQuery.Where(x => x.CreationTime.Year == currentYear && x.CreatorId.HasValue));
-
-        var requestCountDict = currentYearRequests
-            .GroupBy(x => x.CreatorId!.Value)
-            .ToDictionary(g => g.Key, g => g.Count());
-
-        var memberDict = members.ToDictionary(x => x.UserId, x => x);
-        var deptDict = departments.ToDictionary(x => x.Id, x => x);
-
-        var employeeList = new List<EmployeeListItemDto>();
-
-        foreach (var user in users)
-        {
-            memberDict.TryGetValue(user.Id, out var member);
-            Department? dept = null;
-            if (member != null && deptDict.TryGetValue(member.DepartmentId, out var d))
+            if (scope.IsManager && input.DepartmentId.HasValue && !scope.ManagedDeptIds.Contains(input.DepartmentId.Value))
             {
-                dept = d;
+                throw new AbpAuthorizationException("Bạn không có quyền truy cập dữ liệu của phòng ban này.");
             }
 
-            // Kiểm tra phân quyền truy cập theo phân cấp
-            if (!scope.IsGlobal)
+            var users = await _userRepository.GetListAsync();
+            var members = await _memberRepository.GetListAsync();
+            var departments = await _departmentRepository.GetListAsync();
+
+            var currentYear = DateTime.UtcNow.Year;
+            var requestQuery = await _requestRepository.GetQueryableAsync();
+            var currentYearRequests = await AsyncExecuter.ToListAsync(
+                requestQuery.Where(x => x.CreationTime.Year == currentYear && x.CreatorId.HasValue));
+
+            var requestCountDict = currentYearRequests
+                .GroupBy(x => x.CreatorId!.Value)
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            var memberDict = members
+                .GroupBy(x => x.UserId)
+                .ToDictionary(g => g.Key, g => g.First());
+            var deptDict = departments.ToDictionary(x => x.Id, x => x);
+
+            var filterKeyword = !string.IsNullOrWhiteSpace(input.Filter)
+                ? input.Filter.Trim().ToLowerInvariant()
+                : null;
+
+            var employeeList = users
+                .Where(user =>
+                {
+                    if (scope.IsGlobal) return true;
+                    memberDict.TryGetValue(user.Id, out var member);
+                    if (scope.IsManager)
+                    {
+                        var isManagedDeptMember = member != null && scope.ManagedDeptIds.Contains(member.DepartmentId);
+                        return isManagedDeptMember || user.Id == scope.CurrentUserId;
+                    }
+                    return user.Id == scope.CurrentUserId;
+                })
+                .Select(user =>
+                {
+                    memberDict.TryGetValue(user.Id, out var member);
+                    Department? dept = null;
+                    if (member != null && deptDict.TryGetValue(member.DepartmentId, out var d))
+                    {
+                        dept = d;
+                    }
+
+                    var effectiveJoinDate = TenureCalculator.GetEffectiveJoinDate(member?.JoinDate, user.CreationTime);
+                    var (years, months, totalMonths) = TenureCalculator.Calculate(effectiveJoinDate);
+                    var tenureFormatted = TenureCalculator.FormatVietnamese(years, months);
+
+                    var fullName = (!string.IsNullOrWhiteSpace(user.Surname) ? user.Surname + " " : "") + user.Name;
+                    if (string.IsNullOrWhiteSpace(fullName))
+                    {
+                        fullName = user.UserName;
+                    }
+
+                    requestCountDict.TryGetValue(user.Id, out var reqCount);
+
+                    return new EmployeeListItemDto
+                    {
+                        Id = user.Id,
+                        UserName = user.UserName,
+                        FullName = fullName.Trim(),
+                        Email = user.Email,
+                        PhoneNumber = user.PhoneNumber,
+                        DepartmentId = member?.DepartmentId,
+                        DepartmentCode = dept?.Code,
+                        DepartmentName = dept?.Name,
+                        Position = member?.Position ?? string.Empty,
+                        IsManager = dept != null && dept.ManagerId == user.Id,
+                        JoinDate = effectiveJoinDate,
+                        RawJoinDate = member?.JoinDate,
+                        CreationTime = user.CreationTime,
+                        TenureMonths = totalMonths,
+                        TenureFormatted = tenureFormatted,
+                        CurrentYearRequestCount = reqCount
+                    };
+                })
+                .Where(item => !input.DepartmentId.HasValue || item.DepartmentId == input.DepartmentId.Value)
+                .Where(item => string.IsNullOrEmpty(filterKeyword)
+                    || item.FullName.ToLowerInvariant().Contains(filterKeyword)
+                    || item.UserName.ToLowerInvariant().Contains(filterKeyword)
+                    || item.Email.ToLowerInvariant().Contains(filterKeyword)
+                    || item.Position.ToLowerInvariant().Contains(filterKeyword)
+                    || (item.DepartmentName != null && item.DepartmentName.ToLowerInvariant().Contains(filterKeyword)))
+                .Where(item => !input.MinTenureMonths.HasValue || item.TenureMonths >= input.MinTenureMonths.Value)
+                .Where(item => !input.MaxTenureMonths.HasValue || item.TenureMonths <= input.MaxTenureMonths.Value)
+                .ToList();
+
+            var totalCount = employeeList.Count;
+
+            var pagedItems = employeeList
+                .OrderByDescending(x => x.IsManager)
+                .ThenBy(x => x.FullName)
+                .Skip(input.SkipCount)
+                .Take(input.MaxResultCount)
+                .ToList();
+
+            return new PagedResultDto<EmployeeListItemDto>(totalCount, pagedItems);
+        }
+        catch (Exception ex) when (ex is not IBusinessException && ex is not EntityNotFoundException && ex is not AbpAuthorizationException && ex is not AbpValidationException)
+        {
+            Logger.LogError(ex, "Lỗi xảy ra trong GetListAsync nhân viên: {Message}", ex.Message);
+            throw new BusinessException("InternalApproval:00000");
+        }
+    }
+
+    // Lấy chi tiết hồ sơ nhân viên, thâm niên làm việc, thống kê trong năm và các đề xuất gần nhất
+    public virtual async Task<EmployeeProfileDto> GetAsync(Guid id)
+    {
+        try
+        {
+            var user = await _userRepository.FindAsync(id);
+            if (user == null)
             {
-                if (scope.IsManager)
-                {
-                    var isManagedDeptMember = member != null && scope.ManagedDeptIds.Contains(member.DepartmentId);
-                    var isSelf = user.Id == scope.CurrentUserId;
-                    if (!isManagedDeptMember && !isSelf)
-                    {
-                        continue;
-                    }
-                }
-                else
-                {
-                    // Regular employee chỉ thấy chính mình
-                    if (user.Id != scope.CurrentUserId)
-                    {
-                        continue;
-                    }
-                }
+                throw new EntityNotFoundException(typeof(IdentityUser), id);
+            }
+
+            await CheckCanAccessEmployeeAsync(id);
+
+            var member = await _memberRepository.FirstOrDefaultAsync(x => x.UserId == id);
+            Department? dept = null;
+            if (member != null)
+            {
+                dept = await _departmentRepository.FindAsync(member.DepartmentId);
             }
 
             var effectiveJoinDate = TenureCalculator.GetEffectiveJoinDate(member?.JoinDate, user.CreationTime);
@@ -235,14 +292,32 @@ public class EmployeeAppService : InternalApprovalAppService, IEmployeeAppServic
             {
                 fullName = user.UserName;
             }
+            var trimmedFullName = fullName.Trim();
 
-            requestCountDict.TryGetValue(user.Id, out var reqCount);
+            var currentYear = DateTime.UtcNow.Year;
+            var yearlyStats = await CalculateYearlyStatsAsync(id, currentYear);
 
-            var item = new EmployeeListItemDto
+            var requestQuery = await _requestRepository.GetQueryableAsync();
+            var recentEntities = await AsyncExecuter.ToListAsync(
+                requestQuery
+                    .Where(x => x.CreatorId == id)
+                    .OrderByDescending(x => x.CreationTime)
+                    .Take(10));
+
+            var recentDtos = MapWithExceptionHandling<List<Request>, List<RequestDto>>(recentEntities)
+                .Select(rDto =>
+                {
+                    rDto.CreatorName = trimmedFullName;
+                    rDto.DepartmentName = dept?.Name;
+                    rDto.DepartmentCode = dept?.Code;
+                    return rDto;
+                }).ToList();
+
+            return new EmployeeProfileDto
             {
                 Id = user.Id,
                 UserName = user.UserName,
-                FullName = fullName.Trim(),
+                FullName = trimmedFullName,
                 Email = user.Email,
                 PhoneNumber = user.PhoneNumber,
                 DepartmentId = member?.DepartmentId,
@@ -255,515 +330,424 @@ public class EmployeeAppService : InternalApprovalAppService, IEmployeeAppServic
                 CreationTime = user.CreationTime,
                 TenureMonths = totalMonths,
                 TenureFormatted = tenureFormatted,
-                CurrentYearRequestCount = reqCount
+                CurrentYearRequestCount = yearlyStats.TotalRequests,
+                CurrentYearStats = yearlyStats,
+                RecentRequests = recentDtos
             };
-
-            // Lọc theo phòng ban
-            if (input.DepartmentId.HasValue && item.DepartmentId != input.DepartmentId.Value)
-            {
-                continue;
-            }
-
-            // Lọc theo từ khóa tìm kiếm
-            if (!string.IsNullOrWhiteSpace(input.Filter))
-            {
-                var f = input.Filter.Trim().ToLowerInvariant();
-                var match = item.FullName.ToLowerInvariant().Contains(f)
-                    || item.UserName.ToLowerInvariant().Contains(f)
-                    || item.Email.ToLowerInvariant().Contains(f)
-                    || item.Position.ToLowerInvariant().Contains(f)
-                    || (item.DepartmentName != null && item.DepartmentName.ToLowerInvariant().Contains(f));
-
-                if (!match)
-                {
-                    continue;
-                }
-            }
-
-            // Lọc theo thâm niên tối thiểu / tối đa (tháng)
-            if (input.MinTenureMonths.HasValue && item.TenureMonths < input.MinTenureMonths.Value)
-            {
-                continue;
-            }
-
-            if (input.MaxTenureMonths.HasValue && item.TenureMonths > input.MaxTenureMonths.Value)
-            {
-                continue;
-            }
-
-            employeeList.Add(item);
         }
-
-        var totalCount = employeeList.Count;
-
-        // Sắp xếp mặc định hoặc theo Sorting
-        var pagedItems = employeeList
-            .OrderByDescending(x => x.IsManager)
-            .ThenBy(x => x.FullName)
-            .Skip(input.SkipCount)
-            .Take(input.MaxResultCount)
-            .ToList();
-
-        return new PagedResultDto<EmployeeListItemDto>(totalCount, pagedItems);
+        catch (Exception ex) when (ex is not IBusinessException && ex is not EntityNotFoundException && ex is not AbpAuthorizationException && ex is not AbpValidationException)
+        {
+            Logger.LogError(ex, "Lỗi xảy ra trong GetAsync nhân viên {Id}: {Message}", id, ex.Message);
+            throw new BusinessException("InternalApproval:00000");
+        }
     }
 
-    /// <summary>
-    /// Lấy chi tiết hồ sơ nhân viên, thâm niên làm việc, thống kê trong năm và các đề xuất gần nhất.
-    /// </summary>
-    public virtual async Task<EmployeeProfileDto> GetAsync(Guid id)
-    {
-        var user = await _userRepository.FindAsync(id);
-        if (user == null)
-        {
-            throw new EntityNotFoundException(typeof(IdentityUser), id);
-        }
-
-        await CheckCanAccessEmployeeAsync(id);
-
-        var member = await _memberRepository.FirstOrDefaultAsync(x => x.UserId == id);
-        Department? dept = null;
-        if (member != null)
-        {
-            dept = await _departmentRepository.FindAsync(member.DepartmentId);
-        }
-
-        var effectiveJoinDate = TenureCalculator.GetEffectiveJoinDate(member?.JoinDate, user.CreationTime);
-        var (years, months, totalMonths) = TenureCalculator.Calculate(effectiveJoinDate);
-        var tenureFormatted = TenureCalculator.FormatVietnamese(years, months);
-
-        var fullName = (!string.IsNullOrWhiteSpace(user.Surname) ? user.Surname + " " : "") + user.Name;
-        if (string.IsNullOrWhiteSpace(fullName))
-        {
-            fullName = user.UserName;
-        }
-
-        var currentYear = DateTime.UtcNow.Year;
-        var yearlyStats = await CalculateYearlyStatsAsync(id, currentYear);
-
-        // Lấy 10 đề xuất gần nhất của nhân viên
-        var requestQuery = await _requestRepository.GetQueryableAsync();
-        var recentEntities = await AsyncExecuter.ToListAsync(
-            requestQuery
-                .Where(x => x.CreatorId == id)
-                .OrderByDescending(x => x.CreationTime)
-                .Take(10));
-
-        var recentDtos = ObjectMapper.Map<List<Request>, List<RequestDto>>(recentEntities);
-        foreach (var rDto in recentDtos)
-        {
-            rDto.CreatorName = fullName.Trim();
-            rDto.DepartmentName = dept?.Name;
-            rDto.DepartmentCode = dept?.Code;
-        }
-
-        return new EmployeeProfileDto
-        {
-            Id = user.Id,
-            UserName = user.UserName,
-            FullName = fullName.Trim(),
-            Email = user.Email,
-            PhoneNumber = user.PhoneNumber,
-            DepartmentId = member?.DepartmentId,
-            DepartmentCode = dept?.Code,
-            DepartmentName = dept?.Name,
-            Position = member?.Position ?? string.Empty,
-            IsManager = dept != null && dept.ManagerId == user.Id,
-            JoinDate = effectiveJoinDate,
-            RawJoinDate = member?.JoinDate,
-            CreationTime = user.CreationTime,
-            TenureMonths = totalMonths,
-            TenureFormatted = tenureFormatted,
-            CurrentYearRequestCount = yearlyStats.TotalRequests,
-            CurrentYearStats = yearlyStats,
-            RecentRequests = recentDtos
-        };
-    }
-
-    /// <summary>
-    /// Cập nhật ngày bắt đầu làm việc của nhân viên và tính toán lại thâm niên.
-    /// </summary>
+    // Cập nhật ngày bắt đầu làm việc của nhân viên và tính toán lại thâm niên
     [Authorize(InternalApprovalPermissions.Employees.Edit)]
     public virtual async Task<EmployeeProfileDto> UpdateJoinDateAsync(Guid id, UpdateEmployeeJoinDateDto input)
     {
-        // Kiểm tra ràng buộc hợp lệ: không được là ngày trong tương lai và không trước năm 1970
-        if (input.JoinDate.Date > DateTime.UtcNow.Date.AddDays(1))
+        try
         {
-            throw new BusinessException(InternalApprovalDomainErrorCodes.InvalidJoinDate);
-        }
-
-        if (input.JoinDate < new DateTime(1970, 1, 1))
-        {
-            throw new BusinessException(InternalApprovalDomainErrorCodes.InvalidJoinDate);
-        }
-
-        var user = await _userRepository.FindAsync(id);
-        if (user == null)
-        {
-            throw new EntityNotFoundException(typeof(IdentityUser), id);
-        }
-
-        await CheckCanAccessEmployeeAsync(id);
-
-        var member = await _memberRepository.FirstOrDefaultAsync(x => x.UserId == id);
-        if (member != null)
-        {
-            member.JoinDate = input.JoinDate.Date;
-            await _memberRepository.UpdateAsync(member, autoSave: true);
-        }
-        else
-        {
-            // Nếu chưa có phòng ban, tạo liên kết dự phòng với phòng ban đầu tiên hoặc lưu tạm
-            var firstDept = await _departmentRepository.FirstOrDefaultAsync();
-            if (firstDept != null)
+            if (input.JoinDate.Date > DateTime.UtcNow.Date.AddDays(1))
             {
-                var newMember = new DepartmentMember(
-                    GuidGenerator.Create(),
-                    firstDept.Id,
-                    id,
-                    "Nhân viên",
-                    input.JoinDate.Date
-                );
-                await _memberRepository.InsertAsync(newMember, autoSave: true);
-            }
-        }
-
-        return await GetAsync(id);
-    }
-
-    /// <summary>
-    /// Lấy lịch sử đề xuất của nhân viên kèm bộ lọc theo trạng thái, loại hình và năm.
-    /// </summary>
-    public virtual async Task<PagedResultDto<RequestDto>> GetRequestsAsync(Guid id, GetEmployeeRequestsInput input)
-    {
-        var user = await _userRepository.FindAsync(id);
-        if (user == null)
-        {
-            throw new EntityNotFoundException(typeof(IdentityUser), id);
-        }
-
-        await CheckCanAccessEmployeeAsync(id);
-
-        var fullName = ((!string.IsNullOrWhiteSpace(user.Surname) ? user.Surname + " " : "") + user.Name).Trim();
-
-        var member = await _memberRepository.FirstOrDefaultAsync(x => x.UserId == id);
-        Department? dept = null;
-        if (member != null)
-        {
-            dept = await _departmentRepository.FindAsync(member.DepartmentId);
-        }
-
-        var query = await _requestRepository.GetQueryableAsync();
-        query = query.Where(x => x.CreatorId == id);
-
-        if (input.Status.HasValue)
-        {
-            query = query.Where(x => x.Status == input.Status.Value);
-        }
-
-        if (input.Type.HasValue)
-        {
-            query = query.Where(x => x.Type == input.Type.Value);
-        }
-
-        if (input.Year.HasValue)
-        {
-            query = query.Where(x => x.CreationTime.Year == input.Year.Value);
-        }
-
-        var totalCount = await AsyncExecuter.CountAsync(query);
-
-        var requests = await AsyncExecuter.ToListAsync(
-            query.OrderByDescending(x => x.CreationTime)
-                 .Skip(input.SkipCount)
-                 .Take(input.MaxResultCount));
-
-        // Lấy danh sách Approvers để hiển thị tên người duyệt
-        var approverIds = requests.Where(x => x.ApproverId.HasValue).Select(x => x.ApproverId!.Value).Distinct().ToList();
-        var approvers = approverIds.Any()
-            ? await _userRepository.GetListAsync(x => approverIds.Contains(x.Id))
-            : new List<IdentityUser>();
-        var approverDict = approvers.ToDictionary(
-            x => x.Id,
-            x => (!string.IsNullOrWhiteSpace(x.Surname) ? x.Surname + " " : "") + x.Name);
-
-        var dtos = ObjectMapper.Map<List<Request>, List<RequestDto>>(requests);
-        foreach (var dto in dtos)
-        {
-            dto.CreatorName = fullName;
-            dto.DepartmentName = dept?.Name;
-            dto.DepartmentCode = dept?.Code;
-
-            if (dto.ApproverId.HasValue && approverDict.TryGetValue(dto.ApproverId.Value, out var approverName))
-            {
-                dto.ApproverName = approverName;
-            }
-        }
-
-        return new PagedResultDto<RequestDto>(totalCount, dtos);
-    }
-
-    /// <summary>
-    /// Thống kê đề xuất theo năm của nhân viên: số lượng theo trạng thái, tổng tiền yêu cầu, tổng tiền giải ngân và ngày nghỉ.
-    /// </summary>
-    public virtual async Task<EmployeeYearlyStatsDto> GetYearlyStatsAsync(Guid id, int? year = null)
-    {
-        var user = await _userRepository.FindAsync(id);
-        if (user == null)
-        {
-            throw new EntityNotFoundException(typeof(IdentityUser), id);
-        }
-
-        await CheckCanAccessEmployeeAsync(id);
-
-        var targetYear = year ?? DateTime.UtcNow.Year;
-        return await CalculateYearlyStatsAsync(id, targetYear);
-    }
-
-    /// <summary>
-    /// Lấy danh sách các đợt nghỉ phép đã bóc tách thời gian, số ngày và lý do phục vụ timeline nghỉ phép trực quan.
-    /// </summary>
-    public virtual async Task<List<LeaveTimelineItemDto>> GetLeaveTimelineAsync(Guid id, int? year = null)
-    {
-        var user = await _userRepository.FindAsync(id);
-        if (user == null)
-        {
-            throw new EntityNotFoundException(typeof(IdentityUser), id);
-        }
-
-        await CheckCanAccessEmployeeAsync(id);
-
-        var query = await _requestRepository.GetQueryableAsync();
-        var leaves = await AsyncExecuter.ToListAsync(
-            query.Where(x => x.CreatorId == id && x.Type == RequestType.Leave));
-
-        // Lấy danh sách người duyệt
-        var approverIds = leaves.Where(x => x.ApproverId.HasValue).Select(x => x.ApproverId!.Value).Distinct().ToList();
-        var approvers = approverIds.Any()
-            ? await _userRepository.GetListAsync(x => approverIds.Contains(x.Id))
-            : new List<IdentityUser>();
-        var approverDict = approvers.ToDictionary(
-            x => x.Id,
-            x => (!string.IsNullOrWhiteSpace(x.Surname) ? x.Surname + " " : "") + x.Name);
-
-        var timeline = new List<LeaveTimelineItemDto>();
-
-        foreach (var req in leaves)
-        {
-            var extracted = LeaveTimelineExtractor.Extract(req);
-
-            if (year.HasValue && extracted.StartDate.Year != year.Value && req.CreationTime.Year != year.Value)
-            {
-                continue;
+                throw new BusinessException(InternalApprovalDomainErrorCodes.InvalidJoinDate);
             }
 
-            approverDict.TryGetValue(req.ApproverId ?? Guid.Empty, out var approverName);
-
-            timeline.Add(new LeaveTimelineItemDto
+            if (input.JoinDate < new DateTime(1970, 1, 1))
             {
-                RequestId = req.Id,
-                Title = req.Title,
-                StartDate = extracted.StartDate,
-                EndDate = extracted.EndDate,
-                Days = extracted.Days,
-                Reason = extracted.Reason,
-                Status = req.Status,
-                StatusName = GetStatusName(req.Status),
-                CreationTime = req.CreationTime,
-                ApproverName = approverName,
-                ApprovalTime = req.ApprovalTime,
-                RejectionReason = req.RejectionReason
-            });
-        }
+                throw new BusinessException(InternalApprovalDomainErrorCodes.InvalidJoinDate);
+            }
 
-        return timeline.OrderByDescending(x => x.StartDate).ThenByDescending(x => x.CreationTime).ToList();
-    }
-
-    /// <summary>
-    /// Lấy dữ liệu phân tích và thống kê tổng thể nhân sự: phân bổ nhân sự theo phòng ban,
-    /// thâm niên trung bình của các bộ phận, và tần suất gửi đề xuất của nhân viên.
-    /// </summary>
-    [Authorize(InternalApprovalPermissions.Employees.Analytics)]
-    public virtual async Task<HrAnalyticsDto> GetAnalyticsAsync(int? year = null)
-    {
-        var targetYear = year ?? DateTime.UtcNow.Year;
-        var scope = await EvaluateCurrentUserAccessScopeAsync();
-
-        var users = await _userRepository.GetListAsync();
-        var departments = await _departmentRepository.GetListAsync();
-        var members = await _memberRepository.GetListAsync();
-
-        if (!scope.IsGlobal)
-        {
-            if (scope.IsManager)
+            var user = await _userRepository.FindAsync(id);
+            if (user == null)
             {
-                departments = departments.Where(d => scope.ManagedDeptIds.Contains(d.Id)).ToList();
-                members = members.Where(m => scope.ManagedDeptIds.Contains(m.DepartmentId)).ToList();
-                var managedUserIds = members.Select(m => m.UserId).ToHashSet();
-                users = users.Where(u => managedUserIds.Contains(u.Id)).ToList();
+                throw new EntityNotFoundException(typeof(IdentityUser), id);
+            }
+
+            await CheckCanAccessEmployeeAsync(id);
+
+            var member = await _memberRepository.FirstOrDefaultAsync(x => x.UserId == id);
+            if (member != null)
+            {
+                member.JoinDate = input.JoinDate.Date;
+                await _memberRepository.UpdateAsync(member, autoSave: true);
             }
             else
             {
-                var selfMember = members.FirstOrDefault(m => m.UserId == scope.CurrentUserId);
-                if (selfMember != null)
+                var firstDept = await _departmentRepository.FirstOrDefaultAsync();
+                if (firstDept != null)
                 {
-                    departments = departments.Where(d => d.Id == selfMember.DepartmentId).ToList();
-                    members = members.Where(m => m.DepartmentId == selfMember.DepartmentId).ToList();
-                    var deptUserIds = members.Select(m => m.UserId).ToHashSet();
-                    users = users.Where(u => deptUserIds.Contains(u.Id)).ToList();
+                    var newMember = new DepartmentMember(
+                        GuidGenerator.Create(),
+                        firstDept.Id,
+                        id,
+                        "Nhân viên",
+                        input.JoinDate.Date
+                    );
+                    await _memberRepository.InsertAsync(newMember, autoSave: true);
+                }
+            }
+
+            return await GetAsync(id);
+        }
+        catch (Exception ex) when (ex is not IBusinessException && ex is not EntityNotFoundException && ex is not AbpAuthorizationException && ex is not AbpValidationException)
+        {
+            Logger.LogError(ex, "Lỗi xảy ra trong UpdateJoinDateAsync nhân viên {Id}: {Message}", id, ex.Message);
+            throw new BusinessException("InternalApproval:00000");
+        }
+    }
+
+    // Lấy lịch sử đề xuất của nhân viên kèm bộ lọc theo trạng thái, loại hình và năm
+    public virtual async Task<PagedResultDto<RequestDto>> GetRequestsAsync(Guid id, GetEmployeeRequestsInput input)
+    {
+        try
+        {
+            var user = await _userRepository.FindAsync(id);
+            if (user == null)
+            {
+                throw new EntityNotFoundException(typeof(IdentityUser), id);
+            }
+
+            await CheckCanAccessEmployeeAsync(id);
+
+            var fullName = ((!string.IsNullOrWhiteSpace(user.Surname) ? user.Surname + " " : "") + user.Name).Trim();
+
+            var member = await _memberRepository.FirstOrDefaultAsync(x => x.UserId == id);
+            Department? dept = null;
+            if (member != null)
+            {
+                dept = await _departmentRepository.FindAsync(member.DepartmentId);
+            }
+
+            var query = await _requestRepository.GetQueryableAsync();
+            query = query.Where(x => x.CreatorId == id);
+
+            if (input.Status.HasValue)
+            {
+                query = query.Where(x => x.Status == input.Status.Value);
+            }
+
+            if (input.Type.HasValue)
+            {
+                query = query.Where(x => x.Type == input.Type.Value);
+            }
+
+            if (input.Year.HasValue)
+            {
+                query = query.Where(x => x.CreationTime.Year == input.Year.Value);
+            }
+
+            var totalCount = await AsyncExecuter.CountAsync(query);
+
+            var requests = await AsyncExecuter.ToListAsync(
+                query.OrderByDescending(x => x.CreationTime)
+                     .Skip(input.SkipCount)
+                     .Take(input.MaxResultCount));
+
+            var approverIds = requests.Where(x => x.ApproverId.HasValue).Select(x => x.ApproverId!.Value).Distinct().ToList();
+            var approvers = approverIds.Any()
+                ? await _userRepository.GetListAsync(x => approverIds.Contains(x.Id))
+                : new List<IdentityUser>();
+            var approverDict = approvers.ToDictionary(
+                x => x.Id,
+                x => (!string.IsNullOrWhiteSpace(x.Surname) ? x.Surname + " " : "") + x.Name);
+
+            var dtos = MapWithExceptionHandling<List<Request>, List<RequestDto>>(requests)
+                .Select(dto =>
+                {
+                    dto.CreatorName = fullName;
+                    dto.DepartmentName = dept?.Name;
+                    dto.DepartmentCode = dept?.Code;
+
+                    if (dto.ApproverId.HasValue && approverDict.TryGetValue(dto.ApproverId.Value, out var approverName))
+                    {
+                        dto.ApproverName = approverName;
+                    }
+                    return dto;
+                }).ToList();
+
+            return new PagedResultDto<RequestDto>(totalCount, dtos);
+        }
+        catch (Exception ex) when (ex is not IBusinessException && ex is not EntityNotFoundException && ex is not AbpAuthorizationException && ex is not AbpValidationException)
+        {
+            Logger.LogError(ex, "Lỗi xảy ra trong GetRequestsAsync nhân viên {Id}: {Message}", id, ex.Message);
+            throw new BusinessException("InternalApproval:00000");
+        }
+    }
+
+    // Thống kê đề xuất theo năm của nhân viên
+    public virtual async Task<EmployeeYearlyStatsDto> GetYearlyStatsAsync(Guid id, int? year = null)
+    {
+        try
+        {
+            var user = await _userRepository.FindAsync(id);
+            if (user == null)
+            {
+                throw new EntityNotFoundException(typeof(IdentityUser), id);
+            }
+
+            await CheckCanAccessEmployeeAsync(id);
+
+            var targetYear = year ?? DateTime.UtcNow.Year;
+            return await CalculateYearlyStatsAsync(id, targetYear);
+        }
+        catch (Exception ex) when (ex is not IBusinessException && ex is not EntityNotFoundException && ex is not AbpAuthorizationException && ex is not AbpValidationException)
+        {
+            Logger.LogError(ex, "Lỗi xảy ra trong GetYearlyStatsAsync nhân viên {Id}: {Message}", id, ex.Message);
+            throw new BusinessException("InternalApproval:00000");
+        }
+    }
+
+    // Lấy danh sách các đợt nghỉ phép phục vụ timeline nghỉ phép trực quan
+    public virtual async Task<List<LeaveTimelineItemDto>> GetLeaveTimelineAsync(Guid id, int? year = null)
+    {
+        try
+        {
+            var user = await _userRepository.FindAsync(id);
+            if (user == null)
+            {
+                throw new EntityNotFoundException(typeof(IdentityUser), id);
+            }
+
+            await CheckCanAccessEmployeeAsync(id);
+
+            var query = await _requestRepository.GetQueryableAsync();
+            var leaves = await AsyncExecuter.ToListAsync(
+                query.Where(x => x.CreatorId == id && x.Type == RequestType.Leave));
+
+            var approverIds = leaves.Where(x => x.ApproverId.HasValue).Select(x => x.ApproverId!.Value).Distinct().ToList();
+            var approvers = approverIds.Any()
+                ? await _userRepository.GetListAsync(x => approverIds.Contains(x.Id))
+                : new List<IdentityUser>();
+            var approverDict = approvers.ToDictionary(
+                x => x.Id,
+                x => (!string.IsNullOrWhiteSpace(x.Surname) ? x.Surname + " " : "") + x.Name);
+
+            return leaves
+                .Select(req => (Request: req, Extracted: LeaveTimelineExtractor.Extract(req)))
+                .Where(x => !year.HasValue || x.Extracted.StartDate.Year == year.Value || x.Request.CreationTime.Year == year.Value)
+                .Select(x =>
+                {
+                    approverDict.TryGetValue(x.Request.ApproverId ?? Guid.Empty, out var approverName);
+
+                    return new LeaveTimelineItemDto
+                    {
+                        RequestId = x.Request.Id,
+                        Title = x.Request.Title,
+                        StartDate = x.Extracted.StartDate,
+                        EndDate = x.Extracted.EndDate,
+                        Days = x.Extracted.Days,
+                        Reason = x.Extracted.Reason,
+                        Status = x.Request.Status,
+                        StatusName = GetStatusName(x.Request.Status),
+                        CreationTime = x.Request.CreationTime,
+                        ApproverName = approverName,
+                        ApprovalTime = x.Request.ApprovalTime,
+                        RejectionReason = x.Request.RejectionReason
+                    };
+                })
+                .OrderByDescending(x => x.StartDate)
+                .ThenByDescending(x => x.CreationTime)
+                .ToList();
+        }
+        catch (Exception ex) when (ex is not IBusinessException && ex is not EntityNotFoundException && ex is not AbpAuthorizationException && ex is not AbpValidationException)
+        {
+            Logger.LogError(ex, "Lỗi xảy ra trong GetLeaveTimelineAsync nhân viên {Id}: {Message}", id, ex.Message);
+            throw new BusinessException("InternalApproval:00000");
+        }
+    }
+
+    // Lấy dữ liệu phân tích và thống kê tổng thể nhân sự
+    [Authorize(InternalApprovalPermissions.Employees.Analytics)]
+    public virtual async Task<HrAnalyticsDto> GetAnalyticsAsync(int? year = null)
+    {
+        try
+        {
+            var targetYear = year ?? DateTime.UtcNow.Year;
+            var scope = await EvaluateCurrentUserAccessScopeAsync();
+
+            var users = await _userRepository.GetListAsync();
+            var departments = await _departmentRepository.GetListAsync();
+            var members = await _memberRepository.GetListAsync();
+
+            if (!scope.IsGlobal)
+            {
+                if (scope.IsManager)
+                {
+                    departments = departments.Where(d => scope.ManagedDeptIds.Contains(d.Id)).ToList();
+                    members = members.Where(m => scope.ManagedDeptIds.Contains(m.DepartmentId)).ToList();
+                    var managedUserIds = members.Select(m => m.UserId).ToHashSet();
+                    users = users.Where(u => managedUserIds.Contains(u.Id)).ToList();
                 }
                 else
                 {
-                    departments = new List<Department>();
-                    members = new List<DepartmentMember>();
-                    users = new List<IdentityUser>();
+                    var selfMember = members.FirstOrDefault(m => m.UserId == scope.CurrentUserId);
+                    if (selfMember != null)
+                    {
+                        departments = departments.Where(d => d.Id == selfMember.DepartmentId).ToList();
+                        members = members.Where(m => m.DepartmentId == selfMember.DepartmentId).ToList();
+                        var deptUserIds = members.Select(m => m.UserId).ToHashSet();
+                        users = users.Where(u => deptUserIds.Contains(u.Id)).ToList();
+                    }
+                    else
+                    {
+                        departments = new List<Department>();
+                        members = new List<DepartmentMember>();
+                        users = new List<IdentityUser>();
+                    }
                 }
             }
-        }
 
-        var requestQuery = await _requestRepository.GetQueryableAsync();
-        var allRequests = await AsyncExecuter.ToListAsync(
-            requestQuery.Where(x => x.CreationTime.Year == targetYear));
+            var requestQuery = await _requestRepository.GetQueryableAsync();
+            var allRequests = await AsyncExecuter.ToListAsync(
+                requestQuery.Where(x => x.CreationTime.Year == targetYear));
 
-        if (!scope.IsGlobal)
-        {
-            var allowedUserIds = members.Select(m => m.UserId).ToHashSet();
-            allRequests = allRequests.Where(r => r.CreatorId.HasValue && allowedUserIds.Contains(r.CreatorId.Value)).ToList();
-        }
-
-        var memberDict = members.ToDictionary(x => x.UserId, x => x);
-        var deptDict = departments.ToDictionary(x => x.Id, x => x);
-
-        // 1. Company Summary
-        var assignedDeptIds = departments.Select(d => d.Id).ToHashSet();
-        var assignedMembers = members.Where(m => assignedDeptIds.Contains(m.DepartmentId)).ToList();
-        var assignedUserIds = assignedMembers.Select(x => x.UserId).ToHashSet();
-        var assignedUsers = users.Where(u => assignedUserIds.Contains(u.Id)).ToList();
-        var totalEmployees = assignedUsers.Count;
-        var totalDepartments = departments.Count;
-
-        var tenureMonthsList = new List<int>();
-        foreach (var u in assignedUsers)
-        {
-            memberDict.TryGetValue(u.Id, out var m);
-            var effectiveJoin = TenureCalculator.GetEffectiveJoinDate(m?.JoinDate, u.CreationTime);
-            var (_, _, totalM) = TenureCalculator.Calculate(effectiveJoin);
-            tenureMonthsList.Add(totalM);
-        }
-
-        var avgCompanyTenureMonths = tenureMonthsList.Any() ? tenureMonthsList.Average() : 0.0;
-        var totalRequestsThisYear = allRequests.Count;
-        var totalDisbursedThisYear = allRequests
-            .Where(x => x.Status == RequestStatus.Approved && x.Amount.HasValue)
-            .Sum(x => x.Amount!.Value);
-
-        var result = new HrAnalyticsDto
-        {
-            Year = targetYear,
-            CompanySummary = new CompanyHrSummaryDto
+            if (!scope.IsGlobal)
             {
-                TotalEmployees = totalEmployees,
-                TotalDepartments = totalDepartments,
-                CompanyAverageTenureMonths = Math.Round(avgCompanyTenureMonths, 1),
-                CompanyAverageTenureFormatted = TenureCalculator.FormatAverageMonths(avgCompanyTenureMonths),
-                TotalRequestsThisYear = totalRequestsThisYear,
-                TotalDisbursedAmountThisYear = totalDisbursedThisYear
+                var allowedUserIds = members.Select(m => m.UserId).ToHashSet();
+                allRequests = allRequests.Where(r => r.CreatorId.HasValue && allowedUserIds.Contains(r.CreatorId.Value)).ToList();
             }
-        };
 
-        // 2. Headcount & Tenure & Request Frequency by Department
-        var userDeptLookup = members.ToDictionary(x => x.UserId, x => x.DepartmentId);
-        var requestsByDept = allRequests
-            .Where(x => x.CreatorId.HasValue && userDeptLookup.ContainsKey(x.CreatorId!.Value))
-            .GroupBy(x => userDeptLookup[x.CreatorId!.Value])
-            .ToDictionary(g => g.Key, g => g.ToList());
+            var memberDict = members
+                .GroupBy(x => x.UserId)
+                .ToDictionary(g => g.Key, g => g.First());
+            var deptDict = departments.ToDictionary(x => x.Id, x => x);
 
-        foreach (var dept in departments)
-        {
-            var deptMembers = members.Where(x => x.DepartmentId == dept.Id).ToList();
-            var memberUserIds = deptMembers.Select(x => x.UserId).ToHashSet();
-            var deptUsers = users.Where(x => memberUserIds.Contains(x.Id)).ToList();
+            // 1. Company Summary
+            var assignedDeptIds = departments.Select(d => d.Id).ToHashSet();
+            var assignedMembers = members.Where(m => assignedDeptIds.Contains(m.DepartmentId)).ToList();
+            var assignedUserIds = assignedMembers.Select(x => x.UserId).ToHashSet();
+            var assignedUsers = users.Where(u => assignedUserIds.Contains(u.Id)).ToList();
+            var totalEmployees = assignedUsers.Count;
+            var totalDepartments = departments.Count;
 
-            var headcount = deptUsers.Count;
-            var percentage = totalEmployees > 0 ? Math.Round((double)headcount / totalEmployees * 100, 1) : 0;
-
-            result.HeadcountByDepartment.Add(new DepartmentHeadcountDto
-            {
-                DepartmentId = dept.Id,
-                DepartmentCode = dept.Code,
-                DepartmentName = dept.Name,
-                Headcount = headcount,
-                Percentage = percentage
-            });
-
-            // Department Tenure
-            var deptTenures = deptUsers.Select(u =>
+            var tenureMonthsList = assignedUsers.Select(u =>
             {
                 memberDict.TryGetValue(u.Id, out var m);
                 var effectiveJoin = TenureCalculator.GetEffectiveJoinDate(m?.JoinDate, u.CreationTime);
                 return TenureCalculator.Calculate(effectiveJoin).TotalMonths;
             }).ToList();
 
-            var avgDeptTenure = deptTenures.Any() ? deptTenures.Average() : 0.0;
-            var minTenure = deptTenures.Any() ? deptTenures.Min() : 0;
-            var maxTenure = deptTenures.Any() ? deptTenures.Max() : 0;
+            var avgCompanyTenureMonths = tenureMonthsList.Any() ? tenureMonthsList.Average() : 0.0;
+            var totalRequestsThisYear = allRequests.Count;
+            var totalDisbursedThisYear = allRequests
+                .Where(x => x.Status == RequestStatus.Approved && x.Amount.HasValue)
+                .Sum(x => x.Amount!.Value);
 
-            result.TenureByDepartment.Add(new DepartmentTenureDto
+            // 2. Headcount & Tenure & Request Frequency by Department
+            var userDeptLookup = memberDict.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.DepartmentId);
+            var requestsByDept = allRequests
+                .Where(x => x.CreatorId.HasValue && userDeptLookup.ContainsKey(x.CreatorId!.Value))
+                .GroupBy(x => userDeptLookup[x.CreatorId!.Value])
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            var deptStats = departments.Select(dept =>
             {
-                DepartmentId = dept.Id,
-                DepartmentCode = dept.Code,
-                DepartmentName = dept.Name,
-                AverageTenureMonths = Math.Round(avgDeptTenure, 1),
-                AverageTenureFormatted = TenureCalculator.FormatAverageMonths(avgDeptTenure),
-                MinTenureMonths = minTenure,
-                MaxTenureMonths = maxTenure
-            });
+                var memberUserIds = members
+                    .Where(x => x.DepartmentId == dept.Id)
+                    .Select(x => x.UserId)
+                    .ToHashSet();
+                var deptUsers = users.Where(x => memberUserIds.Contains(x.Id)).ToList();
 
-            // Request frequency
-            requestsByDept.TryGetValue(dept.Id, out var deptRequests);
-            var reqCount = deptRequests?.Count ?? 0;
-            var reqPerEmp = headcount > 0 ? Math.Round((double)reqCount / headcount, 2) : 0;
+                var headcount = deptUsers.Count;
+                var percentage = totalEmployees > 0 ? Math.Round((double)headcount / totalEmployees * 100, 1) : 0;
 
-            result.RequestFrequencyByDepartment.Add(new DepartmentRequestFrequencyDto
+                var deptTenures = deptUsers.Select(u =>
+                {
+                    memberDict.TryGetValue(u.Id, out var m);
+                    var effectiveJoin = TenureCalculator.GetEffectiveJoinDate(m?.JoinDate, u.CreationTime);
+                    return TenureCalculator.Calculate(effectiveJoin).TotalMonths;
+                }).ToList();
+
+                var avgDeptTenure = deptTenures.Any() ? deptTenures.Average() : 0.0;
+                var minTenure = deptTenures.Any() ? deptTenures.Min() : 0;
+                var maxTenure = deptTenures.Any() ? deptTenures.Max() : 0;
+
+                requestsByDept.TryGetValue(dept.Id, out var deptRequests);
+                var reqCount = deptRequests?.Count ?? 0;
+                var reqPerEmp = headcount > 0 ? Math.Round((double)reqCount / headcount, 2) : 0;
+
+                return (
+                    Headcount: new DepartmentHeadcountDto
+                    {
+                        DepartmentId = dept.Id,
+                        DepartmentCode = dept.Code,
+                        DepartmentName = dept.Name,
+                        Headcount = headcount,
+                        Percentage = percentage
+                    },
+                    Tenure: new DepartmentTenureDto
+                    {
+                        DepartmentId = dept.Id,
+                        DepartmentCode = dept.Code,
+                        DepartmentName = dept.Name,
+                        AverageTenureMonths = Math.Round(avgDeptTenure, 1),
+                        AverageTenureFormatted = TenureCalculator.FormatAverageMonths(avgDeptTenure),
+                        MinTenureMonths = minTenure,
+                        MaxTenureMonths = maxTenure
+                    },
+                    Frequency: new DepartmentRequestFrequencyDto
+                    {
+                        DepartmentId = dept.Id,
+                        DepartmentCode = dept.Code,
+                        DepartmentName = dept.Name,
+                        TotalRequests = reqCount,
+                        RequestsPerEmployee = reqPerEmp
+                    }
+                );
+            }).ToList();
+
+            // 3. Top Requesters
+            var userDict = users.ToDictionary(x => x.Id, x => x);
+            var topRequesters = allRequests
+                .Where(x => x.CreatorId.HasValue)
+                .GroupBy(x => x.CreatorId!.Value)
+                .OrderByDescending(g => g.Count())
+                .Take(5)
+                .Where(g => userDict.ContainsKey(g.Key))
+                .Select(g =>
+                {
+                    var u = userDict[g.Key];
+                    memberDict.TryGetValue(u.Id, out var m);
+                    Department? d = null;
+                    if (m != null && deptDict.TryGetValue(m.DepartmentId, out var foundDept))
+                    {
+                        d = foundDept;
+                    }
+
+                    var uName = (!string.IsNullOrWhiteSpace(u.Surname) ? u.Surname + " " : "") + u.Name;
+                    return new TopRequesterDto
+                    {
+                        UserId = u.Id,
+                        FullName = !string.IsNullOrWhiteSpace(uName) ? uName.Trim() : u.UserName,
+                        DepartmentName = d?.Name ?? "N/A",
+                        RequestCount = g.Count()
+                    };
+                }).ToList();
+
+            return new HrAnalyticsDto
             {
-                DepartmentId = dept.Id,
-                DepartmentCode = dept.Code,
-                DepartmentName = dept.Name,
-                TotalRequests = reqCount,
-                RequestsPerEmployee = reqPerEmp
-            });
+                Year = targetYear,
+                CompanySummary = new CompanyHrSummaryDto
+                {
+                    TotalEmployees = totalEmployees,
+                    TotalDepartments = totalDepartments,
+                    CompanyAverageTenureMonths = Math.Round(avgCompanyTenureMonths, 1),
+                    CompanyAverageTenureFormatted = TenureCalculator.FormatAverageMonths(avgCompanyTenureMonths),
+                    TotalRequestsThisYear = totalRequestsThisYear,
+                    TotalDisbursedAmountThisYear = totalDisbursedThisYear
+                },
+                HeadcountByDepartment = deptStats.Select(x => x.Headcount).ToList(),
+                TenureByDepartment = deptStats.Select(x => x.Tenure).ToList(),
+                RequestFrequencyByDepartment = deptStats.Select(x => x.Frequency).ToList(),
+                TopRequesters = topRequesters
+            };
         }
-
-        // 3. Top Requesters
-        var userDict = users.ToDictionary(x => x.Id, x => x);
-        var topGroups = allRequests
-            .Where(x => x.CreatorId.HasValue)
-            .GroupBy(x => x.CreatorId!.Value)
-            .OrderByDescending(g => g.Count())
-            .Take(5);
-
-        foreach (var g in topGroups)
+        catch (Exception ex) when (ex is not IBusinessException && ex is not EntityNotFoundException && ex is not AbpAuthorizationException && ex is not AbpValidationException)
         {
-            if (userDict.TryGetValue(g.Key, out var u))
-            {
-                memberDict.TryGetValue(u.Id, out var m);
-                Department? d = null;
-                if (m != null && deptDict.TryGetValue(m.DepartmentId, out var foundDept))
-                {
-                    d = foundDept;
-                }
-
-                var uName = (!string.IsNullOrWhiteSpace(u.Surname) ? u.Surname + " " : "") + u.Name;
-                result.TopRequesters.Add(new TopRequesterDto
-                {
-                    UserId = u.Id,
-                    FullName = !string.IsNullOrWhiteSpace(uName) ? uName.Trim() : u.UserName,
-                    DepartmentName = d?.Name ?? "N/A",
-                    RequestCount = g.Count()
-                });
-            }
+            Logger.LogError(ex, "Lỗi xảy ra trong GetAnalyticsAsync nhân sự: {Message}", ex.Message);
+            throw new BusinessException("InternalApproval:00000");
         }
-
-        return result;
     }
 
     private async Task<EmployeeYearlyStatsDto> CalculateYearlyStatsAsync(Guid userId, int targetYear)
@@ -773,13 +757,9 @@ public class EmployeeAppService : InternalApprovalAppService, IEmployeeAppServic
             requestQuery.Where(x => x.CreatorId == userId && x.CreationTime.Year == targetYear));
 
         var leaveRequests = requests.Where(x => x.Type == RequestType.Leave).ToList();
-        var approvedLeaveRequests = leaveRequests.Where(x => x.Status == RequestStatus.Approved).ToList();
-        double totalLeaveDays = 0;
-        foreach (var lr in approvedLeaveRequests)
-        {
-            var extracted = LeaveTimelineExtractor.Extract(lr);
-            totalLeaveDays += extracted.Days;
-        }
+        var totalLeaveDays = leaveRequests
+            .Where(x => x.Status == RequestStatus.Approved)
+            .Sum(lr => LeaveTimelineExtractor.Extract(lr).Days);
 
         var totalAmountRequested = requests
             .Where(x => x.Amount.HasValue)
@@ -841,234 +821,191 @@ public class EmployeeAppService : InternalApprovalAppService, IEmployeeAppServic
         };
     }
 
-    /// <summary>
-    /// Lấy báo cáo thống kê ngày nghỉ phép của nhân viên theo năm và phòng ban có phân trang, tìm kiếm.
-    /// </summary>
+    // Lấy báo cáo thống kê ngày nghỉ phép của nhân viên theo năm và phòng ban có phân trang, tìm kiếm
     public virtual async Task<PagedResultDto<EmployeeLeaveReportItemDto>> GetLeaveReportAsync(GetLeaveReportInput input)
     {
-        var targetYear = input.Year ?? DateTime.UtcNow.Year;
-        var scope = await EvaluateCurrentUserAccessScopeAsync();
-
-        // Nếu là Manager và chọn lọc theo phòng ban không thuộc quyền quản lý -> throw AbpAuthorizationException
-        if (scope.IsManager && input.DepartmentId.HasValue && !scope.ManagedDeptIds.Contains(input.DepartmentId.Value))
+        try
         {
-            throw new AbpAuthorizationException("Bạn không có quyền truy cập dữ liệu của phòng ban này.");
-        }
+            var targetYear = input.Year ?? DateTime.UtcNow.Year;
+            var scope = await EvaluateCurrentUserAccessScopeAsync();
 
-        var users = await _userRepository.GetListAsync();
-        var members = await _memberRepository.GetListAsync();
-        var departments = await _departmentRepository.GetListAsync();
-
-        var memberDict = members.ToDictionary(x => x.UserId, x => x);
-        var deptDict = departments.ToDictionary(x => x.Id, x => x);
-
-        var requestQuery = await _requestRepository.GetQueryableAsync();
-        var allLeaveRequests = await AsyncExecuter.ToListAsync(
-            requestQuery.Where(x => x.Type == RequestType.Leave && x.CreatorId.HasValue));
-
-        var userLeavesDict = allLeaveRequests
-            .GroupBy(x => x.CreatorId!.Value)
-            .ToDictionary(g => g.Key, g => g.ToList());
-
-        var windowStart = new DateTime(targetYear, 1, 1);
-        var windowEnd = new DateTime(targetYear, 12, 31, 23, 59, 59);
-
-        var reportItems = new List<EmployeeLeaveReportItemDto>();
-
-        foreach (var user in users)
-        {
-            memberDict.TryGetValue(user.Id, out var member);
-            Department? dept = null;
-            if (member != null && deptDict.TryGetValue(member.DepartmentId, out var d))
+            if (scope.IsManager && input.DepartmentId.HasValue && !scope.ManagedDeptIds.Contains(input.DepartmentId.Value))
             {
-                dept = d;
+                throw new AbpAuthorizationException("Bạn không có quyền truy cập dữ liệu của phòng ban này.");
             }
 
-            // Kiểm tra phân quyền truy cập theo phân cấp
-            if (!scope.IsGlobal)
-            {
-                if (scope.IsManager)
+            var users = await _userRepository.GetListAsync();
+            var members = await _memberRepository.GetListAsync();
+            var departments = await _departmentRepository.GetListAsync();
+
+            var memberDict = members
+                .GroupBy(x => x.UserId)
+                .ToDictionary(g => g.Key, g => g.First());
+            var deptDict = departments.ToDictionary(x => x.Id, x => x);
+
+            var requestQuery = await _requestRepository.GetQueryableAsync();
+            var allLeaveRequests = await AsyncExecuter.ToListAsync(
+                requestQuery.Where(x => x.Type == RequestType.Leave && x.CreatorId.HasValue));
+
+            var userLeavesDict = allLeaveRequests
+                .GroupBy(x => x.CreatorId!.Value)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            var windowStart = new DateTime(targetYear, 1, 1);
+            var windowEnd = new DateTime(targetYear, 12, 31, 23, 59, 59);
+
+            var filterKeyword = !string.IsNullOrWhiteSpace(input.Filter)
+                ? input.Filter.Trim().ToLowerInvariant()
+                : null;
+
+            var reportItems = users
+                .Where(user =>
                 {
-                    var isManagedDeptMember = member != null && scope.ManagedDeptIds.Contains(member.DepartmentId);
-                    var isSelf = user.Id == scope.CurrentUserId;
-                    if (!isManagedDeptMember && !isSelf)
+                    if (scope.IsGlobal) return true;
+                    memberDict.TryGetValue(user.Id, out var member);
+                    if (scope.IsManager)
                     {
-                        continue;
+                        var isManagedDeptMember = member != null && scope.ManagedDeptIds.Contains(member.DepartmentId);
+                        return isManagedDeptMember || user.Id == scope.CurrentUserId;
                     }
-                }
-                else
+                    return user.Id == scope.CurrentUserId;
+                })
+                .Where(user =>
                 {
-                    if (user.Id != scope.CurrentUserId)
+                    if (!input.DepartmentId.HasValue) return true;
+                    memberDict.TryGetValue(user.Id, out var member);
+                    return member != null && member.DepartmentId == input.DepartmentId.Value;
+                })
+                .Select(user =>
+                {
+                    memberDict.TryGetValue(user.Id, out var member);
+                    Department? dept = null;
+                    if (member != null && deptDict.TryGetValue(member.DepartmentId, out var d))
                     {
-                        continue;
-                    }
-                }
-            }
-
-            // Lọc theo phòng ban cụ thể nếu có
-            if (input.DepartmentId.HasValue && (member == null || member.DepartmentId != input.DepartmentId.Value))
-            {
-                continue;
-            }
-
-            var fullName = (!string.IsNullOrWhiteSpace(user.Surname) ? user.Surname + " " : "") + user.Name;
-            if (string.IsNullOrWhiteSpace(fullName))
-            {
-                fullName = user.UserName;
-            }
-
-            var item = new EmployeeLeaveReportItemDto
-            {
-                Id = user.Id,
-                UserName = user.UserName,
-                FullName = fullName.Trim(),
-                Email = user.Email,
-                DepartmentId = member?.DepartmentId,
-                DepartmentCode = dept?.Code,
-                DepartmentName = dept?.Name,
-                Position = member?.Position ?? string.Empty
-            };
-
-            // Lọc theo từ khóa tìm kiếm
-            if (!string.IsNullOrWhiteSpace(input.Filter))
-            {
-                var f = input.Filter.Trim().ToLowerInvariant();
-                var match = item.FullName.ToLowerInvariant().Contains(f)
-                    || item.UserName.ToLowerInvariant().Contains(f)
-                    || item.Email.ToLowerInvariant().Contains(f)
-                    || item.Position.ToLowerInvariant().Contains(f)
-                    || (item.DepartmentName != null && item.DepartmentName.ToLowerInvariant().Contains(f));
-
-                if (!match)
-                {
-                    continue;
-                }
-            }
-
-            // Tính toán số ngày nghỉ phép
-            userLeavesDict.TryGetValue(user.Id, out var userLeaves);
-            userLeaves ??= new List<Request>();
-
-            double totalApprovedLeaveDays = 0;
-            int totalSentLeaveRequests = 0;
-            int totalApprovedLeaveRequests = 0;
-
-            var inYearApprovedLeaves = new List<(Request Request, LeaveData Extracted)>();
-            var inYearSentLeaves = new List<(Request Request, LeaveData Extracted)>();
-
-            foreach (var req in userLeaves)
-            {
-                var extracted = LeaveTimelineExtractor.Extract(req);
-                bool inYear = (extracted.StartDate <= windowEnd && extracted.EndDate >= windowStart)
-                              || (req.CreationTime.Year == targetYear);
-
-                if (inYear)
-                {
-                    if (req.Status != RequestStatus.Draft)
-                    {
-                        totalSentLeaveRequests++;
-                        inYearSentLeaves.Add((req, extracted));
+                        dept = d;
                     }
 
-                    if (req.Status == RequestStatus.Approved)
+                    var fullName = (!string.IsNullOrWhiteSpace(user.Surname) ? user.Surname + " " : "") + user.Name;
+                    if (string.IsNullOrWhiteSpace(fullName))
                     {
-                        totalApprovedLeaveRequests++;
-                        inYearApprovedLeaves.Add((req, extracted));
+                        fullName = user.UserName;
+                    }
 
-                        // Tính số ngày nghỉ nằm trong targetYear
-                        double daysInYear;
-                        if (extracted.StartDate >= windowStart && extracted.EndDate <= windowEnd)
+                    var item = new EmployeeLeaveReportItemDto
+                    {
+                        Id = user.Id,
+                        UserName = user.UserName,
+                        FullName = fullName.Trim(),
+                        Email = user.Email,
+                        DepartmentId = member?.DepartmentId,
+                        DepartmentCode = dept?.Code,
+                        DepartmentName = dept?.Name,
+                        Position = member?.Position ?? string.Empty
+                    };
+
+                    userLeavesDict.TryGetValue(user.Id, out var userLeaves);
+                    userLeaves ??= new List<Request>();
+
+                    var extractedLeaves = userLeaves
+                        .Select(req => (Request: req, Extracted: LeaveTimelineExtractor.Extract(req)))
+                        .Where(x => (x.Extracted.StartDate <= windowEnd && x.Extracted.EndDate >= windowStart)
+                                    || x.Request.CreationTime.Year == targetYear)
+                        .ToList();
+
+                    var inYearSentLeaves = extractedLeaves
+                        .Where(x => x.Request.Status != RequestStatus.Draft)
+                        .ToList();
+
+                    var inYearApprovedLeaves = extractedLeaves
+                        .Where(x => x.Request.Status == RequestStatus.Approved)
+                        .ToList();
+
+                    var totalApprovedLeaveDays = inYearApprovedLeaves.Sum(x =>
+                    {
+                        if (x.Extracted.StartDate >= windowStart && x.Extracted.EndDate <= windowEnd)
                         {
-                            daysInYear = extracted.Days;
-                        }
-                        else
-                        {
-                            var effectiveStart = extracted.StartDate < windowStart ? windowStart : extracted.StartDate;
-                            var effectiveEnd = extracted.EndDate > windowEnd ? windowEnd : extracted.EndDate;
-                            if (effectiveEnd >= effectiveStart)
-                            {
-                                daysInYear = (effectiveEnd.Date - effectiveStart.Date).TotalDays + 1;
-                            }
-                            else
-                            {
-                                daysInYear = 0;
-                            }
+                            return x.Extracted.Days;
                         }
 
-                        totalApprovedLeaveDays += daysInYear;
+                        var effectiveStart = x.Extracted.StartDate < windowStart ? windowStart : x.Extracted.StartDate;
+                        var effectiveEnd = x.Extracted.EndDate > windowEnd ? windowEnd : x.Extracted.EndDate;
+                        return effectiveEnd >= effectiveStart
+                            ? (effectiveEnd.Date - effectiveStart.Date).TotalDays + 1
+                            : 0.0;
+                    });
+
+                    item.TotalApprovedLeaveDays = totalApprovedLeaveDays;
+                    item.TotalSentLeaveRequests = inYearSentLeaves.Count;
+                    item.TotalApprovedLeaveRequests = inYearApprovedLeaves.Count;
+
+                    var latestCandidate = inYearApprovedLeaves
+                        .OrderByDescending(x => x.Extracted.StartDate)
+                        .ThenByDescending(x => x.Request.CreationTime)
+                        .Select(x => x.Extracted)
+                        .FirstOrDefault()
+                        ?? inYearSentLeaves
+                            .OrderByDescending(x => x.Extracted.StartDate)
+                            .ThenByDescending(x => x.Request.CreationTime)
+                            .Select(x => x.Extracted)
+                            .FirstOrDefault();
+
+                    if (latestCandidate != null)
+                    {
+                        item.LatestLeaveStartDate = latestCandidate.StartDate;
+                        item.LatestLeaveEndDate = latestCandidate.EndDate;
+                        item.LatestLeaveDays = latestCandidate.Days;
+                        item.LatestLeavePeriodFormatted = latestCandidate.StartDate.Date == latestCandidate.EndDate.Date
+                            ? $"{latestCandidate.StartDate:dd/MM/yyyy} ({latestCandidate.Days} ngày)"
+                            : $"{latestCandidate.StartDate:dd/MM/yyyy} - {latestCandidate.EndDate:dd/MM/yyyy} ({latestCandidate.Days} ngày)";
                     }
-                }
-            }
+                    else
+                    {
+                        item.LatestLeaveStartDate = null;
+                        item.LatestLeaveEndDate = null;
+                        item.LatestLeaveDays = null;
+                        item.LatestLeavePeriodFormatted = "Chưa có";
+                    }
 
-            item.TotalApprovedLeaveDays = totalApprovedLeaveDays;
-            item.TotalSentLeaveRequests = totalSentLeaveRequests;
-            item.TotalApprovedLeaveRequests = totalApprovedLeaveRequests;
+                    return item;
+                })
+                .Where(item => string.IsNullOrEmpty(filterKeyword)
+                    || item.FullName.ToLowerInvariant().Contains(filterKeyword)
+                    || item.UserName.ToLowerInvariant().Contains(filterKeyword)
+                    || item.Email.ToLowerInvariant().Contains(filterKeyword)
+                    || item.Position.ToLowerInvariant().Contains(filterKeyword)
+                    || (item.DepartmentName != null && item.DepartmentName.ToLowerInvariant().Contains(filterKeyword)))
+                .ToList();
 
-            // Xác định đợt nghỉ phép gần nhất
-            var latestCandidate = inYearApprovedLeaves
-                .OrderByDescending(x => x.Extracted.StartDate)
-                .ThenByDescending(x => x.Request.CreationTime)
-                .Select(x => x.Extracted)
-                .FirstOrDefault();
+            var totalCount = reportItems.Count;
 
-            if (latestCandidate == null)
+            IEnumerable<EmployeeLeaveReportItemDto> ordered = reportItems;
+            if (!string.IsNullOrWhiteSpace(input.Sorting))
             {
-                latestCandidate = inYearSentLeaves
-                    .OrderByDescending(x => x.Extracted.StartDate)
-                    .ThenByDescending(x => x.Request.CreationTime)
-                    .Select(x => x.Extracted)
-                    .FirstOrDefault();
-            }
-
-            if (latestCandidate != null)
-            {
-                item.LatestLeaveStartDate = latestCandidate.StartDate;
-                item.LatestLeaveEndDate = latestCandidate.EndDate;
-                item.LatestLeaveDays = latestCandidate.Days;
-                if (latestCandidate.StartDate.Date == latestCandidate.EndDate.Date)
+                try
                 {
-                    item.LatestLeavePeriodFormatted = $"{latestCandidate.StartDate:dd/MM/yyyy} ({latestCandidate.Days} ngày)";
+                    ordered = reportItems.AsQueryable().OrderBy(input.Sorting);
                 }
-                else
+                catch
                 {
-                    item.LatestLeavePeriodFormatted = $"{latestCandidate.StartDate:dd/MM/yyyy} - {latestCandidate.EndDate:dd/MM/yyyy} ({latestCandidate.Days} ngày)";
+                    ordered = reportItems.OrderByDescending(x => x.TotalApprovedLeaveDays).ThenBy(x => x.FullName);
                 }
             }
             else
             {
-                item.LatestLeaveStartDate = null;
-                item.LatestLeaveEndDate = null;
-                item.LatestLeaveDays = null;
-                item.LatestLeavePeriodFormatted = "Chưa có";
-            }
-
-            reportItems.Add(item);
-        }
-
-        var totalCount = reportItems.Count;
-
-        IEnumerable<EmployeeLeaveReportItemDto> ordered = reportItems;
-        if (!string.IsNullOrWhiteSpace(input.Sorting))
-        {
-            try
-            {
-                ordered = reportItems.AsQueryable().OrderBy(input.Sorting);
-            }
-            catch
-            {
                 ordered = reportItems.OrderByDescending(x => x.TotalApprovedLeaveDays).ThenBy(x => x.FullName);
             }
+
+            var pagedItems = ordered
+                .Skip(input.SkipCount)
+                .Take(input.MaxResultCount)
+                .ToList();
+
+            return new PagedResultDto<EmployeeLeaveReportItemDto>(totalCount, pagedItems);
         }
-        else
+        catch (Exception ex) when (ex is not IBusinessException && ex is not EntityNotFoundException && ex is not AbpAuthorizationException && ex is not AbpValidationException)
         {
-            ordered = reportItems.OrderByDescending(x => x.TotalApprovedLeaveDays).ThenBy(x => x.FullName);
+            Logger.LogError(ex, "Lỗi xảy ra trong GetLeaveReportAsync: {Message}", ex.Message);
+            throw new BusinessException("InternalApproval:00000");
         }
-
-        var pagedItems = ordered
-            .Skip(input.SkipCount)
-            .Take(input.MaxResultCount)
-            .ToList();
-
-        return new PagedResultDto<EmployeeLeaveReportItemDto>(totalCount, pagedItems);
     }
 }

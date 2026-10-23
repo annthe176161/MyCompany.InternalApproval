@@ -13,9 +13,9 @@ public class InternalApprovalApplicationAutoMapperProfile : Profile
          * Alternatively, you can split your mapping configurations
          * into multiple profile classes for a better organization. */
 
-        //CreateMap<Request, RequestDto>()
-        //    .ForMember(dest => dest.CreatorName, opt => opt.Ignore())
-        //    .ForMember(dest => dest.ApproverName, opt => opt.Ignore());
+        CreateMap<Request, RequestDto>()
+            .ForMember(dest => dest.CreatorName, opt => opt.Ignore())
+            .ForMember(dest => dest.ApproverName, opt => opt.Ignore());
 
         CreateMap<RequestComment, RequestCommentDto>()
             .ForMember(dest => dest.CreatorName, opt => opt.Ignore());

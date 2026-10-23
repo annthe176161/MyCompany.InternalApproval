@@ -1,14 +1,13 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.Extensions.Logging;
-using MyCompany.InternalApproval.Permissions;
-using MyCompany.InternalApproval.Departments;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Logging;
+using MyCompany.InternalApproval.Departments;
+using MyCompany.InternalApproval.Permissions;
 using Volo.Abp;
 using Volo.Abp.Application.Dtos;
-using Volo.Abp.Application.Services;
 using Volo.Abp.Authorization;
 using Volo.Abp.Domain.Entities;
 using Volo.Abp.Domain.Repositories;
@@ -18,13 +17,10 @@ using Volo.Abp.Validation;
 
 namespace MyCompany.InternalApproval.Requests;
 
-/// <summary>
-/// Dịch vụ ứng dụng (Application Service) quản lý các đề xuất nội bộ.
-/// Cung cấp các chức năng CRUD, gửi duyệt, phê duyệt, từ chối và thêm bình luận cho đề xuất.
-/// </summary>
+// Dịch vụ quản lý các đề xuất nội bộ (CRUD, gửi duyệt, phê duyệt, từ chối và thêm bình luận)
 [RemoteService(IsEnabled = false)]
 [Authorize(InternalApprovalPermissions.Requests.Default)]
-public class RequestAppService : ApplicationService, IRequestAppService
+public class RequestAppService : InternalApprovalAppService, IRequestAppService
 {
     private readonly IRequestRepository _requestRepository;
     private readonly RequestManager _requestManager;
@@ -46,27 +42,7 @@ public class RequestAppService : ApplicationService, IRequestAppService
         _departmentRepository = departmentRepository;
     }
 
-    /// <summary>
-    /// Ánh xạ dữ liệu qua AutoMapper.
-    /// </summary>
-    protected virtual TDestination MapWithExceptionHandling<TSource, TDestination>(TSource source)
-    {
-        try
-        {
-            return ObjectMapper.Map<TSource, TDestination>(source);
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Lỗi AutoMapper khi chuyển đổi kiểu từ {Source} sang {Destination}: {Message}", typeof(TSource).Name, typeof(TDestination).Name, ex.Message);
-            throw new BusinessException(InternalApprovalDomainErrorCodes.MappingError)
-                .WithData("Source", typeof(TSource).Name)
-                .WithData("Destination", typeof(TDestination).Name);
-        }
-    }
-
-    /// <summary>
-    /// Lấy danh sách đề xuất có phân trang và tìm kiếm.
-    /// </summary>
+    // Lấy danh sách đề xuất có phân trang và tìm kiếm
     public virtual async Task<PagedResultDto<RequestDto>> GetListAsync(GetRequestListInput input)
     {
         try
@@ -102,6 +78,7 @@ public class RequestAppService : ApplicationService, IRequestAppService
             var userIds = requests
                 .Select(x => x.CreatorId)
                 .Concat(requests.Select(x => x.ApproverId))
+                .Concat(requests.SelectMany(x => x.Comments.Select(c => c.CreatorId)))
                 .Where(x => x.HasValue)
                 .Select(x => x!.Value)
                 .Distinct()
@@ -133,39 +110,43 @@ public class RequestAppService : ApplicationService, IRequestAppService
                 : new List<Department>();
 
             var deptDict = depts.ToDictionary(x => x.Id, x => (x.Code, x.Name));
-            var userDeptDict = memberList.ToDictionary(
-                x => x.UserId,
-                x => deptDict.TryGetValue(x.DepartmentId, out var d) ? d : default
-            );
+            var userDeptDict = memberList
+                .GroupBy(x => x.UserId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => deptDict.TryGetValue(g.First().DepartmentId, out var d) ? d : default
+                );
 
-            var requestDtos = MapWithExceptionHandling<List<Request>, List<RequestDto>>(requests);
-
-            foreach (var dto in requestDtos)
-            {
-                if (dto.CreatorId.HasValue && userDict.TryGetValue(dto.CreatorId.Value, out var creatorName))
+            var requestDtos = MapWithExceptionHandling<List<Request>, List<RequestDto>>(requests)
+                .Select(dto =>
                 {
-                    dto.CreatorName = creatorName;
-                }
-
-                if (dto.CreatorId.HasValue && userDeptDict.TryGetValue(dto.CreatorId.Value, out var deptInfo) && !string.IsNullOrWhiteSpace(deptInfo.Name))
-                {
-                    dto.DepartmentCode = deptInfo.Code;
-                    dto.DepartmentName = deptInfo.Name;
-                }
-
-                if (dto.ApproverId.HasValue && userDict.TryGetValue(dto.ApproverId.Value, out var approverName))
-                {
-                    dto.ApproverName = approverName;
-                }
-
-                foreach (var commentDto in dto.Comments)
-                {
-                    if (commentDto.CreatorId.HasValue && userDict.TryGetValue(commentDto.CreatorId.Value, out var commentCreatorName))
+                    if (dto.CreatorId.HasValue && userDict.TryGetValue(dto.CreatorId.Value, out var creatorName))
                     {
-                        commentDto.CreatorName = commentCreatorName;
+                        dto.CreatorName = creatorName;
                     }
-                }
-            }
+
+                    if (dto.CreatorId.HasValue && userDeptDict.TryGetValue(dto.CreatorId.Value, out var deptInfo) && !string.IsNullOrWhiteSpace(deptInfo.Name))
+                    {
+                        dto.DepartmentCode = deptInfo.Code;
+                        dto.DepartmentName = deptInfo.Name;
+                    }
+
+                    if (dto.ApproverId.HasValue && userDict.TryGetValue(dto.ApproverId.Value, out var approverName))
+                    {
+                        dto.ApproverName = approverName;
+                    }
+
+                    dto.Comments = dto.Comments.Select(commentDto =>
+                    {
+                        if (commentDto.CreatorId.HasValue && userDict.TryGetValue(commentDto.CreatorId.Value, out var commentCreatorName))
+                        {
+                            commentDto.CreatorName = commentCreatorName;
+                        }
+                        return commentDto;
+                    }).ToList();
+
+                    return dto;
+                }).ToList();
 
             return new PagedResultDto<RequestDto>(totalCount, requestDtos);
         }
@@ -176,9 +157,7 @@ public class RequestAppService : ApplicationService, IRequestAppService
         }
     }
 
-    /// <summary>
-    /// Lấy chi tiết đề xuất theo Id.
-    /// </summary>
+    // Lấy chi tiết đề xuất theo Id
     public virtual async Task<RequestDto> GetAsync(Guid id)
     {
         try
@@ -189,12 +168,14 @@ public class RequestAppService : ApplicationService, IRequestAppService
                 throw new EntityNotFoundException(typeof(Request), id);
             }
 
-            var userIds = new List<Guid>();
-            if (request.CreatorId.HasValue) userIds.Add(request.CreatorId.Value);
-            if (request.ApproverId.HasValue) userIds.Add(request.ApproverId.Value);
-            userIds.AddRange(request.Comments.Where(x => x.CreatorId.HasValue).Select(x => x.CreatorId!.Value));
+            var userIds = new[] { request.CreatorId, request.ApproverId }
+                .Concat(request.Comments.Select(x => x.CreatorId))
+                .Where(x => x.HasValue)
+                .Select(x => x!.Value)
+                .Distinct()
+                .ToList();
 
-            var users = userIds.Distinct().Any()
+            var users = userIds.Any()
                 ? await _userRepository.GetListAsync(x => userIds.Contains(x.Id))
                 : new List<IdentityUser>();
 
@@ -226,13 +207,14 @@ public class RequestAppService : ApplicationService, IRequestAppService
                 dto.ApproverName = approverName;
             }
 
-            foreach (var commentDto in dto.Comments)
+            dto.Comments = dto.Comments.Select(commentDto =>
             {
                 if (commentDto.CreatorId.HasValue && userDict.TryGetValue(commentDto.CreatorId.Value, out var commentCreatorName))
                 {
                     commentDto.CreatorName = commentCreatorName;
                 }
-            }
+                return commentDto;
+            }).ToList();
 
             return dto;
         }
@@ -243,18 +225,14 @@ public class RequestAppService : ApplicationService, IRequestAppService
         }
     }
 
-    /// <summary>
-    /// Tạo mới một đề xuất.
-    /// </summary>
+    // Tạo mới một đề xuất
     [Authorize(InternalApprovalPermissions.Requests.Create)]
     public virtual async Task<RequestDto> CreateAsync(CreateRequestDto input)
     {
         try
         {
-            // Kiểm tra hợp lệ số tiền dựa theo loại đề xuất
             ValidateAmount(input.Type, input.Amount);
 
-            // Khởi tạo đối tượng Request (mặc định trạng thái là Nháp)
             var request = new Request(
                 GuidGenerator.Create(),
                 input.Title,
@@ -265,7 +243,6 @@ public class RequestAppService : ApplicationService, IRequestAppService
                 input.EndDate
             );
 
-            // Lưu đề xuất vào cơ sở dữ liệu
             await _requestRepository.InsertAsync(request, autoSave: true);
 
             return MapWithExceptionHandling<Request, RequestDto>(request);
@@ -277,18 +254,14 @@ public class RequestAppService : ApplicationService, IRequestAppService
         }
     }
 
-    /// <summary>
-    /// Cập nhật thông tin đề xuất.
-    /// </summary>
+    // Cập nhật thông tin đề xuất
     [Authorize(InternalApprovalPermissions.Requests.Edit)]
     public virtual async Task<RequestDto> UpdateAsync(Guid id, UpdateRequestDto input)
     {
         try
         {
-            // 1. Kiểm tra dữ liệu đầu vào ngay lập tức (không cần chờ gọi Database)
             ValidateAmount(input.Type, input.Amount);
 
-            // 2. Lấy dữ liệu và kiểm tra các ràng buộc nghiệp vụ
             var request = await _requestRepository.GetAsync(id);
 
             if (request.CreatorId.HasValue && request.CreatorId != CurrentUser.GetId())
@@ -301,7 +274,6 @@ public class RequestAppService : ApplicationService, IRequestAppService
                 throw new BusinessException(InternalApprovalDomainErrorCodes.OnlyDraftCanBeEdited);
             }
 
-            // 3. Xử lý cập nhật
             request
                 .SetTitle(input.Title)
                 .SetType(input.Type)
@@ -320,9 +292,7 @@ public class RequestAppService : ApplicationService, IRequestAppService
         }
     }
 
-    /// <summary>
-    /// Xóa đề xuất.
-    /// </summary>
+    // Xóa đề xuất
     [Authorize(InternalApprovalPermissions.Requests.Delete)]
     public virtual async Task DeleteAsync(Guid id)
     {
@@ -349,9 +319,7 @@ public class RequestAppService : ApplicationService, IRequestAppService
         }
     }
 
-    /// <summary>
-    /// Gửi duyệt đề xuất.
-    /// </summary>
+    // Gửi duyệt đề xuất
     public virtual async Task<RequestDto> SubmitAsync(Guid id)
     {
         try
@@ -370,9 +338,7 @@ public class RequestAppService : ApplicationService, IRequestAppService
         }
     }
 
-    /// <summary>
-    /// Phê duyệt đề xuất.
-    /// </summary>
+    // Phê duyệt đề xuất
     [Authorize(InternalApprovalPermissions.Requests.Approve)]
     public virtual async Task<RequestDto> ApproveAsync(Guid id, ApproveRequestDto input)
     {
@@ -402,21 +368,17 @@ public class RequestAppService : ApplicationService, IRequestAppService
         }
     }
 
-    /// <summary>
-    /// Từ chối đề xuất.
-    /// </summary>
+    // Từ chối đề xuất
     [Authorize(InternalApprovalPermissions.Requests.Reject)]
     public virtual async Task<RequestDto> RejectAsync(Guid id, RejectRequestDto input)
     {
         try
         {
-            // 1. Kiểm tra lý do từ chối ngay ở đầu (không cần chờ gọi Database)
             if (string.IsNullOrWhiteSpace(input.Reason))
             {
                 throw new BusinessException(InternalApprovalDomainErrorCodes.RejectionReasonRequired);
             }
 
-            // 2. Lấy dữ liệu và kiểm tra tồn tại
             var request = await _requestRepository.GetWithDetailsAsync(id);
             if (request == null)
             {
@@ -435,20 +397,16 @@ public class RequestAppService : ApplicationService, IRequestAppService
         }
     }
 
-    /// <summary>
-    /// Thêm bình luận vào đề xuất.
-    /// </summary>
+    // Thêm bình luận vào đề xuất
     public virtual async Task<RequestCommentDto> AddCommentAsync(Guid id, CreateRequestCommentDto input)
     {
         try
         {
-            // 1. Kiểm tra nội dung bình luận ngay ở đầu
             if (string.IsNullOrWhiteSpace(input.Content))
             {
                 throw new BusinessException("InternalApproval:00000");
             }
 
-            // 2. Lấy dữ liệu và kiểm tra tồn tại
             var request = await _requestRepository.GetWithDetailsAsync(id);
             if (request == null)
             {
@@ -470,9 +428,7 @@ public class RequestAppService : ApplicationService, IRequestAppService
         }
     }
 
-    /// <summary>
-    /// Kiểm tra hợp lệ số tiền theo loại đề xuất.
-    /// </summary>
+    // Kiểm tra hợp lệ số tiền theo loại đề xuất
     private static void ValidateAmount(RequestType type, decimal? amount)
     {
         if (type == RequestType.Equipment || type == RequestType.AdvanceMoney)
@@ -484,4 +440,3 @@ public class RequestAppService : ApplicationService, IRequestAppService
         }
     }
 }
-
