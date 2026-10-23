@@ -34,6 +34,11 @@
   border-radius: 8px;
   border: 1px solid #e5e7eb;
   overflow: hidden;
+
+  ::ng-deep .ant-table-pagination.ant-pagination {
+    margin: 16px !important;
+    padding-right: 4px;
+  }
 }
 
 .fw-semibold {
