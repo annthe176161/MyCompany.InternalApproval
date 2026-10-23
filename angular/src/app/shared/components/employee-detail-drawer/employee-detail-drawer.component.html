@@ -1,167 +1,130 @@
 <nz-drawer
   [nzVisible]="isVisible"
-  [nzWidth]="760"
+  [nzWidth]="720"
   nzPlacement="right"
   [nzZIndex]="1100"
   [nzClosable]="true"
   [nzTitle]="drawerTitle"
   (nzOnClose)="close()"
 >
-  <!-- DRAWER TITLE TEMPLATE -->
   <ng-template #drawerTitle>
     <div class="drawer-header-title">
-      <div class="header-avatar">
-        {{ getAvatarInitial() }}
-      </div>
       <div class="header-main-info">
         <div class="header-name-row">
           <span class="header-fullname">{{ profile?.fullName || 'Hồ sơ nhân viên' }}</span>
           <span *ngIf="profile?.userName" class="header-username">(&#64;{{ profile?.userName }})</span>
-          <span *ngIf="profile?.isManager" class="header-manager-pill">Trưởng phòng</span>
+          <nz-tag *ngIf="profile?.isManager" nzColor="default">Trưởng phòng</nz-tag>
         </div>
         <div class="header-sub-row">
-          <span *ngIf="profile?.departmentName" class="sub-dept">
-            <span nz-icon nzType="apartment"></span>
+          <span *ngIf="profile?.departmentName">
             {{ profile?.departmentName }} ({{ profile?.departmentCode }})
           </span>
-          <span *ngIf="profile?.position" class="sub-position">
-            <span nz-icon nzType="idcard"></span>
-            {{ profile?.position }}
-          </span>
+          <span *ngIf="profile?.departmentName && profile?.position">•</span>
+          <span *ngIf="profile?.position">{{ profile?.position }}</span>
         </div>
       </div>
     </div>
   </ng-template>
 
-  <!-- DRAWER CONTENT -->
   <ng-container *nzDrawerContent>
     <nz-spin [nzSpinning]="loadingProfile">
       <div *ngIf="profile" class="employee-drawer-body">
-
-        <!-- TOP TENURE QUICK HIGHLIGHT -->
+        <!-- TÓM TẮT THÂM NIÊN -->
         <div class="tenure-quick-card">
-          <div class="tenure-quick-content">
-            <div class="tenure-quick-label">
-              <span nz-icon nzType="clock-circle"></span> Thâm niên làm việc hiện tại
-            </div>
+          <div>
+            <div class="tenure-quick-label">Thâm niên làm việc</div>
             <div class="tenure-quick-value">{{ profile.tenureFormatted }}</div>
-            <div class="tenure-quick-sub">{{ profile.tenureMonths }} tháng cống hiến &middot; Mốc: {{ getTenureMilestoneLabel().label }}</div>
+            <div class="tenure-quick-sub">
+              {{ profile.tenureMonths }} tháng công tác • Mốc: {{ getTenureMilestoneLabel().label }}
+            </div>
           </div>
-          <div class="tenure-quick-badge">
-            <nz-tag [nzColor]="getTenureMilestoneLabel().color" class="custom-milestone-tag">
-              {{ profile.position || 'Nhân viên' }}
-            </nz-tag>
+          <div>
+            <nz-tag nzColor="default">{{ profile.position || 'Nhân viên' }}</nz-tag>
           </div>
         </div>
 
-        <!-- 4-TAB INTERFACE -->
+        <!-- 4 TABS -->
         <nz-tabset [nzAnimated]="false" [(nzSelectedIndex)]="selectedTabIndex" class="employee-tabs">
-
-          <!-- ================= TAB 1: THÔNG TIN CHUNG & THÂM NIÊN ================= -->
-          <nz-tab [nzTitle]="tab1Title">
-            <ng-template #tab1Title>
-              <span nz-icon nzType="user"></span> Thông tin chung & Thâm niên
-            </ng-template>
-
+          <!-- TAB 1: THÔNG TIN CHUNG -->
+          <nz-tab nzTitle="Thông tin chung">
             <div class="tab-content-container">
-              <!-- Cụm 1: Thông tin cá nhân & Đơn vị -->
               <div class="section-card">
                 <div class="section-card-header">
-                  <div class="section-title">
-                    <span nz-icon nzType="profile"></span> Thông tin cá nhân & Đơn vị
-                  </div>
+                  <div class="section-title">Thông tin cá nhân & Đơn vị</div>
                 </div>
                 <div class="detail-grid">
                   <div class="detail-item">
-                    <span class="detail-label">Họ và tên:</span>
+                    <span class="detail-label">Họ và tên</span>
                     <span class="detail-value fw-600">{{ profile.fullName }}</span>
                   </div>
                   <div class="detail-item">
-                    <span class="detail-label">Tên đăng nhập:</span>
+                    <span class="detail-label">Tài khoản</span>
                     <span class="detail-value">&#64;{{ profile.userName }}</span>
                   </div>
                   <div class="detail-item">
-                    <span class="detail-label">Email liên hệ:</span>
-                    <span class="detail-value text-primary">{{ profile.email }}</span>
+                    <span class="detail-label">Email</span>
+                    <span class="detail-value">{{ profile.email }}</span>
                   </div>
                   <div class="detail-item">
-                    <span class="detail-label">Số điện thoại:</span>
+                    <span class="detail-label">Số điện thoại</span>
                     <span class="detail-value">{{ profile.phoneNumber || 'Chưa cập nhật' }}</span>
                   </div>
                   <div class="detail-item">
-                    <span class="detail-label">Phòng ban:</span>
+                    <span class="detail-label">Phòng ban</span>
                     <span class="detail-value">
-                      <nz-tag nzColor="blue">{{ profile.departmentName || 'Chưa phân bổ' }}</nz-tag>
-                      <span *ngIf="profile.departmentCode" class="text-muted font-monospace">({{ profile.departmentCode }})</span>
+                      {{ profile.departmentName || 'Chưa phân bổ' }}
+                      <span *ngIf="profile.departmentCode" class="text-muted">({{ profile.departmentCode }})</span>
                     </span>
                   </div>
                   <div class="detail-item">
-                    <span class="detail-label">Chức danh / Vị trí:</span>
+                    <span class="detail-label">Chức danh</span>
                     <span class="detail-value fw-600">{{ profile.position || 'Thành viên' }}</span>
                   </div>
                   <div class="detail-item">
-                    <span class="detail-label">Vai trò đơn vị:</span>
+                    <span class="detail-label">Vai trò đơn vị</span>
                     <span class="detail-value">
-                      <nz-badge
-                        [nzStatus]="profile.isManager ? 'success' : 'default'"
-                        [nzText]="profile.isManager ? 'Trưởng bộ phận / Quản lý' : 'Thành viên thông thường'"
-                      ></nz-badge>
+                      {{ profile.isManager ? 'Trưởng bộ phận / Quản lý' : 'Thành viên' }}
                     </span>
                   </div>
                   <div class="detail-item">
-                    <span class="detail-label">Ngày tạo tài khoản:</span>
+                    <span class="detail-label">Ngày tạo tài khoản</span>
                     <span class="detail-value">{{ profile.creationTime | date: 'dd/MM/yyyy HH:mm' }}</span>
                   </div>
                 </div>
               </div>
 
-              <!-- Cụm 2: Ngày bắt đầu làm việc & Cập nhật JoinDate -->
+              <!-- Ngày bắt đầu làm việc -->
               <div class="section-card">
                 <div class="section-card-header">
-                  <div class="section-title">
-                    <span nz-icon nzType="calendar"></span> Ngày bắt đầu làm việc (Join Date)
-                  </div>
+                  <div class="section-title">Ngày bắt đầu làm việc</div>
                   <button
                     *ngIf="canEditJoinDate && !isEditingJoinDate"
                     nz-button
                     nzType="default"
                     nzSize="small"
-                    class="btn-edit-action"
                     (click)="startEditJoinDate()"
-                    nz-tooltip="Chỉnh sửa ngày vào làm việc của nhân viên"
                   >
-                    <span nz-icon nzType="edit"></span> Chỉnh sửa
+                    Chỉnh sửa
                   </button>
                 </div>
 
                 <div class="join-date-container">
-                  <!-- Xem bình thường -->
                   <div *ngIf="!isEditingJoinDate" class="join-date-view">
                     <div class="join-date-main">
-                      <span class="join-date-display">
-                        <span nz-icon nzType="schedule" style="margin-right: 6px; color: #1890ff;"></span>
-                        {{ profile.joinDate | date: 'dd/MM/yyyy' }}
-                      </span>
-                      <span *ngIf="profile.rawJoinDate" class="join-date-status-tag official">
-                        <span nz-icon nzType="check-circle"></span> Ngày vào làm chính thức
-                      </span>
-                      <span *ngIf="!profile.rawJoinDate" class="join-date-status-tag auto-fallback" nz-tooltip="Chưa nhập ngày vào làm tùy chỉnh, tự động lấy ngày tạo tài khoản">
-                        <span nz-icon nzType="info-circle"></span> Tự động lấy theo ngày tạo tài khoản
-                      </span>
-                    </div>
-                    <div class="join-date-note text-muted">
-                      Ngày vào làm việc dùng làm mốc tính thâm niên gắn bó và số ngày phép hàng năm.
+                      <span class="join-date-display">{{ profile.joinDate | date: 'dd/MM/yyyy' }}</span>
+                      <nz-tag nzColor="default">
+                        {{ profile.rawJoinDate ? 'Ngày vào làm chính thức' : 'Lấy theo ngày tạo tài khoản' }}
+                      </nz-tag>
                     </div>
                   </div>
 
-                  <!-- Chế độ chỉnh sửa -->
                   <div *ngIf="isEditingJoinDate" class="join-date-edit-form">
                     <div class="edit-row">
                       <span class="edit-label">Chọn ngày vào làm mới:</span>
                       <nz-date-picker
                         [(ngModel)]="editJoinDate"
                         nzFormat="dd/MM/yyyy"
-                        [nzPlaceHolder]="'Chọn ngày vào làm'"
+                        nzPlaceHolder="Chọn ngày vào làm"
                         class="date-picker-custom"
                       ></nz-date-picker>
                       <button
@@ -172,7 +135,7 @@
                         [disabled]="!editJoinDate"
                         (click)="saveJoinDate()"
                       >
-                        <span nz-icon nzType="save"></span> Lưu
+                        Lưu
                       </button>
                       <button
                         nz-button
@@ -184,118 +147,51 @@
                         Hủy
                       </button>
                     </div>
-                    <div class="edit-hint text-muted">
-                      Hệ thống sẽ tự động tính toán lại thâm niên làm việc ngay sau khi cập nhật.
-                    </div>
                   </div>
                 </div>
               </div>
-
-              <!-- Cụm 3: Tính toán Thâm niên & Cột mốc gắn bó -->
-              <div class="section-card">
-                <div class="section-card-header">
-                  <div class="section-title">
-                    <span nz-icon nzType="rise"></span> Thâm niên & Cột mốc cống hiến
-                  </div>
-                </div>
-
-                <div class="tenure-milestone-box">
-                  <div class="milestone-header-row">
-                    <div class="milestone-name">
-                      Cột mốc: <strong>{{ getTenureMilestoneLabel().label }}</strong>
-                    </div>
-                    <div class="milestone-percentage font-monospace fw-600">
-                      {{ profile.tenureMonths }} tháng cống hiến
-                    </div>
-                  </div>
-
-                  <!-- Progress Bar -->
-                  <nz-progress
-                    [nzPercent]="getTenureProgressPercentage()"
-                    [nzStrokeColor]="getTenureMilestoneLabel().color"
-                    [nzStatus]="'active'"
-                    [nzShowInfo]="false"
-                  ></nz-progress>
-
-                  <!-- Cột mốc 4 giai đoạn -->
-                  <div class="milestone-steps-row">
-                    <div class="m-step" [class.active]="profile.tenureMonths < 2">
-                      <div class="m-dot"></div>
-                      <div class="m-text">Thử việc</div>
-                      <div class="m-sub">&lt; 2 tháng</div>
-                    </div>
-                    <div class="m-step" [class.active]="profile.tenureMonths >= 2 && profile.tenureMonths < 12">
-                      <div class="m-dot"></div>
-                      <div class="m-text">Chính thức</div>
-                      <div class="m-sub">2 - 12 tháng</div>
-                    </div>
-                    <div class="m-step" [class.active]="profile.tenureMonths >= 12 && profile.tenureMonths < 36">
-                      <div class="m-dot"></div>
-                      <div class="m-text">Gắn bó</div>
-                      <div class="m-sub">1 - 3 năm</div>
-                    </div>
-                    <div class="m-step" [class.active]="profile.tenureMonths >= 36">
-                      <div class="m-dot"></div>
-                      <div class="m-text">Kỳ cựu</div>
-                      <div class="m-sub">&gt; 3 năm</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
             </div>
           </nz-tab>
 
-          <!-- ================= TAB 2: TIMELINE NGHỈ PHÉP TRỰC QUAN ================= -->
-          <nz-tab [nzTitle]="tab2Title">
-            <ng-template #tab2Title>
-              <span nz-icon nzType="history"></span> Timeline Nghỉ phép
-            </ng-template>
-
+          <!-- TAB 2: LỊCH SỬ NGHỈ PHÉP -->
+          <nz-tab nzTitle="Lịch sử nghỉ phép">
             <div class="tab-content-container">
-              <!-- KPI Tóm tắt nghỉ phép -->
               <div class="leave-kpi-bar">
-                <div class="leave-kpi-item primary">
+                <div class="leave-kpi-item">
                   <div class="kpi-num">{{ leaveStats.totalApprovedDays }}</div>
-                  <div class="kpi-title">Tổng ngày nghỉ đã duyệt</div>
+                  <div class="kpi-title">Ngày nghỉ đã duyệt</div>
                 </div>
                 <div class="leave-kpi-item">
                   <div class="kpi-num">{{ leaveStats.totalLeaves }}</div>
-                  <div class="kpi-title">Tổng số đơn gửi</div>
+                  <div class="kpi-title">Tổng đơn gửi</div>
                 </div>
-                <div class="leave-kpi-item success">
+                <div class="leave-kpi-item">
                   <div class="kpi-num">{{ leaveStats.approvedCount }}</div>
-                  <div class="kpi-title">Đã được duyệt</div>
+                  <div class="kpi-title">Đã duyệt</div>
                 </div>
-                <div class="leave-kpi-item warning">
+                <div class="leave-kpi-item">
                   <div class="kpi-num">{{ leaveStats.pendingCount }}</div>
-                  <div class="kpi-title">Đang chờ xét duyệt</div>
+                  <div class="kpi-title">Chờ duyệt</div>
                 </div>
               </div>
 
-              <!-- Dòng thời gian Timeline -->
               <nz-spin [nzSpinning]="loadingTimeline">
-                <div *ngIf="leaveTimeline.length === 0 && !loadingTimeline" class="empty-timeline-box">
-                  <nz-empty nzNotFoundImage="simple" nzNotFoundContent="Nhân viên chưa có đơn nghỉ phép nào được ghi nhận."></nz-empty>
+                <div *ngIf="leaveTimeline.length === 0 && !loadingTimeline" class="py-4">
+                  <nz-empty nzNotFoundImage="simple" nzNotFoundContent="Chưa có đơn nghỉ phép nào."></nz-empty>
                 </div>
 
                 <div *ngIf="leaveTimeline.length > 0" class="timeline-wrapper">
                   <nz-timeline>
                     <nz-timeline-item
                       *ngFor="let item of leaveTimeline; trackBy: trackTimelineById"
-                      [nzColor]="getStatusTag(item.status).color"
                     >
                       <div class="timeline-node-card">
-                        <!-- Header đợt nghỉ: Khoảng ngày + Số ngày + Badge trạng thái -->
                         <div class="node-header">
                           <div class="node-date-range">
-                            <span nz-icon nzType="calendar" class="range-icon"></span>
                             <span class="range-text">
-                              {{ item.startDate | date: 'dd/MM/yyyy' }} &rarr; {{ item.endDate | date: 'dd/MM/yyyy' }}
+                              {{ item.startDate | date: 'dd/MM/yyyy' }} - {{ item.endDate | date: 'dd/MM/yyyy' }}
                             </span>
-                            <nz-tag nzColor="blue" class="duration-badge">
-                              {{ item.days | number: '1.0-1' }} ngày
-                            </nz-tag>
+                            <nz-tag nzColor="default">{{ item.days | number: '1.0-1' }} ngày</nz-tag>
                           </div>
                           <nz-badge
                             [nzStatus]="getStatusTag(item.status).badgeStatus"
@@ -303,31 +199,21 @@
                           ></nz-badge>
                         </div>
 
-                        <!-- Tiêu đề & Lý do -->
                         <div class="node-body">
                           <div class="node-title">{{ item.title }}</div>
                           <div *ngIf="item.reason" class="node-reason">
-                            <span class="reason-prefix">Lý do:</span> {{ item.reason }}
+                            Lý do: {{ item.reason }}
                           </div>
                         </div>
 
-                        <!-- Footer: Ngày tạo + Người duyệt/Từ chối -->
                         <div class="node-footer text-muted">
-                          <div class="node-creation-time">
-                            <span nz-icon nzType="clock-circle"></span>
-                            Tạo lúc: {{ item.creationTime | date: 'dd/MM/yyyy HH:mm' }}
-                          </div>
-                          <div *ngIf="item.status === RequestStatus.Approved && item.approverName" class="node-approval-info text-success">
-                            <span nz-icon nzType="check-circle"></span>
+                          <div>Tạo lúc: {{ item.creationTime | date: 'dd/MM/yyyy HH:mm' }}</div>
+                          <div *ngIf="item.status === RequestStatus.Approved && item.approverName">
                             Duyệt bởi: <strong>{{ item.approverName }}</strong>
-                            <span *ngIf="item.approvalTime"> lúc {{ item.approvalTime | date: 'dd/MM/yyyy HH:mm' }}</span>
                           </div>
-                          <div *ngIf="item.status === RequestStatus.Rejected" class="node-rejection-info text-danger">
-                            <span nz-icon nzType="close-circle"></span>
+                          <div *ngIf="item.status === RequestStatus.Rejected" class="text-danger">
                             Từ chối bởi: <strong>{{ item.approverName || 'Quản lý' }}</strong>
-                            <div *ngIf="item.rejectionReason" class="rejection-reason-box">
-                              Lý do từ chối: {{ item.rejectionReason }}
-                            </div>
+                            <span *ngIf="item.rejectionReason"> ({{ item.rejectionReason }})</span>
                           </div>
                         </div>
                       </div>
@@ -338,23 +224,17 @@
             </div>
           </nz-tab>
 
-          <!-- ================= TAB 3: LỊCH SỬ ĐỀ XUẤT & BỘ LỌC ================= -->
-          <nz-tab [nzTitle]="tab3Title">
-            <ng-template #tab3Title>
-              <span nz-icon nzType="file-text"></span> Lịch sử Đề xuất
-            </ng-template>
-
+          <!-- TAB 3: LỊCH SỬ ĐỀ XUẤT -->
+          <nz-tab nzTitle="Lịch sử đề xuất">
             <div class="tab-content-container">
-              <!-- Filter Bar -->
               <div class="request-filter-bar">
                 <div class="filter-controls">
-                  <!-- Bộ lọc Trạng thái -->
                   <div class="filter-group">
                     <span class="filter-label">Trạng thái:</span>
                     <nz-select
                       [(ngModel)]="selectedStatus"
                       (ngModelChange)="onRequestFilterChange()"
-                      nzPlaceHolder="Tất cả trạng thái"
+                      nzPlaceHolder="Tất cả"
                       class="filter-select"
                       nzAllowClear
                     >
@@ -366,13 +246,12 @@
                     </nz-select>
                   </div>
 
-                  <!-- Bộ lọc Loại đề xuất -->
                   <div class="filter-group">
-                    <span class="filter-label">Loại đề xuất:</span>
+                    <span class="filter-label">Loại:</span>
                     <nz-select
                       [(ngModel)]="selectedType"
                       (ngModelChange)="onRequestFilterChange()"
-                      nzPlaceHolder="Tất cả loại"
+                      nzPlaceHolder="Tất cả"
                       class="filter-select"
                       nzAllowClear
                     >
@@ -386,11 +265,10 @@
                 </div>
 
                 <div class="filter-summary text-muted">
-                  Tổng cộng: <strong>{{ totalRequests }}</strong> đề xuất
+                  Tổng: <strong>{{ totalRequests }}</strong> đề xuất
                 </div>
               </div>
 
-              <!-- Table Requests -->
               <nz-table
                 #requestTable
                 [nzData]="requests"
@@ -405,35 +283,27 @@
               >
                 <thead>
                   <tr>
-                    <th nzWidth="130px">Mã & Ngày gửi</th>
+                    <th nzWidth="120px">Mã & Ngày</th>
                     <th>Tiêu đề & Loại</th>
-                    <th nzWidth="150px">Số tiền</th>
-                    <th nzWidth="140px">Trạng thái</th>
+                    <th nzWidth="140px">Số tiền</th>
+                    <th nzWidth="130px">Trạng thái</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr *ngFor="let req of requestTable.data; trackBy: trackRequestById">
                     <td>
-                      <div class="font-monospace fw-600 text-truncate" style="max-width: 110px;">
-                        #{{ req.id.substring(0, 8) }}
-                      </div>
-                      <div class="text-muted text-11">
-                        {{ req.creationTime | date: 'dd/MM/yyyy' }}
-                      </div>
+                      <div class="fw-600">#{{ req.id.substring(0, 8) }}</div>
+                      <div class="text-muted text-11">{{ req.creationTime | date: 'dd/MM/yyyy' }}</div>
                     </td>
                     <td>
                       <div class="req-title-cell fw-500">{{ req.title }}</div>
-                      <div class="req-type-pill">
-                        <nz-tag [nzColor]="getTypeTag(req.type).color" class="type-tag-small">
-                          {{ getTypeTag(req.type).label }}
-                        </nz-tag>
-                      </div>
+                      <span class="text-muted text-11">{{ getTypeTag(req.type).label }}</span>
                     </td>
                     <td>
-                      <span *ngIf="req.type !== RequestType.Leave && req.amount" class="text-success fw-600">
+                      <span *ngIf="req.type !== RequestType.Leave && req.amount" class="fw-600">
                         {{ req.amount | number: '1.0-0' }} VNĐ
                       </span>
-                      <span *ngIf="req.type === RequestType.Leave" class="text-muted">-</span>
+                      <span *ngIf="req.type === RequestType.Leave" class="text-muted">—</span>
                     </td>
                     <td>
                       <nz-badge
@@ -447,16 +317,11 @@
             </div>
           </nz-tab>
 
-          <!-- ================= TAB 4: THỐNG KÊ SỐ LIỆU THEO NĂM ================= -->
-          <nz-tab [nzTitle]="tab4Title">
-            <ng-template #tab4Title>
-              <span nz-icon nzType="bar-chart"></span> Thống kê theo năm
-            </ng-template>
-
+          <!-- TAB 4: THỐNG KÊ THEO NĂM -->
+          <nz-tab nzTitle="Thống kê theo năm">
             <div class="tab-content-container">
-              <!-- Bộ chọn năm -->
               <div class="year-selector-bar">
-                <span class="year-label">Năm báo cáo:</span>
+                <span class="year-label">Năm:</span>
                 <nz-select
                   [(ngModel)]="selectedYear"
                   (ngModelChange)="onYearChange($event)"
@@ -472,101 +337,51 @@
 
               <nz-spin [nzSpinning]="loadingStats">
                 <div *ngIf="yearlyStats" class="stats-container">
-                  <!-- 4 Thẻ KPI Đề xuất trong năm -->
                   <div class="stats-kpi-grid">
-                    <div class="kpi-card total">
-                      <div class="kpi-icon-box">
-                        <span nz-icon nzType="folder-open"></span>
-                      </div>
+                    <div class="kpi-card">
                       <div class="kpi-info">
                         <div class="kpi-num">{{ yearlyStats.totalRequests }}</div>
-                        <div class="kpi-label">Tổng đề xuất trong năm</div>
+                        <div class="kpi-label">Tổng đề xuất</div>
                       </div>
                     </div>
 
-                    <div class="kpi-card approved">
-                      <div class="kpi-icon-box">
-                        <span nz-icon nzType="check-circle"></span>
-                      </div>
+                    <div class="kpi-card">
                       <div class="kpi-info">
                         <div class="kpi-num">{{ yearlyStats.approvedCount }}</div>
-                        <div class="kpi-label">
-                          Đã phê duyệt
-                          <span *ngIf="yearlyStats.totalRequests > 0" class="sub-rate">
-                            ({{ (yearlyStats.approvedCount / yearlyStats.totalRequests * 100) | number: '1.0-1' }}%)
-                          </span>
-                        </div>
+                        <div class="kpi-label">Đã duyệt</div>
                       </div>
                     </div>
 
-                    <div class="kpi-card pending">
-                      <div class="kpi-icon-box">
-                        <span nz-icon nzType="clock-circle"></span>
-                      </div>
+                    <div class="kpi-card">
                       <div class="kpi-info">
                         <div class="kpi-num">{{ yearlyStats.submittedCount }}</div>
-                        <div class="kpi-label">Đang chờ xét duyệt</div>
+                        <div class="kpi-label">Chờ duyệt</div>
                       </div>
                     </div>
 
-                    <div class="kpi-card rejected">
-                      <div class="kpi-icon-box">
-                        <span nz-icon nzType="close-circle"></span>
-                      </div>
+                    <div class="kpi-card">
                       <div class="kpi-info">
                         <div class="kpi-num">{{ yearlyStats.rejectedCount }}</div>
-                        <div class="kpi-label">Bị từ chối</div>
+                        <div class="kpi-label">Từ chối</div>
                       </div>
                     </div>
                   </div>
 
-                  <!-- 2 Thẻ Tài chính & Ngân sách -->
                   <div class="finance-cards-grid">
-                    <div class="finance-card requested">
-                      <div class="fin-title">Tổng số tiền đã đề xuất:</div>
+                    <div class="finance-card">
+                      <div class="fin-title">Tổng số tiền đề xuất</div>
                       <div class="fin-amount">{{ yearlyStats.totalAmountRequested | number: '1.0-0' }} VNĐ</div>
-                      <div class="fin-sub text-muted">Bao gồm toàn bộ đề xuất mua thiết bị & tạm ứng trong năm</div>
                     </div>
 
-                    <div class="finance-card disbursed">
-                      <div class="fin-title">Tổng số tiền đã duyệt / giải ngân:</div>
-                      <div class="fin-amount text-success">{{ yearlyStats.totalAmountDisbursed | number: '1.0-0' }} VNĐ</div>
-                      <div class="fin-sub text-muted">Số tiền đã được người có thẩm quyền phê duyệt chính thức</div>
+                    <div class="finance-card">
+                      <div class="fin-title">Tổng số tiền đã duyệt</div>
+                      <div class="fin-amount">{{ yearlyStats.totalAmountDisbursed | number: '1.0-0' }} VNĐ</div>
                     </div>
                   </div>
-
-                  <!-- Phân bổ theo loại hình đề xuất -->
-                  <div class="section-card" *ngIf="yearlyStats.breakdownByType && yearlyStats.breakdownByType.length > 0">
-                    <div class="section-card-header">
-                      <div class="section-title">
-                        <span nz-icon nzType="pie-chart"></span> Phân bổ đề xuất theo loại hình
-                      </div>
-                    </div>
-                    <div class="breakdown-list">
-                      <div *ngFor="let b of yearlyStats.breakdownByType" class="breakdown-item">
-                        <div class="b-row-top">
-                          <span class="b-name fw-600">{{ b.typeName }}</span>
-                          <span class="b-count">
-                            <strong>{{ b.count }}</strong> lượt
-                            <span *ngIf="b.totalAmount > 0" class="b-amount text-success">
-                              ({{ b.totalAmount | number: '1.0-0' }} VNĐ)
-                            </span>
-                          </span>
-                        </div>
-                        <nz-progress
-                          [nzPercent]="yearlyStats.totalRequests > 0 ? (b.count / yearlyStats.totalRequests * 100) : 0"
-                          [nzStrokeColor]="getTypeTag(b.type).chartColor"
-                          [nzShowInfo]="false"
-                        ></nz-progress>
-                      </div>
-                    </div>
-                  </div>
-
                 </div>
               </nz-spin>
             </div>
           </nz-tab>
-
         </nz-tabset>
       </div>
     </nz-spin>
