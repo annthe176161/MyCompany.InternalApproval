@@ -1,0 +1,21 @@
+# Visual Studio / .NET
+.vs/
+**/bin/
+**/obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+Logs/
+**/Logs/
+*.log
+
+# Node & Angular
+**/node_modules/
+**/.angular/
+**/dist/
+.npm/
+
+# Antigravity & Agent artifacts
+.agents/
+.gemini/

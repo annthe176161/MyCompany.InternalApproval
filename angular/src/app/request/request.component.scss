@@ -1,0 +1,271 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.request-page-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* Tùy chỉnh thanh cuộn bên trong của bảng nz-table */
+::ng-deep .ant-table-body {
+  overflow-y: auto !important;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: #d1d5db;
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: #9ca3af;
+  }
+  &::-webkit-scrollbar-track {
+    background: #f9fafb;
+  }
+}
+
+.page-header {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 12px;
+
+  h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #1f2937;
+  }
+
+  ::ng-deep {
+    .ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled) {
+      background: #0f172a !important;
+      border-color: #0f172a !important;
+      color: #ffffff !important;
+      box-shadow: -1px 0 0 0 #0f172a !important;
+    }
+
+    .ant-radio-button-wrapper {
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      border: 1px solid #e2e8f0;
+
+      &:first-child {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+      }
+      &:last-child {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+      }
+      &::before {
+        display: none !important;
+      }
+    }
+  }
+}
+
+.filter-card {
+  flex: 0 0 auto;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+
+  ::ng-deep .ant-card-body {
+    padding: 10px 16px;
+  }
+}
+
+.filter-bar {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+
+  .search-input {
+    width: 280px;
+  }
+
+  .select-filter {
+    width: 180px;
+  }
+}
+
+.table-card {
+  flex: 1 1 auto;
+  min-height: 0;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+
+  ::ng-deep .ant-card-body {
+    padding: 10px 16px 6px;
+  }
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Căn chỉnh icon và text trong button chuẩn chỉ, không bị lệch */
+.btn-icon-text {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  vertical-align: middle;
+
+  span[nz-icon] {
+    display: inline-flex;
+    align-items: center;
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  span:not([nz-icon]) {
+    line-height: 1;
+  }
+}
+
+.action-btn-single {
+  margin: 0 auto;
+  border-radius: 4px;
+  font-weight: 500;
+  padding: 0 10px;
+}
+
+/* Nhóm các icon thao tác nằm thẳng hàng ở cột hành động */
+.action-btn-group {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* Nút icon thao tác đẹp mắt, có hover màu sắc riêng biệt */
+.action-icon-btn {
+  width: 32px !important;
+  height: 32px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  border-radius: 6px !important;
+  font-size: 15px !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent !important;
+
+  span[nz-icon] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+
+  /* Xem chi tiết - Màu xanh dương */
+  &.view {
+    color: #1890ff;
+    background-color: #f0f7ff;
+    &:hover {
+      background-color: #1890ff;
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(24, 144, 255, 0.35);
+    }
+  }
+
+  /* Chỉnh sửa - Màu cam */
+  &.edit {
+    color: #fa8c16;
+    background-color: #fff7e6;
+    &:hover {
+      background-color: #fa8c16;
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(250, 140, 22, 0.35);
+    }
+  }
+
+  /* Gửi duyệt - Màu tím */
+  &.submit {
+    color: #722ed1;
+    background-color: #f9f0ff;
+    &:hover {
+      background-color: #722ed1;
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(114, 46, 209, 0.35);
+    }
+  }
+
+  /* Phê duyệt - Màu xanh lá cây */
+  &.approve {
+    color: #52c41a;
+    background-color: #f6ffed;
+    &:hover {
+      background-color: #52c41a;
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(82, 196, 26, 0.35);
+    }
+  }
+
+  /* Từ chối - Màu đỏ cam */
+  &.reject {
+    color: #fa541c;
+    background-color: #fff2e8;
+    &:hover {
+      background-color: #fa541c;
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(250, 84, 28, 0.35);
+    }
+  }
+
+  /* Xóa đề xuất - Màu đỏ */
+  &.delete {
+    color: #ff4d4f;
+    background-color: #fff1f0;
+    &:hover {
+      background-color: #ff4d4f;
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(255, 77, 79, 0.35);
+    }
+  }
+}
+
+.creator-clickable {
+  cursor: pointer;
+  color: #1890ff;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    color: #096dd9;
+    text-decoration: underline;
+
+    .quick-view-icon {
+      color: #096dd9;
+      opacity: 1;
+    }
+  }
+
+  .quick-view-icon {
+    font-size: 13px;
+    color: #94a3b8;
+    opacity: 0.7;
+    transition: all 0.2s ease;
+  }
+}
+
+
+

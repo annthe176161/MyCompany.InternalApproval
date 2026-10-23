@@ -1,0 +1,167 @@
+<nz-drawer
+  [nzClosable]="true"
+  [nzVisible]="isVisible"
+  nzPlacement="right"
+  nzTitle="Chi tiết Đề xuất"
+  [nzWidth]="560"
+  (nzOnClose)="close()"
+>
+  <ng-container *nzDrawerContent>
+    <div *ngIf="detailRequest">
+      <!-- Section 1: Thông tin chung -->
+      <div class="drawer-section">
+        <div class="section-title">Thông tin đề xuất</div>
+        <div class="detail-row">
+          <span class="label">Mã đề xuất:</span>
+          <span class="value font-monospace">#{{ detailRequest.id }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Tiêu đề:</span>
+          <span class="value" style="font-weight: 600;">{{ detailRequest.title }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Loại đề xuất:</span>
+          <span class="value">
+            <nz-tag [nzColor]="getTypeTag(detailRequest.type).color">
+              {{ getTypeTag(detailRequest.type).label }}
+            </nz-tag>
+          </span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Trạng thái:</span>
+          <span class="value">
+            <nz-badge
+              [nzStatus]="getStatusTag(detailRequest.status).badgeStatus"
+              [nzText]="getStatusTag(detailRequest.status).label"
+            ></nz-badge>
+          </span>
+        </div>
+        <div class="detail-row" *ngIf="detailRequest.type !== RequestType.Leave && detailRequest.amount">
+          <span class="label">Số tiền:</span>
+          <span class="value" style="font-weight: 600; color: #059669;">
+            {{ detailRequest.amount | number: '1.0-0' }} VNĐ
+          </span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Người tạo:</span>
+          <span class="value">
+            <span
+              *ngIf="detailRequest.creatorId"
+              class="creator-clickable"
+              (click)="onCreatorClick(detailRequest.creatorId)"
+              nz-tooltip="Nhấp để xem nhanh hồ sơ nhân viên"
+            >
+              {{ detailRequest.creatorName }}
+              <span nz-icon nzType="idcard" class="quick-view-icon"></span>
+            </span>
+            <span *ngIf="!detailRequest.creatorId">{{ detailRequest.creatorName || 'Hệ thống' }}</span>
+          </span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Ngày tạo:</span>
+          <span class="value">{{ detailRequest.creationTime | date: 'dd/MM/yyyy HH:mm:ss' }}</span>
+        </div>
+        <div class="detail-row" *ngIf="detailRequest.description">
+          <span class="label">Mô tả chi tiết:</span>
+          <span class="value" style="white-space: pre-wrap;">{{ detailRequest.description }}</span>
+        </div>
+      </div>
+
+      <!-- Section 2: Dòng thời gian phê duyệt (Timeline) -->
+      <div class="drawer-section">
+        <div class="section-title">Lịch sử phê duyệt</div>
+        <nz-timeline>
+          <!-- Bước 1: Khởi tạo -->
+          <nz-timeline-item nzColor="blue">
+            <div style="font-weight: 600;">Khởi tạo đề xuất</div>
+            <div style="font-size: 12px; color: #6b7280;">
+              Tạo bởi {{ detailRequest.creatorName || 'Người dùng' }} vào ngày {{ detailRequest.creationTime | date: 'dd/MM/yyyy HH:mm' }}
+            </div>
+          </nz-timeline-item>
+
+          <!-- Bước 2: Gửi duyệt -->
+          <nz-timeline-item
+            *ngIf="detailRequest.status !== RequestStatus.Draft"
+            nzColor="blue"
+          >
+            <div style="font-weight: 600;">Đã gửi phê duyệt</div>
+            <div style="font-size: 12px; color: #6b7280;">
+              Đã chuyển trạng thái chờ quản lý xét duyệt
+            </div>
+          </nz-timeline-item>
+
+          <!-- Bước 3: Phê duyệt -->
+          <nz-timeline-item
+            *ngIf="detailRequest.status === RequestStatus.Approved"
+            nzColor="green"
+          >
+            <div style="font-weight: 600; color: #059669;">Đã được phê duyệt</div>
+            <div style="font-size: 12px; color: #6b7280;">
+              Phê duyệt bởi: <strong>{{ detailRequest.approverName || 'Quản lý' }}</strong>
+              <span *ngIf="detailRequest.approvalTime"> lúc {{ detailRequest.approvalTime | date: 'dd/MM/yyyy HH:mm' }}</span>
+            </div>
+          </nz-timeline-item>
+
+          <!-- Bước 3 (Từ chối): -->
+          <nz-timeline-item
+            *ngIf="detailRequest.status === RequestStatus.Rejected"
+            nzColor="red"
+          >
+            <div style="font-weight: 600; color: #dc2626;">Đã bị từ chối</div>
+            <div style="font-size: 12px; color: #6b7280;">
+              Từ chối bởi: <strong>{{ detailRequest.approverName || 'Quản lý' }}</strong>
+              <span *ngIf="detailRequest.approvalTime"> lúc {{ detailRequest.approvalTime | date: 'dd/MM/yyyy HH:mm' }}</span>
+            </div>
+            <div *ngIf="detailRequest.rejectionReason" style="margin-top: 6px; padding: 6px 10px; background: #fef2f2; border-left: 3px solid #dc2626; color: #991b1b; font-size: 13px;">
+              <strong>Lý do:</strong> {{ detailRequest.rejectionReason }}
+            </div>
+          </nz-timeline-item>
+        </nz-timeline>
+      </div>
+
+      <!-- Section 3: Bình luận và trao đổi -->
+      <div class="drawer-section">
+        <div class="section-title">
+          Bình luận trao đổi ({{ detailRequest.comments ? detailRequest.comments.length : 0 }})
+        </div>
+
+        <!-- Danh sách bình luận -->
+        <div class="comments-container">
+          <div *ngIf="!detailRequest.comments || detailRequest.comments.length === 0" style="color: #9ca3af; font-size: 13px; text-align: center; padding: 12px 0;">
+            Chưa có bình luận nào cho đề xuất này.
+          </div>
+
+          <div *ngFor="let comment of detailRequest.comments; trackBy: trackCommentById" class="comment-item">
+            <div class="comment-header">
+              <span class="author">{{ comment.creatorName || 'Thành viên' }}</span>
+              <span class="time">{{ comment.creationTime | date: 'dd/MM/yyyy HH:mm' }}</span>
+            </div>
+            <div class="comment-content">{{ comment.content }}</div>
+          </div>
+        </div>
+
+        <!-- Nhập bình luận mới -->
+        <div class="comment-input-area">
+          <textarea
+            nz-input
+            rows="3"
+            [(ngModel)]="newCommentText"
+            placeholder="Viết bình luận hoặc phản hồi..."
+          ></textarea>
+          <div style="display: flex; justify-content: flex-end;">
+            <button
+              nz-button
+              nzType="primary"
+              [nzLoading]="isSendingComment"
+              [disabled]="!newCommentText.trim()"
+              (click)="sendComment()"
+            >
+              <span nz-icon nzType="send"></span> Gửi bình luận
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+</nz-drawer>
+

@@ -1,0 +1,452 @@
+<div class="department-page-container">
+  <!-- HEADER TRANG -->
+  <div class="page-header">
+    <div class="header-left">
+      <div>
+        <div class="header-title-row">
+          <h2>Quản lý Cơ cấu Phòng ban</h2>
+          <span class="dept-count-badge">{{ filteredDepartments.length }} phòng ban</span>
+        </div>
+        <p class="header-subtitle">
+          Quản lý danh mục phòng ban, bổ nhiệm trưởng phòng và phân chia vị trí nhân sự trong công ty
+        </p>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <nz-input-group [nzPrefix]="searchPrefix" class="search-input">
+        <input
+          type="text"
+          nz-input
+          placeholder="Tìm phòng ban, mã, trưởng phòng..."
+          [(ngModel)]="searchKeyword"
+          (ngModelChange)="filterDepartments()"
+        />
+        <ng-template #searchPrefix>
+          <span nz-icon nzType="search" class="search-icon"></span>
+        </ng-template>
+      </nz-input-group>
+
+      <button
+        *ngIf="canCreate"
+        nz-button
+        nzType="primary"
+        class="btn-create-dept"
+        (click)="openCreateModal()"
+      >
+        <span nz-icon nzType="plus"></span>
+        Thêm phòng ban mới
+      </button>
+
+      <button nz-button nzType="default" (click)="loadDepartments()" [nzLoading]="loading" nz-tooltip="Tải lại dữ liệu">
+        <span nz-icon nzType="reload"></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- BẢNG DANH SÁCH PHÒNG BAN -->
+  <div class="table-card">
+    <nz-table
+      #deptTable
+      [nzData]="filteredDepartments"
+      [nzLoading]="loading"
+      [nzPageSize]="10"
+      [nzShowSizeChanger]="true"
+      nzBordered="false"
+      class="department-table"
+    >
+      <thead>
+        <tr>
+          <th nzWidth="60px" nzAlign="center">STT</th>
+          <th nzWidth="120px">Mã phòng</th>
+          <th nzWidth="260px">Tên phòng ban</th>
+          <th nzWidth="240px">Trưởng phòng</th>
+          <th nzWidth="140px" nzAlign="center">Nhân sự</th>
+          <th>Mô tả</th>
+          <th nzWidth="180px" nzAlign="center">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let dept of deptTable.data; let i = index">
+          <td nzAlign="center" class="text-muted">{{ i + 1 }}</td>
+          <td>
+            <span class="code-badge">{{ dept.code }}</span>
+          </td>
+          <td>
+            <div class="dept-name">{{ dept.name }}</div>
+          </td>
+          <td>
+            <div *ngIf="dept.managerName" class="manager-info">
+              <div>
+                <div
+                  class="manager-name clickable-employee"
+                  (click)="openEmployeeDrawer(dept.managerId)"
+                  nz-tooltip="Nhấp để xem nhanh hồ sơ Trưởng phòng"
+                >
+                  {{ dept.managerName }}
+                  <span nz-icon nzType="idcard" class="quick-view-icon"></span>
+                </div>
+                <span class="manager-badge">Trưởng phòng</span>
+              </div>
+            </div>
+            <div *ngIf="!dept.managerName" class="no-manager">
+              <span>Chưa bổ nhiệm</span>
+            </div>
+          </td>
+          <td nzAlign="center">
+            <span class="member-count-pill" (click)="openMembersDrawer(dept)" nz-tooltip="Bấm để xem danh sách nhân sự">
+              {{ dept.memberCount }} nhân viên
+            </span>
+          </td>
+          <td class="text-secondary text-truncate" [nz-tooltip]="dept.description">
+            {{ dept.description || 'Chưa có mô tả' }}
+          </td>
+          <td nzAlign="center">
+            <div class="action-buttons">
+              <!-- Nút Quản lý nhân sự & chức vụ -->
+              <button
+                nz-button
+                nzType="default"
+                nzSize="small"
+                class="btn-members"
+                (click)="openMembersDrawer(dept)"
+                nz-tooltip="Phân chia nhân sự & chức vụ"
+              >
+                <span>Nhân sự</span>
+              </button>
+
+              <!-- Nút Sửa -->
+              <button
+                *ngIf="canEdit"
+                nz-button
+                nzType="text"
+                nzSize="small"
+                class="btn-action-edit"
+                (click)="openEditModal(dept)"
+                nz-tooltip="Chỉnh sửa thông tin phòng ban"
+              >
+                <span nz-icon nzType="edit"></span>
+              </button>
+
+              <!-- Nút Xóa -->
+              <button
+                *ngIf="canDelete"
+                nz-button
+                nzType="text"
+                nzDanger
+                nzSize="small"
+                class="btn-action-delete"
+                nz-popconfirm
+                nzPopconfirmTitle="Bạn có chắc chắn muốn xóa phòng ban này? Tất cả dữ liệu liên quan sẽ bị xóa!"
+                nzOkText="Xóa phòng ban"
+                nzCancelText="Hủy"
+                nzOkDanger
+                (nzOnConfirm)="deleteDepartment(dept)"
+                nz-tooltip="Xóa phòng ban"
+              >
+                <span nz-icon nzType="delete"></span>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </nz-table>
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- MODAL: TẠO MỚI / CHỈNH SỬA PHÒNG BAN                           -->
+<!-- ============================================================== -->
+<nz-modal
+  [(nzVisible)]="isModalVisible"
+  [nzTitle]="modalTitle"
+  [nzContent]="modalContent"
+  [nzFooter]="modalFooter"
+  (nzOnCancel)="handleModalCancel()"
+  [nzWidth]="520"
+>
+  <ng-template #modalTitle>
+    <div class="modal-title-wrap">
+      <span>{{ selectedDepartment ? 'Chỉnh sửa Phòng ban' : 'Thêm mới Phòng ban' }}</span>
+    </div>
+  </ng-template>
+
+  <ng-template #modalContent>
+    <form nz-form [formGroup]="deptForm" nzLayout="vertical">
+      <div nz-row [nzGutter]="16">
+        <div nz-col [nzSpan]="10">
+          <nz-form-item>
+            <nz-form-label nzRequired nzFor="code">Mã phòng ban</nz-form-label>
+            <nz-form-control nzErrorTip="Mã phòng ban không được để trống!">
+              <input
+                nz-input
+                formControlName="code"
+                placeholder="VD: IT, HR, FINANCE..."
+                style="text-transform: uppercase;"
+              />
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+        <div nz-col [nzSpan]="14">
+          <nz-form-item>
+            <nz-form-label nzRequired nzFor="name">Tên phòng ban</nz-form-label>
+            <nz-form-control nzErrorTip="Tên phòng ban là bắt buộc!">
+              <input nz-input formControlName="name" placeholder="VD: Công nghệ Thông tin" />
+            </nz-form-control>
+          </nz-form-item>
+        </div>
+      </div>
+
+      <nz-form-item>
+        <nz-form-label nzFor="description">Mô tả nhiệm vụ / chức năng</nz-form-label>
+        <nz-form-control>
+          <textarea
+            nz-input
+            formControlName="description"
+            rows="3"
+            placeholder="Mô tả chức năng, nhiệm vụ chính của phòng ban..."
+          ></textarea>
+        </nz-form-control>
+      </nz-form-item>
+    </form>
+  </ng-template>
+
+  <ng-template #modalFooter>
+    <button nz-button nzType="default" (click)="handleModalCancel()">Hủy bỏ</button>
+    <button
+      nz-button
+      nzType="primary"
+      (click)="handleModalSubmit()"
+      [nzLoading]="isModalSubmitting"
+      class="btn-modal-submit"
+    >
+      {{ selectedDepartment ? 'Lưu thay đổi' : 'Tạo phòng ban' }}
+    </button>
+  </ng-template>
+</nz-modal>
+
+<!-- ============================================================== -->
+<!-- DRAWER: QUẢN LÝ NHÂN SỰ & CHỨC VỤ TRONG PHÒNG BAN              -->
+<!-- ============================================================== -->
+<nz-drawer
+  [nzVisible]="isDrawerVisible"
+  [nzWidth]="680"
+  [nzTitle]="drawerTitle"
+  (nzOnClose)="closeDrawer()"
+  class="member-management-drawer"
+>
+  <ng-template #drawerTitle>
+    <div class="drawer-header-title" *ngIf="activeDepartment">
+      <span>Phòng ban: <strong>{{ activeDepartment.name }}</strong> ({{ activeDepartment.code }})</span>
+    </div>
+  </ng-template>
+
+  <ng-container *nzDrawerContent>
+    <nz-spin [nzSpinning]="isMembersLoading">
+      <!-- KHUNG THÊM NHÂN SỰ VÀO PHÒNG BAN -->
+      <div class="add-member-card" *ngIf="canManageMembers">
+        <div class="section-title">
+          <span>Phân chia Nhân sự mới vào Phòng ban</span>
+        </div>
+
+        <form nz-form [formGroup]="addMemberForm" nzLayout="vertical" (ngSubmit)="submitAddMember()">
+          <div nz-row [nzGutter]="12">
+            <div nz-col [nzSpan]="12">
+              <nz-form-item>
+                <nz-form-label nzRequired>Chọn nhân viên</nz-form-label>
+                <nz-form-control nzErrorTip="Vui lòng chọn nhân sự!">
+                  <nz-select
+                    formControlName="userId"
+                    nzShowSearch
+                    nzPlaceHolder="Tìm theo tên hoặc username..."
+                  >
+                    <nz-option
+                      *ngFor="let u of availableUsers"
+                      [nzValue]="u.id"
+                      [nzLabel]="u.fullName + ' (' + u.userName + ')'"
+                    >
+                    </nz-option>
+                  </nz-select>
+                </nz-form-control>
+              </nz-form-item>
+            </div>
+
+            <div nz-col [nzSpan]="12">
+              <nz-form-item>
+                <nz-form-label nzRequired>Vị trí / Chức danh</nz-form-label>
+                <nz-form-control nzErrorTip="Vui lòng nhập chức vụ!">
+                  <input
+                    nz-input
+                    formControlName="position"
+                    placeholder="VD: Kỹ sư Phần mềm, Kế toán..."
+                  />
+                </nz-form-control>
+              </nz-form-item>
+            </div>
+          </div>
+
+          <!-- Gợi ý chức danh phổ biến -->
+          <div class="quick-tags">
+            <span class="quick-label">Gợi ý nhanh:</span>
+            <nz-tag
+              *ngFor="let pos of commonPositions"
+              class="quick-pos-tag"
+              (click)="quickSelectPosition(pos)"
+            >
+              {{ pos }}
+            </nz-tag>
+          </div>
+
+          <div class="add-member-btn-row">
+            <button nz-button nzType="primary" class="btn-add-member" (click)="submitAddMember()">
+              <span nz-icon nzType="plus"></span>
+              Thêm vào phòng ban
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <nz-divider nzText="Danh sách nhân sự hiện tại ({{ members.length }})"></nz-divider>
+
+      <!-- DANH SÁCH NHÂN SỰ CỦA PHÒNG -->
+      <div *ngIf="members.length === 0" class="empty-members">
+        <nz-empty nzNotFoundImage="simple" nzNotFoundContent="Phòng ban này chưa có nhân sự nào. Hãy thêm nhân viên ở trên!">
+        </nz-empty>
+      </div>
+
+      <div *ngIf="members.length > 0" class="members-list">
+        <div
+          *ngFor="let m of members"
+          class="member-item-card"
+          [class.is-manager-card]="m.isManager"
+        >
+          <div
+            class="member-avatar-box clickable-avatar"
+            [class.manager-avatar-box]="m.isManager"
+            (click)="openEmployeeDrawer(m.userId)"
+            nz-tooltip="Nhấp để xem nhanh hồ sơ nhân viên"
+          >
+            <span>{{ m.fullName?.charAt(0) || 'U' }}</span>
+          </div>
+
+          <div class="member-info-content">
+            <div class="member-top-row">
+              <span
+                class="member-fullname clickable-employee"
+                (click)="openEmployeeDrawer(m.userId)"
+                nz-tooltip="Nhấp để xem nhanh hồ sơ nhân viên"
+              >
+                {{ m.fullName }}
+                <span nz-icon nzType="idcard" class="quick-view-icon"></span>
+              </span>
+              <span class="member-username">(&#64;{{ m.userName }})</span>
+              <span *ngIf="m.isManager" class="badge-manager-pill">
+                Trưởng phòng
+              </span>
+            </div>
+
+            <div class="member-email text-muted">
+              {{ m.email }}
+            </div>
+
+            <!-- CHỈNH SỬA VỊ TRÍ / CHỨC VỤ -->
+            <div class="member-position-row">
+              <span class="pos-label">Chức danh:</span>
+              <ng-container *ngIf="editingMemberId !== m.userId">
+                <span class="position-pill">{{ m.position }}</span>
+                <button
+                  *ngIf="canManageMembers"
+                  nz-button
+                  nzType="link"
+                  nzSize="small"
+                  class="btn-edit-pos"
+                  (click)="startEditPosition(m)"
+                >
+                  Đổi
+                </button>
+              </ng-container>
+
+              <ng-container *ngIf="editingMemberId === m.userId">
+                <input
+                  nz-input
+                  nzSize="small"
+                  [(ngModel)]="editingPosition"
+                  class="input-edit-pos"
+                  placeholder="Nhập chức danh mới..."
+                />
+                <button
+                  nz-button
+                  nzType="primary"
+                  nzSize="small"
+                  class="btn-save-pos"
+                  (click)="savePosition(m)"
+                >
+                  Lưu
+                </button>
+                <button
+                  nz-button
+                  nzType="default"
+                  nzSize="small"
+                  (click)="cancelEditPosition()"
+                >
+                  Hủy
+                </button>
+              </ng-container>
+            </div>
+          </div>
+
+          <!-- THAO TÁC VỚI THÀNH VIÊN -->
+          <div class="member-actions">
+            <!-- Nút Xem hồ sơ (Luôn hiển thị) -->
+            <button
+              nz-button
+              nzType="default"
+              nzSize="small"
+              class="btn-view-profile"
+              (click)="openEmployeeDrawer(m.userId)"
+              nz-tooltip="Xem chi tiết hồ sơ nhân sự"
+            >
+              <span nz-icon nzType="idcard"></span>
+              <span>Hồ sơ</span>
+            </button>
+
+            <!-- Nút Bổ nhiệm / Hủy Trưởng phòng -->
+            <button
+              *ngIf="canManageMembers"
+              nz-button
+              nzSize="small"
+              [nzType]="m.isManager ? 'default' : 'primary'"
+              [class.btn-revoke-manager]="m.isManager"
+              (click)="toggleManager(m)"
+              nz-tooltip="Bổ nhiệm hoặc hủy quyền Trưởng phòng ban"
+            >
+              <span>{{ m.isManager ? 'Hủy Trưởng phòng' : 'Bổ nhiệm TP' }}</span>
+            </button>
+
+            <!-- Nút Gỡ khỏi phòng -->
+            <button
+              *ngIf="canManageMembers"
+              nz-button
+              nzType="text"
+              nzDanger
+              nzSize="small"
+              nz-popconfirm
+              [nzPopconfirmTitle]="'Bạn có chắc muốn gỡ ' + m.fullName + ' khỏi phòng ban này?'"
+              nzOkText="Gỡ nhân viên"
+              nzCancelText="Hủy"
+              nzOkDanger
+              (nzOnConfirm)="removeMember(m)"
+              nz-tooltip="Gỡ nhân viên khỏi phòng"
+            >
+              Gỡ
+            </button>
+          </div>
+        </div>
+      </div>
+    </nz-spin>
+  </ng-container>
+</nz-drawer>
+
+<!-- REUSABLE EMPLOYEE DETAIL DRAWER (QUICK-VIEW) -->
+<app-employee-detail-drawer #employeeDrawer></app-employee-detail-drawer>
+

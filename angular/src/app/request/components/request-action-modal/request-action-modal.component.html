@@ -1,0 +1,55 @@
+<!-- MODAL: PHÊ DUYỆT -->
+<nz-modal
+  [(nzVisible)]="isApproveModalVisible"
+  nzTitle="Xác nhận Phê duyệt Đề xuất"
+  (nzOnCancel)="isApproveModalVisible = false"
+  (nzOnOk)="confirmApprove()"
+  [nzOkLoading]="isApproving"
+  nzOkText="Đồng ý Phê duyệt"
+  nzCancelText="Hủy"
+>
+  <ng-container *nzModalContent>
+    <p>Bạn có chắc chắn muốn phê duyệt đề xuất <strong>{{ selectedRequestForApprove?.title }}</strong>?</p>
+    <nz-form-item>
+      <nz-form-label>Ghi chú phê duyệt (tùy chọn)</nz-form-label>
+      <nz-form-control>
+        <textarea
+          nz-input
+          rows="3"
+          [(ngModel)]="approvalNote"
+          placeholder="Nhập ghi chú hoặc căn dặn thêm (không bắt buộc)..."
+        ></textarea>
+      </nz-form-control>
+    </nz-form-item>
+  </ng-container>
+</nz-modal>
+
+<!-- MODAL: TỪ CHỐI -->
+<nz-modal
+  [(nzVisible)]="isRejectModalVisible"
+  nzTitle="Từ chối Đề xuất"
+  (nzOnCancel)="isRejectModalVisible = false"
+  (nzOnOk)="confirmReject()"
+  [nzOkLoading]="isRejecting"
+  [nzOkDisabled]="!rejectionReason.trim()"
+  nzOkText="Xác nhận Từ chối"
+  [nzOkDanger]="true"
+  nzCancelText="Hủy"
+>
+  <ng-container *nzModalContent>
+    <p>Vui lòng nhập lý do từ chối đề xuất <strong>{{ selectedRequestForReject?.title }}</strong>:</p>
+    <nz-form-item>
+      <nz-form-label nzRequired>Lý do từ chối</nz-form-label>
+      <nz-form-control nzErrorTip="Lý do từ chối là bắt buộc!">
+        <textarea
+          nz-input
+          rows="4"
+          [(ngModel)]="rejectionReason"
+          placeholder="Nhập lý do cụ thể vì sao từ chối đề xuất này..."
+          required
+        ></textarea>
+      </nz-form-control>
+    </nz-form-item>
+  </ng-container>
+</nz-modal>
+

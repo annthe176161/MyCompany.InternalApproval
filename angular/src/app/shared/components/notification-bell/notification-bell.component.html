@@ -1,0 +1,125 @@
+<div
+  class="notification-bell-trigger"
+  nz-popover
+  [nzPopoverContent]="notificationPanelTpl"
+  nzPopoverPlacement="bottomRight"
+  nzPopoverTrigger="click"
+  [(nzPopoverVisible)]="isPopoverVisible"
+  (nzPopoverVisibleChange)="onVisibleChange($event)"
+  nzPopoverOverlayClassName="notification-popover-overlay"
+>
+  <button class="bell-button" type="button" title="Thông báo hệ thống">
+    <span nz-icon nzType="bell" nzTheme="outline" class="bell-icon"></span>
+    <span *ngIf="unreadCount > 0" class="bell-badge-count">
+      {{ unreadCount > 99 ? '99+' : unreadCount }}
+    </span>
+  </button>
+</div>
+
+<!-- NỘI DUNG POPOVER DANH SÁCH THÔNG BÁO -->
+<ng-template #notificationPanelTpl>
+  <div class="notification-panel">
+    <!-- Header -->
+    <div class="notification-header">
+      <div class="header-title">
+        <span nz-icon nzType="bell" nzTheme="fill" class="header-bell-icon"></span>
+        <span class="title-text">Thông báo</span>
+        <span *ngIf="unreadCount > 0" class="unread-count-pill">{{ unreadCount }} mới</span>
+      </div>
+
+      <button
+        *ngIf="unreadCount > 0"
+        nz-button
+        nzType="link"
+        nzSize="small"
+        class="mark-all-read-btn"
+        (click)="markAllAsRead()"
+      >
+        <span nz-icon nzType="check"></span>
+        Đánh dấu tất cả đã đọc
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="notification-body">
+      <!-- Loading khi chưa có dữ liệu và đang tải lần đầu -->
+      <div *ngIf="loading && notifications.length === 0" class="notification-loading">
+        <nz-spin nzSimple></nz-spin>
+        <span class="loading-text">Đang tải thông báo...</span>
+      </div>
+
+      <!-- Danh sách thông báo -->
+      <div *ngIf="notifications.length > 0" class="notification-list">
+        <div
+          *ngFor="let item of notifications"
+          class="notification-item"
+          [class.unread]="!item.isRead"
+          (click)="onItemClick(item)"
+        >
+          <!-- Icon trạng thái -->
+          <div
+            class="item-icon-wrapper"
+            [class.submitted]="item.status === RequestStatus.Submitted"
+            [class.approved]="item.status === RequestStatus.Approved"
+            [class.rejected]="item.status === RequestStatus.Rejected"
+          >
+            <span
+              *ngIf="item.status === RequestStatus.Submitted"
+              nz-icon
+              nzType="file-text"
+              nzTheme="outline"
+              class="status-icon"
+            ></span>
+            <span
+              *ngIf="item.status === RequestStatus.Approved"
+              nz-icon
+              nzType="check-circle"
+              nzTheme="fill"
+              class="status-icon"
+            ></span>
+            <span
+              *ngIf="item.status === RequestStatus.Rejected"
+              nz-icon
+              nzType="close-circle"
+              nzTheme="fill"
+              class="status-icon"
+            ></span>
+          </div>
+
+          <!-- Nội dung thông báo -->
+          <div class="item-content">
+            <div class="item-title-row">
+              <div class="title-container">
+                <span *ngIf="!item.isRead" class="item-unread-dot"></span>
+                <span class="item-title">{{ item.title }}</span>
+              </div>
+              <nz-tag *ngIf="item.status === RequestStatus.Submitted" nzColor="processing">Chờ duyệt</nz-tag>
+              <nz-tag *ngIf="item.status === RequestStatus.Approved" nzColor="success">Đã duyệt</nz-tag>
+              <nz-tag *ngIf="item.status === RequestStatus.Rejected" nzColor="error">Đã từ chối</nz-tag>
+            </div>
+
+            <div class="item-message">
+              {{ item.message }}
+            </div>
+
+            <div class="item-time">
+              <span nz-icon nzType="clock-circle" nzTheme="outline"></span>
+              <span>{{ item.creationTime | date: 'dd/MM/yyyy HH:mm' }}</span>
+              <span *ngIf="item.approverName" class="approver-info">
+                • Người duyệt: <strong>{{ item.approverName }}</strong>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Trạng thái trống -->
+      <div *ngIf="!loading && notifications.length === 0" class="notification-empty">
+        <nz-empty
+          nzNotFoundImage="simple"
+          nzNotFoundContent="Bạn chưa có thông báo nào"
+        ></nz-empty>
+      </div>
+    </div>
+  </div>
+</ng-template>

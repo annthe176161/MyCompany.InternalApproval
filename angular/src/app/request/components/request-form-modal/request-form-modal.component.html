@@ -1,0 +1,71 @@
+<nz-modal
+  [(nzVisible)]="isVisible"
+  [nzTitle]="isEditing ? 'Chỉnh sửa Đề xuất' : 'Tạo Đề xuất mới'"
+  (nzOnCancel)="close()"
+  [nzFooter]="modalFooter"
+  [nzWidth]="580"
+>
+  <ng-container *nzModalContent>
+    <form nz-form [formGroup]="form" nzLayout="vertical">
+      <!-- Loại đề xuất -->
+      <nz-form-item>
+        <nz-form-label nzRequired>Loại đề xuất</nz-form-label>
+        <nz-form-control nzErrorTip="Vui lòng chọn loại đề xuất">
+          <nz-select formControlName="type" nzPlaceHolder="Chọn loại đề xuất">
+            <nz-option [nzValue]="RequestType.Leave" nzLabel="Nghỉ phép"></nz-option>
+            <nz-option [nzValue]="RequestType.Equipment" nzLabel="Mua sắm thiết bị"></nz-option>
+            <nz-option [nzValue]="RequestType.AdvanceMoney" nzLabel="Tạm ứng tiền"></nz-option>
+          </nz-select>
+        </nz-form-control>
+      </nz-form-item>
+
+      <!-- Tiêu đề -->
+      <nz-form-item>
+        <nz-form-label nzRequired>Tiêu đề</nz-form-label>
+        <nz-form-control nzErrorTip="Tiêu đề là bắt buộc (tối đa 200 ký tự)">
+          <input nz-input formControlName="title" placeholder="Nhập tiêu đề đề xuất..." maxlength="200" />
+        </nz-form-control>
+      </nz-form-item>
+
+      <!-- Số tiền (chỉ hiện/bắt buộc khi là Equipment hoặc AdvanceMoney) -->
+      <nz-form-item *ngIf="form.get('type')?.value !== RequestType.Leave">
+        <nz-form-label nzRequired>Số tiền đề xuất (VNĐ)</nz-form-label>
+        <nz-form-control nzErrorTip="Số tiền là bắt buộc và phải từ 1,000 VNĐ trở lên">
+          <nz-input-number
+            formControlName="amount"
+            [nzMin]="1000"
+            [nzStep]="50000"
+            style="width: 100%;"
+            [nzFormatter]="currencyFormatter"
+            [nzParser]="currencyParser"
+            placeholder="Nhập số tiền..."
+          ></nz-input-number>
+        </nz-form-control>
+      </nz-form-item>
+
+      <!-- Nội dung chi tiết -->
+      <nz-form-item>
+        <nz-form-label>Nội dung chi tiết</nz-form-label>
+        <nz-form-control>
+          <textarea
+            nz-input
+            formControlName="description"
+            rows="4"
+            placeholder="Mô tả lý do, chi tiết đề xuất..."
+          ></textarea>
+        </nz-form-control>
+      </nz-form-item>
+    </form>
+  </ng-container>
+
+  <ng-template #modalFooter>
+    <button nz-button nzType="default" (click)="close()">Hủy</button>
+    <button nz-button nzType="default" [nzLoading]="isSaving" (click)="save(false)">
+      Lưu nháp
+    </button>
+    <button nz-button nzType="primary" [nzLoading]="isSaving" (click)="save(true)">
+      {{ isEditing ? 'Lưu cập nhật' : 'Lưu & Gửi phê duyệt ngay' }}
+    </button>
+  </ng-template>
+</nz-modal>
+

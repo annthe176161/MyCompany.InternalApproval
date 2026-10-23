@@ -1,0 +1,987 @@
+/* You can add global styles to this file, and also import other style files */
+
+@keyframes donut-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+:root {
+  --lpx-logo: url('/assets/images/logo/logo-light.svg');
+  --lpx-logo-icon: url('/assets/images/logo/logo-light-thumbnail.svg');
+}
+.donut {
+  display: inline-block;
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-left-color: #7983ff;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  animation: donut-spin 1.2s linear infinite;
+
+  &.centered {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+}
+
+.abp-logo {
+  background-repeat: no-repeat;
+}
+
+.abp-support {
+  width: 178px;
+  height: 30px;
+  background-image: url('/assets/images/getting-started/abp-support.svg');
+}
+
+.abp-community {
+  width: 215px;
+  height: 30px;
+  background-image: url('/assets/images/getting-started/abp-community.svg');
+}
+
+.abp-blog {
+  width: 142px;
+  height: 30px;
+  background-image: url('/assets/images/getting-started/abp-blog.svg');
+}
+
+.logo-x {
+  width: 20px;
+  height: 20px;
+  background-image: url('/assets/images/getting-started/x.svg');
+}
+
+/* ==========================================================================
+   TÙY BIẾN GIAO DIỆN SIDEBAR & THƯƠNG HIỆU HIỆN ĐẠI (ENTERPRISE UI)
+   1. Đổi tên Project / Logo sang Internal Approval chuyên nghiệp.
+   2. Tone màu Dark Slate (#0f172a), bo góc nhẹ, hiệu ứng chuyển động mượt mà.
+   3. Menu item hover & active với dải màu gradient công nghệ nổi bật.
+   4. Thu nhỏ (Collapse 72px) / Mở rộng (Expand 280px) chuẩn UX.
+   ========================================================================== */
+
+/* ==========================================================================
+   TÙY BIẾN GIAO DIỆN SIDEBAR & THƯƠNG HIỆU ĐƠN SẮC MÀU ĐEN (MONOCHROME BLACK)
+   1. Đổi tên Project / Logo sang Internal Approval đơn sắc đen sang trọng.
+   2. Tone màu Đen tuyền (#09090b / #000000 / #18181b / #27272a).
+   3. Menu item hover & active đơn sắc tối giản (Trắng / Xám bạc / Đen).
+   4. Thu nhỏ (Collapse 72px) / Mở rộng (Expand 290px) chuẩn xác, đồng trục.
+   ========================================================================== */
+
+/* Thanh Sidebar chính - Neo cố định trên đỉnh màn hình (top: 0) */
+.lpx-sidebar-container {
+  min-width: 290px !important;
+  max-width: 290px !important;
+  width: 290px !important;
+  top: 0 !important;
+  left: 0 !important;
+  height: 100vh !important;
+  position: fixed !important;
+  z-index: 1050 !important;
+
+  .lpx-sidebar {
+    min-width: 290px !important;
+    max-width: 290px !important;
+    width: 290px !important;
+    height: 100vh !important;
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+    background-color: #09090b !important; /* Đơn sắc đen tuyền */
+    border-right: 1px solid #27272a !important;
+  }
+
+  .lpx-nav {
+    min-width: 290px !important;
+    max-width: 290px !important;
+    width: 290px !important;
+    height: 100vh !important;
+    padding-top: 0 !important; /* Loại bỏ padding-top 72px mặc định của LeptonX */
+    margin-top: 0 !important;
+    background-color: #09090b !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  /* Khung chứa Logo & Nút Toggle: Nằm sát đỉnh màn hình (top: 0) */
+  .lpx-logo-container {
+    height: 70px !important;
+    min-height: 70px !important;
+    max-height: 70px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    background-color: #09090b !important;
+    border-bottom: 1px solid #27272a !important;
+    padding: 0 16px 0 18px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    position: sticky !important;
+    top: 0 !important;
+    left: 0 !important;
+    z-index: 1060 !important;
+    margin: 0 !important;
+
+    /* Nút toggle mở rộng/thu nhỏ (3 gạch / filter) */
+    .menu-collapse-icon {
+      position: static !important;
+      top: auto !important;
+      right: auto !important;
+      bottom: auto !important;
+      left: auto !important;
+      transform: none !important;
+      margin-left: 16px !important;
+      flex-shrink: 0 !important;
+      width: 34px !important;
+      height: 34px !important;
+      border-radius: 8px !important;
+      background-color: #18181b !important;
+      border: 1px solid #27272a !important;
+      color: #a1a1aa !important;
+      font-size: 1.25rem !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      cursor: pointer !important;
+      transition: background-color 0.2s ease, color 0.2s ease !important;
+
+      &:hover {
+        background-color: #27272a !important;
+        border-color: #3f3f46 !important;
+        color: #ffffff !important;
+        transform: none !important;
+      }
+    }
+  }
+
+  /* Danh sách Menu Navigation */
+  .lpx-nav-menu {
+    flex: 1 1 auto !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 12px 10px !important;
+
+    /* Tiêu đề nhóm menu (General, Settings...) */
+    .group-menu-item {
+      font-size: 10.5px !important;
+      font-weight: 700 !important;
+      text-transform: uppercase !important;
+      letter-spacing: 1.2px !important;
+      color: #71717a !important;
+      padding: 16px 14px 6px !important;
+    }
+
+    .outer-menu-item {
+      margin-bottom: 3px !important;
+    }
+
+    /* Từng liên kết Menu item */
+    .lpx-menu-item-link {
+      border-radius: 8px !important;
+      padding: 10px 14px !important;
+      margin: 2px 0 !important;
+      color: #a1a1aa !important;
+      font-size: 13.5px !important;
+      font-weight: 500 !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 12px !important;
+      transition: all 0.2s ease !important;
+      text-decoration: none !important;
+
+      /* Icon menu */
+      .lpx-menu-item-icon {
+        font-size: 17px !important;
+        color: #71717a !important;
+        min-width: 20px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        transition: all 0.2s ease !important;
+      }
+
+      .lpx-menu-item-text {
+        color: inherit !important;
+        white-space: nowrap !important;
+      }
+
+      /* Hover item */
+      &:hover {
+        background-color: #18181b !important;
+        color: #ffffff !important;
+
+        .lpx-menu-item-icon {
+          color: #ffffff !important;
+        }
+      }
+
+      /* Active / Selected item (Đang chọn - Đơn sắc đen/trắng tương phản cao) */
+      &.selected {
+        background: #27272a !important;
+        color: #ffffff !important;
+        font-weight: 600 !important;
+        border-left: 3px solid #ffffff !important;
+
+        .lpx-menu-item-icon {
+          color: #ffffff !important;
+        }
+      }
+    }
+
+    /* Submenu (Menu con) */
+    .lpx-inner-menu {
+      background-color: #121212 !important;
+      border-radius: 8px !important;
+      margin: 4px 0 4px 18px !important;
+      padding: 4px 0 !important;
+      border-left: 1px solid #27272a !important;
+
+      .lpx-inner-menu-item .lpx-menu-item-link {
+        padding: 8px 12px !important;
+        font-size: 13px !important;
+      }
+    }
+  }
+}
+
+/* ==========================================================================
+   TRẠNG THÁI THU NHỎ / ĐÓNG SIDEBAR (COLLAPSED 72PX) - ĐƠN SẮC MÀU ĐEN
+   - Giữ cố định 72px trên đỉnh màn hình (top: 0), không bung khi hover qua.
+   - Nút mở ra và các icon menu căn giữa tuyệt đối theo trục dọc.
+   ========================================================================== */
+#lpx-wrapper.hover-trigger {
+  /* Khóa cố định kích thước 72px, triệt tiêu bung tự động khi hover chuột */
+  .lpx-sidebar-container,
+  .lpx-sidebar-container:hover {
+    min-width: 72px !important;
+    max-width: 72px !important;
+    width: 72px !important;
+    top: 0 !important;
+    left: 0 !important;
+    box-sizing: border-box !important;
+
+    .lpx-sidebar,
+    .lpx-sidebar:hover,
+    .lpx-nav,
+    .lpx-nav:hover {
+      min-width: 72px !important;
+      max-width: 72px !important;
+      width: 72px !important;
+      background-color: #09090b !important;
+      border-right: 1px solid #27272a !important;
+      padding-top: 0 !important;
+      overflow-x: hidden !important;
+      box-sizing: border-box !important;
+    }
+  }
+
+  .lpx-content-container {
+    margin-left: 72px !important;
+  }
+
+  .lpx-sidebar-container {
+    /* Header 72px: Nằm ngay sát đỉnh màn hình (top: 0) */
+    .lpx-logo-container,
+    .lpx-logo-container:hover {
+      width: 72px !important;
+      min-width: 72px !important;
+      max-width: 72px !important;
+      height: 70px !important;
+      min-height: 70px !important;
+      max-height: 70px !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      background-color: #09090b !important;
+      border-bottom: 1px solid #27272a !important;
+      box-sizing: border-box !important;
+
+      app-brand-logo,
+      .lpx-brand-logo,
+      .lpx-brand-name {
+        display: none !important;
+      }
+    }
+
+    /* NÚT MỞ RA (EXPAND BUTTON): Kích thước chuẩn 42x42px căn giữa */
+    .menu-collapse-icon,
+    .lpx-logo-container .menu-collapse-icon,
+    &.lpx-sidebar-container:not(:hover) .menu-collapse-icon,
+    &.lpx-sidebar-container:hover .menu-collapse-icon,
+    .hidden-in-hover-trigger.menu-collapse-icon {
+      display: flex !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
+      position: static !important;
+      top: auto !important;
+      right: auto !important;
+      bottom: auto !important;
+      left: auto !important;
+      transform: none !important;
+      margin: 0 auto !important;
+      width: 42px !important;
+      min-width: 42px !important;
+      max-width: 42px !important;
+      height: 42px !important;
+      min-height: 42px !important;
+      max-height: 42px !important;
+      border-radius: 8px !important;
+      background-color: #18181b !important;
+      color: #ffffff !important;
+      font-size: 1.35rem !important;
+      cursor: pointer !important;
+      border: 1px solid #27272a !important;
+      box-sizing: border-box !important;
+      align-items: center !important;
+      justify-content: center !important;
+      transition: background-color 0.2s ease, border-color 0.2s ease !important;
+
+      &:hover {
+        background-color: #27272a !important;
+        border-color: #3f3f46 !important;
+        color: #ffffff !important;
+        transform: none !important;
+      }
+
+      i {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        transform: rotate(180deg) !important;
+      }
+    }
+
+    /* CONTAINER MENU ROUTES KHI THU NHỎ */
+    lpx-navbar-routes {
+      width: 100% !important;
+      display: block !important;
+      box-sizing: border-box !important;
+    }
+
+    /* DANH SÁCH MENU ITEM: Khóa 72px và căn giữa tuyệt đối */
+    .lpx-nav-menu {
+      width: 72px !important;
+      min-width: 72px !important;
+      max-width: 72px !important;
+      padding: 10px 0 !important;
+      margin: 0 !important;
+      box-sizing: border-box !important;
+      list-style: none !important;
+      overflow-x: hidden !important;
+
+      /* Ẩn triệt để text và icon điều hướng phụ */
+      .group-menu-item,
+      .lpx-menu-item-text,
+      .dd-icon,
+      .lpx-caret,
+      .lpx-inner-menu {
+        display: none !important;
+        visibility: hidden !important;
+        width: 0 !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      .outer-menu-item {
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        margin: 0 0 6px 0 !important;
+        padding: 0 !important;
+        list-style: none !important;
+        box-sizing: border-box !important;
+      }
+
+      lpx-sub-navbar {
+        width: 100% !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        box-sizing: border-box !important;
+      }
+
+      /* TỪNG NÚT MENU: Khối 42x42px đồng bộ hoàn hảo với nút mở ở trên */
+      .lpx-menu-item-link {
+        width: 42px !important;
+        min-width: 42px !important;
+        max-width: 42px !important;
+        height: 42px !important;
+        min-height: 42px !important;
+        max-height: 42px !important;
+        padding: 0 !important;
+        margin: 0 auto !important;
+        gap: 0 !important;
+        border-radius: 8px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-sizing: border-box !important;
+        border: 1px solid transparent !important;
+        transition: all 0.2s ease !important;
+
+        .lpx-menu-item-icon {
+          width: 100% !important;
+          min-width: unset !important;
+          max-width: unset !important;
+          height: 100% !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          font-size: 1.25rem !important;
+          color: #71717a !important;
+          transform: none !important;
+
+          .lpx-icon,
+          i {
+            width: auto !important;
+            height: auto !important;
+            min-width: unset !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            line-height: 1 !important;
+            transform: none !important;
+          }
+        }
+
+        /* Hover khi chưa active */
+        &:hover:not(.selected) {
+          background-color: #18181b !important;
+          border-color: #27272a !important;
+
+          .lpx-menu-item-icon {
+            color: #ffffff !important;
+            transform: none !important;
+          }
+        }
+
+        /* Đang active (selected): Đơn sắc đen/trắng tinh tế */
+        &.selected {
+          border-left: none !important;
+          border: 1px solid #3f3f46 !important;
+          background: #27272a !important;
+
+          .lpx-menu-item-icon {
+            color: #ffffff !important;
+            transform: none !important;
+          }
+        }
+      }
+    }
+  }
+
+  /* Hiệu ứng chuyển động mượt mà khi đóng/mở */
+  .lpx-sidebar-container,
+  .lpx-sidebar,
+  .lpx-nav,
+  .lpx-content-container {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+}
+
+/* Khoảng cách nội dung khi sidebar mở rộng 290px */
+@media only screen and (min-width: 1200px) {
+  #lpx-wrapper:not(.hover-trigger) .lpx-content-container {
+    margin-left: 290px !important;
+  }
+}
+
+/* ==========================================================================
+   TOPBAR HEADER & BREADCRUMB CĂN CHỈNH ĐỒNG TRỤC, CÂN ĐỐI
+   - Căn giữa hoàn hảo trục dọc cho thanh Topbar
+   - Icon ngôi nhà (fa-home) và chữ "Trang chủ" thẳng hàng cân đối tuyệt đối
+   ========================================================================== */
+.lpx-topbar-container {
+  background-color: #ffffff !important;
+  border-bottom: 1px solid #e4e4e7 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+  min-height: 52px !important;
+  display: flex !important;
+  align-items: center !important;
+
+  .lpx-topbar {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 0 20px !important;
+    min-height: 52px !important;
+    background-color: transparent !important;
+    border: none !important;
+  }
+}
+
+.lpx-breadcrumb-container {
+  height: auto !important;
+  min-height: 32px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.lpx-breadcrumb {
+  display: flex !important;
+  align-items: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  list-style: none !important;
+}
+
+.lpx-breadcrumb-item {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  line-height: 1 !important;
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  padding: 4px 8px !important;
+  margin: 0 !important;
+  color: #475569 !important;
+  border-radius: 6px !important;
+  white-space: nowrap !important;
+
+  .lpx-breadcrumb-item-icon,
+  lpx-icon {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    line-height: 1 !important;
+    margin: 0 !important;
+    font-size: 14px !important;
+
+    i, .fas, .fa {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      line-height: 1 !important;
+      vertical-align: middle !important;
+      margin: 0 !important;
+    }
+  }
+
+  a,
+  .lpx-breadcrumb-item-text {
+    display: inline-flex !important;
+    align-items: center !important;
+    line-height: 1.2 !important;
+    vertical-align: middle !important;
+    color: #334155 !important;
+    text-decoration: none !important;
+    font-weight: 500 !important;
+    margin: 0 !important;
+  }
+
+  &:hover {
+    color: #0f172a !important;
+    a {
+      color: #0f172a !important;
+    }
+  }
+}
+
+.lpx-breadcrumb-separator {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 4px !important;
+  color: #94a3b8 !important;
+  line-height: 1 !important;
+
+  lpx-icon, i {
+    display: inline-flex !important;
+    align-items: center !important;
+    line-height: 1 !important;
+    vertical-align: middle !important;
+  }
+}
+
+/* ==========================================================================
+   KHÓA CUỘN TOÀN MÀN HÌNH CHO MODULE QUẢN LÝ ĐỀ XUẤT
+   - Giữ giao diện vừa khít 100% màn hình
+   - Chỉ cuộn bên trong dữ liệu của bảng (nz-table)
+   ========================================================================== */
+body:has(.request-page-container),
+body:has(.dashboard-page-container),
+body:has(.employee-page-container) {
+  overflow: hidden !important;
+}
+
+.lpx-content-container:has(.request-page-container),
+.lpx-content-container:has(.dashboard-page-container),
+.lpx-content-container:has(.employee-page-container) {
+  overflow: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+}
+
+.lpx-content:has(.request-page-container),
+.lpx-content:has(.employee-page-container) {
+  padding: 12px 24px 8px !important;
+  overflow: hidden !important;
+  height: calc(100vh - 72px) !important;
+  max-height: calc(100vh - 72px) !important;
+  box-sizing: border-box !important;
+}
+
+.lpx-content:has(.dashboard-page-container) {
+  padding: 8px 18px 4px !important;
+  overflow: hidden !important;
+  height: calc(100vh - 70px) !important;
+  max-height: calc(100vh - 70px) !important;
+  box-sizing: border-box !important;
+}
+
+/* Tinh chỉnh thanh phân trang bảng đề xuất gọn gàng, tránh bị lẹm đáy */
+.table-card .ant-table-pagination.ant-pagination {
+  margin: 8px 0 2px 0 !important;
+}
+
+/* Style cho menu dropdown hành động bảng đề xuất */
+.request-action-menu {
+  min-width: 150px;
+  border-radius: 6px;
+  padding: 4px 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+
+  .ant-dropdown-menu-item {
+    padding: 8px 16px;
+    font-size: 13px;
+    line-height: 1.5;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: #f3f4f6;
+    }
+  }
+
+  .ant-dropdown-menu-item-divider {
+    margin: 4px 0;
+  }
+
+  .text-primary {
+    color: #1890ff !important;
+  }
+
+  .text-info {
+    color: #0284c7 !important;
+  }
+
+  .text-success {
+    color: #52c41a !important;
+  }
+
+  .text-danger {
+    color: #ff4d4f !important;
+  }
+}
+
+/* ==========================================================================
+   TOAST & MESSAGE NOTIFICATION - GÓC TRÊN BÊN PHẢI (TOP-RIGHT) & KÍCH THƯỚC LỚN
+   - Hiển thị góc trên bên phải màn hình
+   - Phóng to kích thước chữ, icon, padding để dễ đọc, nổi bật, thẩm mỹ
+   - Hỗ trợ cả NG-ZORRO (ant-message, ant-notification) và ABP Toaster
+   ========================================================================== */
+
+/* 1. NG-ZORRO Message (NzMessageService) */
+.ant-message {
+  top: 24px !important;
+  right: 24px !important;
+  left: auto !important;
+  width: auto !important;
+  pointer-events: none !important;
+  text-align: right !important;
+  z-index: 11000 !important;
+
+  .ant-message-notice {
+    padding: 6px 0 !important;
+    text-align: right !important;
+  }
+
+  .ant-message-notice-content {
+    display: inline-flex !important;
+    align-items: center !important;
+    padding: 14px 22px !important;
+    font-size: 15.5px !important;
+    font-weight: 500 !important;
+    color: #0f172a !important;
+    background: #ffffff !important;
+    border-radius: 12px !important;
+    box-shadow: 0 14px 35px -4px rgba(15, 23, 42, 0.18), 0 4px 12px rgba(15, 23, 42, 0.08) !important;
+    border: 1px solid #e2e8f0 !important;
+    min-width: 360px !important;
+    max-width: 520px !important;
+    text-align: left !important;
+    pointer-events: all !important;
+    transition: all 0.25s ease-in-out !important;
+
+    .ant-message-custom-content {
+      display: inline-flex !important;
+      align-items: center !important;
+      width: 100% !important;
+
+      > span:not(.anticon) {
+        font-size: 15.5px !important;
+        line-height: 1.45 !important;
+        font-weight: 500 !important;
+      }
+    }
+
+    .anticon {
+      font-size: 24px !important;
+      margin-right: 14px !important;
+      vertical-align: middle !important;
+      flex-shrink: 0 !important;
+    }
+
+    /* Viền nhấn màu và biểu tượng theo từng loại thông báo */
+    &.ant-message-success,
+    &:has(.anticon-check-circle) {
+      border-left: 6px solid #16a34a !important;
+      .anticon-check-circle {
+        color: #16a34a !important;
+      }
+    }
+
+    &.ant-message-error,
+    &:has(.anticon-close-circle) {
+      border-left: 6px solid #dc2626 !important;
+      .anticon-close-circle {
+        color: #dc2626 !important;
+      }
+    }
+
+    &.ant-message-warning,
+    &:has(.anticon-exclamation-circle) {
+      border-left: 6px solid #d97706 !important;
+      .anticon-exclamation-circle {
+        color: #d97706 !important;
+      }
+    }
+
+    &.ant-message-info,
+    &:has(.anticon-info-circle) {
+      border-left: 6px solid #2563eb !important;
+      .anticon-info-circle {
+        color: #2563eb !important;
+      }
+    }
+  }
+}
+
+/* 2. NG-ZORRO Notification (NzNotificationService) */
+.ant-notification {
+  top: 24px !important;
+  right: 24px !important;
+  z-index: 11000 !important;
+
+  .ant-notification-notice {
+    padding: 18px 24px !important;
+    width: 440px !important;
+    max-width: calc(100vw - 48px) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 14px 35px -4px rgba(15, 23, 42, 0.18), 0 4px 12px rgba(15, 23, 42, 0.08) !important;
+    border: 1px solid #e2e8f0 !important;
+    background: #ffffff !important;
+
+    .ant-notification-notice-icon {
+      font-size: 26px !important;
+      top: 18px !important;
+      left: 20px !important;
+    }
+
+    .ant-notification-notice-message {
+      font-size: 16.5px !important;
+      font-weight: 700 !important;
+      margin-left: 40px !important;
+      margin-bottom: 6px !important;
+      color: #0f172a !important;
+    }
+
+    .ant-notification-notice-description {
+      font-size: 14.5px !important;
+      margin-left: 40px !important;
+      line-height: 1.5 !important;
+      color: #334155 !important;
+    }
+
+    .ant-notification-notice-close {
+      top: 18px !important;
+      right: 18px !important;
+      font-size: 16px !important;
+      color: #64748b !important;
+
+      &:hover {
+        color: #0f172a !important;
+      }
+    }
+  }
+}
+
+/* 3. ABP Toaster (abp-toast-container & abp-toast) */
+.abp-toast-container {
+  top: 24px !important;
+  bottom: auto !important;
+  right: 24px !important;
+  left: auto !important;
+  z-index: 11000 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  min-width: 380px !important;
+
+  .abp-toast {
+    width: 440px !important;
+    max-width: calc(100vw - 48px) !important;
+    min-height: 72px !important;
+    padding: 16px 22px !important;
+    border-radius: 12px !important;
+    margin: 8px 0 !important;
+    box-shadow: 0 14px 35px -4px rgba(15, 23, 42, 0.22), 0 4px 12px rgba(15, 23, 42, 0.1) !important;
+    grid-template-columns: 44px 1fr !important;
+    gap: 16px !important;
+    align-items: center !important;
+
+    .abp-toast-icon {
+      .icon {
+        font-size: 28px !important;
+      }
+    }
+
+    .abp-toast-content {
+      .abp-toast-title {
+        font-size: 16.5px !important;
+        font-weight: 700 !important;
+        margin-bottom: 4px !important;
+      }
+
+      .abp-toast-message {
+        font-size: 14.5px !important;
+        line-height: 1.5 !important;
+        max-width: 340px !important;
+        font-weight: 400 !important;
+      }
+
+      .abp-toast-close-button {
+        top: 2px !important;
+        right: 2px !important;
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 16px !important;
+        cursor: pointer !important;
+      }
+    }
+  }
+}
+
+/* 4. Bootstrap / Generic Toast Container */
+.toast-container {
+  top: 24px !important;
+  right: 24px !important;
+  bottom: auto !important;
+  left: auto !important;
+  z-index: 11000 !important;
+
+  .toast {
+    font-size: 15px !important;
+    min-width: 380px !important;
+    border-radius: 12px !important;
+    box-shadow: 0 14px 35px -4px rgba(15, 23, 42, 0.18) !important;
+  }
+}
+
+/* ==========================================================================
+   GIAO DIỆN ĐĂNG NHẬP (ACCOUNT / LOGIN) - ĐƠN SẮC ĐỒNG BỘ TOÀN HỆ THỐNG
+   - Ẩn triệt để: Đăng ký mới, Quên mật khẩu, Chuyển đổi Tenant
+   - Phong cách đơn sắc Slate tinh gọn, hiện đại
+   ========================================================================== */
+
+/* Ẩn các thành phần không cần thiết */
+abp-login {
+  strong:has(a[routerLink*="/account/register"]),
+  a[routerLink*="/account/register"],
+  a[routerLink*="/account/forgot-password"],
+  #AbpTenantSwitchLink,
+  .card:has(#AbpTenantSwitchLink) {
+    display: none !important;
+  }
+
+  /* Tiêu đề Đăng nhập đơn sắc */
+  h4 {
+    font-size: 0 !important;
+    text-align: center !important;
+    margin-bottom: 24px !important;
+
+    &::before {
+      content: 'INTERNAL APPROVAL' !important;
+      display: block !important;
+      font-size: 19px !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.8px !important;
+      color: #0f172a !important;
+      margin-bottom: 6px !important;
+    }
+
+    &::after {
+      content: 'Đăng nhập hệ thống phê duyệt nội bộ' !important;
+      display: block !important;
+      font-size: 13.5px !important;
+      font-weight: 400 !important;
+      color: #64748b !important;
+    }
+  }
+
+  /* Nhãn và Form Input */
+  .form-label {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: #475569 !important;
+  }
+
+  .form-control {
+    border-radius: 8px !important;
+    padding: 10px 14px !important;
+    border: 1px solid #cbd5e1 !important;
+    font-size: 14px !important;
+
+    &:focus {
+      border-color: #2563eb !important;
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2) !important;
+    }
+  }
+
+  /* Nút Đăng nhập đơn sắc */
+  abp-button button,
+  button[type="submit"] {
+    background-color: #2563eb !important;
+    border: 1px solid #2563eb !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    font-size: 15px !important;
+    letter-spacing: 0.5px !important;
+    padding: 11px !important;
+    color: #ffffff !important;
+    transition: background-color 0.15s ease !important;
+
+    &:hover {
+      background-color: #1d4ed8 !important;
+      border-color: #1d4ed8 !important;
+    }
+  }
+}
+
+
+

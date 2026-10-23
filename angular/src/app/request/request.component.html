@@ -1,0 +1,347 @@
+<div class="request-page-container">
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <div>
+      <h2>Quản lý Đề xuất Nội bộ</h2>
+      <p class="text-muted mb-0">
+        {{ activeScope === 'my' ? 'Danh sách các đề xuất của tài khoản đăng nhập' : 'Danh sách toàn bộ đề xuất trên hệ thống' }}
+      </p>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+      <!-- Bộ chọn phạm vi: Chỉ hiển thị cho Approver (Admin luôn là Tất cả đề xuất, Nhân viên luôn là Đề xuất của tôi) -->
+      <nz-radio-group
+        *ngIf="isApprover && !isAdmin"
+        [(ngModel)]="activeScope"
+        (ngModelChange)="onScopeChange($event)"
+        nzButtonStyle="solid"
+      >
+        <label nz-radio-button nzValue="my">
+          Đề xuất của tôi
+        </label>
+        <label nz-radio-button nzValue="all">
+          Tất cả đề xuất
+        </label>
+      </nz-radio-group>
+
+      <button
+        nz-button
+        nzType="primary"
+        class="btn-icon-text"
+        *ngIf="!isAdmin"
+        (click)="formModal.openCreate()"
+      >
+        <span nz-icon nzType="plus"></span>
+        <span>Tạo đề xuất mới</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- FILTER BAR -->
+  <nz-card [nzBordered]="false" class="filter-card">
+    <div class="filter-bar">
+      <!-- Search Input -->
+      <nz-input-group [nzSuffix]="suffixIconSearch" class="search-input">
+        <input
+          type="text"
+          nz-input
+          placeholder="Tìm theo tiêu đề..."
+          [(ngModel)]="searchTerm"
+          (keyup.enter)="onSearch()"
+        />
+      </nz-input-group>
+      <ng-template #suffixIconSearch>
+        <span nz-icon nzType="search" (click)="onSearch()" style="cursor: pointer;"></span>
+      </ng-template>
+
+      <!-- Filter Status (Động theo shared config) -->
+      <nz-select
+        class="select-filter"
+        [(ngModel)]="selectedStatus"
+        nzPlaceHolder="Trạng thái"
+        nzAllowClear
+        (ngModelChange)="onFilterChange()"
+      >
+        <nz-option [nzValue]="null" nzLabel="Tất cả trạng thái"></nz-option>
+        <nz-option
+          *ngFor="let st of statusList"
+          [nzValue]="st.value"
+          [nzLabel]="st.label"
+        ></nz-option>
+      </nz-select>
+
+      <!-- Filter Type (Động theo shared config) -->
+      <nz-select
+        class="select-filter"
+        [(ngModel)]="selectedType"
+        nzPlaceHolder="Loại đề xuất"
+        nzAllowClear
+        (ngModelChange)="onFilterChange()"
+      >
+        <nz-option [nzValue]="null" nzLabel="Tất cả loại đề xuất"></nz-option>
+        <nz-option
+          *ngFor="let tp of typeList"
+          [nzValue]="tp.value"
+          [nzLabel]="tp.label"
+        ></nz-option>
+      </nz-select>
+
+      <button nz-button nzType="default" class="btn-icon-text" (click)="onSearch()">
+        <span nz-icon nzType="reload"></span>
+        <span>Làm mới</span>
+      </button>
+
+      <!-- Xuất báo cáo Excel -->
+      <button
+        nz-button
+        nzType="default"
+        class="btn-icon-text ms-auto"
+        [nzLoading]="isExporting"
+        (click)="exportExcel()"
+        nz-tooltip
+        nzTooltipTitle="Xuất danh sách theo bộ lọc ra file Excel (.xlsx)"
+      >
+        <span nz-icon nzType="file-excel" nzTheme="outline" style="color: #10b981; font-size: 15px;"></span>
+        <span>Xuất Excel</span>
+      </button>
+
+      <!-- Tùy chỉnh cột hiển thị -->
+      <button
+        nz-button
+        nzType="default"
+        class="btn-icon-text"
+        nz-popover
+        [nzPopoverTitle]="colSettingTitle"
+        [nzPopoverContent]="colSettingContent"
+        nzPopoverPlacement="bottomRight"
+        nzPopoverTrigger="click"
+      >
+        <span nz-icon nzType="setting" nzTheme="outline"></span>
+        <span>Tùy chỉnh cột</span>
+      </button>
+    </div>
+  </nz-card>
+
+  <!-- DATA TABLE -->
+  <nz-card [nzBordered]="false" class="table-card">
+    <nz-table
+      #basicTable
+      [nzData]="requests"
+      [nzFrontPagination]="false"
+      [nzLoading]="loading"
+      [nzTotal]="totalCount"
+      [nzPageIndex]="pageIndex"
+      [nzPageSize]="pageSize"
+      [nzShowSizeChanger]="true"
+      [nzPageSizeOptions]="[10, 20, 50]"
+      [nzScroll]="{ y: 'calc(100vh - 360px)', x: tableScrollX }"
+      (nzQueryParams)="onQueryParamsChange($event)"
+    >
+      <thead>
+        <tr>
+          <th *ngIf="isColumnVisible('code')" nzWidth="120px">Mã & Ngày tạo</th>
+          <th *ngIf="isColumnVisible('title')" nzWidth="280px">Tiêu đề & Loại</th>
+          <th *ngIf="isColumnVisible('amount')" nzWidth="150px">Số tiền</th>
+          <th *ngIf="isColumnVisible('creator')" nzWidth="160px">Người tạo</th>
+          <th *ngIf="isColumnVisible('status')" nzWidth="130px">Trạng thái</th>
+          <th *ngIf="isColumnVisible('action')" nzWidth="160px" nzAlign="center">Hành động</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let data of basicTable.data; trackBy: trackById">
+          <!-- Col 1: Mã & Ngày -->
+          <td *ngIf="isColumnVisible('code')">
+            <div style="font-weight: 500; font-size: 13px;">
+              #{{ data.id.substring(0, 8) }}
+            </div>
+            <div style="font-size: 11px; color: #6b7280;">
+              {{ data.creationTime | date: 'dd/MM/yyyy HH:mm' }}
+            </div>
+          </td>
+
+          <!-- Col 2: Tiêu đề & Loại -->
+          <td *ngIf="isColumnVisible('title')">
+            <div style="font-weight: 600; color: #111827; cursor: pointer;" (click)="detailDrawer.open(data)">
+              {{ data.title }}
+            </div>
+            <div style="margin-top: 4px;">
+              <nz-tag [nzColor]="getTypeTag(data.type).color">
+                {{ getTypeTag(data.type).label }}
+              </nz-tag>
+            </div>
+          </td>
+
+          <!-- Col 3: Số tiền -->
+          <td *ngIf="isColumnVisible('amount')">
+            <span *ngIf="data.type !== RequestType.Leave && data.amount" style="font-weight: 600; color: #059669;">
+              {{ data.amount | number: '1.0-0' }} VNĐ
+            </span>
+          </td>
+
+          <!-- Col 4: Người tạo -->
+          <td *ngIf="isColumnVisible('creator')">
+            <div style="font-weight: 500;">
+              <span
+                *ngIf="data.creatorId"
+                class="creator-clickable"
+                (click)="openEmployeeDrawer(data.creatorId)"
+                nz-tooltip="Nhấp để xem nhanh hồ sơ nhân viên"
+              >
+                {{ data.creatorName }}
+                <span nz-icon nzType="idcard" class="quick-view-icon"></span>
+              </span>
+              <span *ngIf="!data.creatorId">{{ data.creatorName || 'Hệ thống' }}</span>
+            </div>
+          </td>
+
+          <!-- Col 5: Trạng thái -->
+          <td *ngIf="isColumnVisible('status')">
+            <nz-badge
+              [nzStatus]="getStatusTag(data.status).badgeStatus"
+              [nzText]="getStatusTag(data.status).label"
+            ></nz-badge>
+          </td>
+
+          <!-- Col 6: Hành động -->
+          <td *ngIf="isColumnVisible('action')" nzAlign="center">
+            <div class="action-btn-group">
+              <!-- 1. Xem chi tiết & Lịch sử (Luôn hiển thị) -->
+              <button
+                nz-button
+                nzType="text"
+                nzShape="circle"
+                class="action-icon-btn view"
+                nz-tooltip
+                nzTooltipTitle="Xem chi tiết & Lịch sử"
+                (click)="detailDrawer.open(data)"
+              >
+                <span nz-icon nzType="eye"></span>
+              </button>
+
+              <!-- 2. Chỉnh sửa (Trạng thái Nháp & có quyền Edit) -->
+              <ng-container *abpPermission="'Requests.Edit'">
+                <button
+                  nz-button
+                  nzType="text"
+                  nzShape="circle"
+                  class="action-icon-btn edit"
+                  *ngIf="data.status === RequestStatus.Draft"
+                  nz-tooltip
+                  nzTooltipTitle="Chỉnh sửa đề xuất"
+                  (click)="formModal.openEdit(data)"
+                >
+                  <span nz-icon nzType="edit"></span>
+                </button>
+              </ng-container>
+
+              <!-- 3. Gửi phê duyệt (Trạng thái Nháp & là đơn của mình) -->
+              <button
+                nz-button
+                nzType="text"
+                nzShape="circle"
+                class="action-icon-btn submit"
+                *ngIf="data.status === RequestStatus.Draft && (!data.creatorId || data.creatorId === currentUserId)"
+                nz-tooltip
+                nzTooltipTitle="Gửi phê duyệt"
+                (click)="submit(data)"
+              >
+                <span nz-icon nzType="send"></span>
+              </button>
+
+              <!-- 4. Phê duyệt (Chờ duyệt & có quyền Approve & không phải tự duyệt đơn mình) -->
+              <ng-container *abpPermission="'Requests.Approve'">
+                <button
+                  nz-button
+                  nzType="text"
+                  nzShape="circle"
+                  class="action-icon-btn approve"
+                  *ngIf="data.status === RequestStatus.Submitted && (!currentUserId || data.creatorId !== currentUserId)"
+                  nz-tooltip
+                  nzTooltipTitle="Phê duyệt đề xuất"
+                  (click)="actionModal.openApprove(data)"
+                >
+                  <span nz-icon nzType="check"></span>
+                </button>
+              </ng-container>
+
+              <!-- 5. Từ chối (Chờ duyệt & có quyền Reject) -->
+              <ng-container *abpPermission="'Requests.Reject'">
+                <button
+                  nz-button
+                  nzType="text"
+                  nzShape="circle"
+                  class="action-icon-btn reject"
+                  *ngIf="data.status === RequestStatus.Submitted"
+                  nz-tooltip
+                  nzTooltipTitle="Từ chối đề xuất"
+                  (click)="actionModal.openReject(data)"
+                >
+                  <span nz-icon nzType="close"></span>
+                </button>
+              </ng-container>
+
+              <!-- 6. Xóa đề xuất (Trạng thái Nháp & có quyền Delete) -->
+              <ng-container *abpPermission="'Requests.Delete'">
+                <button
+                  nz-button
+                  nzType="text"
+                  nzShape="circle"
+                  class="action-icon-btn delete"
+                  *ngIf="data.status === RequestStatus.Draft"
+                  nz-tooltip
+                  nzTooltipTitle="Xóa đề xuất"
+                  nz-popconfirm
+                  nzPopconfirmTitle="Bạn có chắc chắn muốn xóa đề xuất này?"
+                  (nzOnConfirm)="delete(data)"
+                >
+                  <span nz-icon nzType="delete"></span>
+                </button>
+              </ng-container>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </nz-table>
+  </nz-card>
+
+  <!-- COMPONENT: TẠO / SỬA MODAL (MÀN HÌNH 2) -->
+  <app-request-form-modal #formModal (saveSuccess)="loadData()"></app-request-form-modal>
+
+  <!-- COMPONENT: PHÊ DUYỆT / TỪ CHỐI MODAL (MÀN HÌNH 3) -->
+  <app-request-action-modal #actionModal (actionSuccess)="loadData()"></app-request-action-modal>
+
+  <!-- COMPONENT: CHI TIẾT & TIMELINE DRAWER (MÀN HÌNH 4) -->
+  <app-request-detail-drawer
+    #detailDrawer
+    (openEmployeeProfile)="openEmployeeDrawer($event)"
+  ></app-request-detail-drawer>
+
+  <!-- COMPONENT: EMPLOYEE DETAIL DRAWER (QUICK-VIEW) -->
+  <app-employee-detail-drawer #employeeDrawer></app-employee-detail-drawer>
+
+  <!-- TEMPLATE: CÀI ĐẶT CỘT HIỂN THỊ (POPOVER) -->
+  <ng-template #colSettingTitle>
+    <div style="display: flex; justify-content: space-between; align-items: center; min-width: 200px;">
+      <span style="font-weight: 600; font-size: 13.5px;">Cột hiển thị</span>
+      <a (click)="resetColumns()" style="font-size: 12px; color: #1890ff; cursor: pointer; user-select: none;">
+        Đặt lại
+      </a>
+    </div>
+  </ng-template>
+
+  <ng-template #colSettingContent>
+    <div class="column-setting-list" style="display: flex; flex-direction: column; gap: 9px; min-width: 200px; padding: 4px 0;">
+      <div *ngFor="let col of columns" style="display: flex; align-items: center;">
+        <label
+          nz-checkbox
+          [(ngModel)]="col.visible"
+          [nzDisabled]="col.required"
+          (ngModelChange)="onColumnChange()"
+          style="width: 100%; font-size: 13px;"
+        >
+          <span>{{ col.label }}</span>
+          <span *ngIf="col.required" style="color: #9ca3af; font-size: 11px; margin-left: 4px;">(cố định)</span>
+        </label>
+      </div>
+    </div>
+  </ng-template>
+</div>

@@ -1,0 +1,243 @@
+/* ==========================================================================
+   GIAO DIỆN ĐĂNG NHẬP ĐƠN SẮC MÀU ĐEN (MONOCHROME BLACK ENTERPRISE)
+   - Tông màu: Đơn sắc đen tuyền (#000000 / #121212 / #18181b), tối giản, sang trọng.
+   - Loại bỏ các phần thừa của ABP: Tenant switch, Đăng ký mới, Quên mật khẩu, Ngôn ngữ.
+   - Kích thước card chuẩn (440px), căn giữa cân đối, chữ hiển thị tự nhiên.
+   ========================================================================== */
+
+/* 1. LOẠI BỎ TRIỆT ĐỂ CÁC THÀNH PHẦN THỪA CỦA ABP */
+#AbpTenantSwitchLink,
+.card:has(#AbpTenantSwitchLink),
+.card.mb-3:has(.text-uppercase),
+.card:has(#AbpTenantSwitchLink) + hr,
+.card.mb-3 + hr,
+a[href*="/Account/Register"],
+strong:has(a[href*="/Account/Register"]),
+span:has(a[href*="/Account/Register"]),
+a[href*="/Account/ForgotPassword"],
+.lpx-language-selection,
+#languageDropdown,
+.dropdown-menu[aria-labelledby="languageDropdown"],
+.action-group-menu,
+#mobile-user-menu-group,
+.lpx-topbar-container,
+.lpx-mobile-navbar-container,
+.lpx-breadcrumb-container {
+  display: none !important;
+}
+
+/* 2. MÀU NỀN ĐƠN SẮC ĐEN TUYỀN (PURE MONOCHROME BLACK) */
+html,
+body.abp-account-layout,
+body.abp-account-layout .lpx-scroll-container,
+body.abp-account-layout #lpx-wrapper,
+body.abp-account-layout .lpx-content-container,
+body.abp-account-layout .lpx-content,
+body.abp-account-layout .container {
+  background-color: #000000 !important; /* Đơn sắc đen tuyền */
+  background-image: none !important;
+  color: #f4f4f5 !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+body.abp-account-layout {
+  min-height: 100vh !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+body.abp-account-layout .lpx-scroll-container,
+body.abp-account-layout #lpx-wrapper {
+  width: 100% !important;
+  min-height: 100vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* 3. ĐỊNH HÌNH KHUNG CHỨA (ĐẢM BẢO CHUẨN 440PX, CĂN GIỮA MÀN HÌNH) */
+body.abp-account-layout .lpx-content-container {
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 30px 16px !important;
+  margin: 0 !important;
+}
+
+body.abp-account-layout .lpx-content {
+  width: 100% !important;
+  max-width: 440px !important;
+  margin: 0 auto !important;
+}
+
+body.abp-account-layout .container,
+body.abp-account-layout .row {
+  width: 100% !important;
+  max-width: 440px !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+}
+
+body.abp-account-layout [class*="col-"] {
+  width: 100% !important;
+  max-width: 440px !important;
+  flex: 0 0 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* 4. HỘP ĐĂNG NHẬP ĐƠN SẮC ĐEN (MONOCHROME BLACK CARD) */
+body.abp-account-layout .card {
+  width: 100% !important;
+  max-width: 440px !important;
+  background-color: #121212 !important; /* Đen sâu sang trọng */
+  border: 1px solid #27272a !important; /* Viền xám đen tinh tế */
+  border-radius: 14px !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+  overflow: hidden !important;
+  margin: 0 auto !important;
+}
+
+body.abp-account-layout .card-body {
+  padding: 38px 32px 34px !important;
+}
+
+/* 5. TIÊU ĐỀ GỌN GÀNG, KHÔNG BỊ NGẮT DÒNG */
+body.abp-account-layout .card-body h4 {
+  font-size: 0 !important;
+  text-align: center !important;
+  margin: 0 0 24px 0 !important;
+}
+
+body.abp-account-layout .card-body h4::before {
+  content: 'INTERNAL APPROVAL' !important;
+  display: block !important;
+  font-size: 19px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.8px !important;
+  color: #ffffff !important;
+  margin-bottom: 6px !important;
+}
+
+body.abp-account-layout .card-body h4::after {
+  content: 'Đăng nhập hệ thống phê duyệt nội bộ' !important;
+  display: block !important;
+  font-size: 13.5px !important;
+  font-weight: 400 !important;
+  color: #a1a1aa !important;
+}
+
+/* 6. Ô NHẬP LIỆU (INPUTS) & NHÃN (LABELS) ĐƠN SẮC */
+body.abp-account-layout .form-label {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #d4d4d8 !important;
+  margin-bottom: 6px !important;
+}
+
+body.abp-account-layout .form-control {
+  background-color: #09090b !important; /* Nền đen tương phản bên trong card */
+  border: 1px solid #27272a !important;
+  border-radius: 8px !important;
+  color: #ffffff !important;
+  font-size: 14px !important;
+  padding: 10px 14px !important;
+  height: 42px !important;
+  box-sizing: border-box !important;
+}
+
+body.abp-account-layout .form-control:focus {
+  background-color: #09090b !important;
+  border-color: #71717a !important;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+  outline: none !important;
+}
+
+/* Nút ẩn/hiện mật khẩu */
+body.abp-account-layout .input-group .form-control {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+body.abp-account-layout .input-group #PasswordVisibilityButton {
+  background-color: #09090b !important;
+  border: 1px solid #27272a !important;
+  border-left: none !important;
+  border-top-right-radius: 8px !important;
+  border-bottom-right-radius: 8px !important;
+  color: #a1a1aa !important;
+  padding: 0 14px !important;
+  height: 42px !important;
+}
+
+body.abp-account-layout .input-group #PasswordVisibilityButton:hover {
+  color: #ffffff !important;
+  background-color: #18181b !important;
+}
+
+/* Checkbox 'Ghi nhớ' */
+body.abp-account-layout .form-check {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin-top: 4px !important;
+  margin-bottom: 8px !important;
+}
+
+body.abp-account-layout .form-check-input {
+  background-color: #09090b !important;
+  border: 1px solid #3f3f46 !important;
+  border-radius: 4px !important;
+  width: 16px !important;
+  height: 16px !important;
+  margin: 0 !important;
+  cursor: pointer !important;
+}
+
+body.abp-account-layout .form-check-input:checked {
+  background-color: #ffffff !important;
+  border-color: #ffffff !important;
+}
+
+body.abp-account-layout .form-check-label {
+  font-size: 13.5px !important;
+  color: #a1a1aa !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  margin: 0 !important;
+}
+
+/* 7. NÚT ĐĂNG NHẬP ĐƠN SẮC TRẮNG - ĐEN TƯƠNG PHẢN CAO CẤP */
+body.abp-account-layout button[type="submit"][name="Action"] {
+  background-color: #ffffff !important;
+  border: 1px solid #ffffff !important;
+  border-radius: 8px !important;
+  color: #09090b !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  height: 44px !important;
+  line-height: 42px !important;
+  padding: 0 16px !important;
+  margin-top: 14px !important;
+  cursor: pointer !important;
+  width: 100% !important;
+  transition: all 0.15s ease !important;
+}
+
+body.abp-account-layout button[type="submit"][name="Action"]:hover {
+  background-color: #e4e4e7 !important;
+  border-color: #e4e4e7 !important;
+  color: #000000 !important;
+}
+
+body.abp-account-layout .text-danger {
+  color: #f87171 !important;
+  font-size: 12.5px !important;
+  margin-top: 4px !important;
+}

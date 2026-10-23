@@ -1,0 +1,559 @@
+<div class="dashboard-page-container">
+  <!-- TRƯỜNG HỢP 1: CHƯA ĐĂNG NHẬP -->
+  <div *ngIf="!hasLoggedIn" class="guest-welcome-container">
+    <nz-card [nzBordered]="false" class="guest-card">
+      <div class="guest-card-body">
+        <h2 class="guest-title">HỆ THỐNG PHÊ DUYỆT NỘI BỘ</h2>
+        <p class="guest-subtitle">
+          Quản lý, theo dõi và phê duyệt quy trình đề xuất nhanh chóng, minh bạch và an toàn.
+        </p>
+        <button nz-button nzType="primary" nzSize="large" (click)="login()" class="btn-guest-login">
+          Đăng nhập vào hệ thống
+        </button>
+      </div>
+    </nz-card>
+  </div>
+
+  <!-- TRƯỜNG HỢP 2: ĐÃ ĐĂNG NHẬP (DASHBOARD CHÍNH 1 TRANG KHÔNG CUỘN) -->
+  <div *ngIf="hasLoggedIn" class="dashboard-content">
+
+    <!-- THANH ĐIỀU HƯỚNG TỔNG HỢP TINH GỌN (UNIFIED TOPBAR) -->
+    <div class="dashboard-topbar">
+      <!-- Cụm trái: Thông tin người dùng & vai trò -->
+      <div class="topbar-user">
+        <div class="user-meta">
+          <span class="user-name">Xin chào, {{ currentUserFullName }}!</span>
+          <div class="role-tags-inline">
+            <nz-tag *ngIf="isAdmin" nzColor="black" class="role-badge-mini">Quản trị viên</nz-tag>
+            <nz-tag *ngIf="isApprover && !isAdmin" nzColor="geekblue" class="role-badge-mini">Quản lý duyệt</nz-tag>
+            <nz-tag *ngIf="!isAdmin && !isApprover" nzColor="default" class="role-badge-mini">Nhân viên</nz-tag>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cụm giữa: Chuyển đổi góc nhìn vai trò -->
+      <div class="topbar-role-switcher" *ngIf="isAdmin || isApprover">
+        <nz-radio-group [(ngModel)]="activeRoleView" nzButtonStyle="solid" nzSize="small" class="role-radio-compact">
+          <label nz-radio-button nzValue="admin" *ngIf="isAdmin">
+            <span>Quản trị hệ thống</span>
+          </label>
+          <label nz-radio-button nzValue="approver" *ngIf="isApprover">
+            <span>Người phê duyệt</span>
+            <span *ngIf="approverPendingCount > 0" class="role-badge-count">{{ approverPendingCount }}</span>
+          </label>
+          <label nz-radio-button nzValue="employee" *ngIf="!isAdmin">
+            <span>Đề xuất của tôi</span>
+          </label>
+        </nz-radio-group>
+      </div>
+
+      <!-- Cụm phải: Thao tác nhanh -->
+      <div class="topbar-actions">
+        <button *ngIf="!isAdmin" nz-button nzType="primary" nzSize="small" (click)="navigateToCreate()" class="action-btn btn-primary-black">
+          <span>+ Tạo đề xuất</span>
+        </button>
+        <button nz-button nzSize="small" (click)="navigateToRequests(undefined, activeRoleView === 'admin' ? 'all' : 'my')" class="action-btn btn-outline">
+          <span>Quản lý</span>
+        </button>
+        <button nz-button nzSize="small" (click)="exportDashboardReport()" [nzLoading]="isExporting" class="action-btn btn-outline" nz-tooltip nzTooltipTitle="Xuất báo cáo Excel">
+          <span>Xuất Excel</span>
+        </button>
+        <button nz-button nzSize="small" (click)="loadDashboardData()" [nzLoading]="loading" class="action-btn btn-reload" nz-tooltip nzTooltipTitle="Làm mới số liệu">
+          <span>Làm mới</span>
+        </button>
+      </div>
+    </div>
+
+    <nz-spin [nzSpinning]="loading" class="dashboard-spin-wrapper">
+      <!-- ============================================================== -->
+      <!-- VIEW 1: GÓC NHÌN QUẢN TRỊ VIÊN (ADMIN DASHBOARD)               -->
+      <!-- ============================================================== -->
+      <div *ngIf="activeRoleView === 'admin'" class="role-dashboard-view">
+        
+        <!-- HÀNG 1: 6 THẺ KPI ĐỒNG BỘ 1 DÒNG DUY NHẤT -->
+        <div class="stats-grid-6col">
+          <!-- Card 1: Tổng đề xuất -->
+          <div class="stat-card" (click)="navigateToRequests(undefined, 'all')">
+            <div class="stat-content">
+              <div class="stat-label">Tổng đề xuất</div>
+              <div class="stat-value">{{ adminTotalCount }}</div>
+              <div class="stat-hint">Toàn hệ thống</div>
+            </div>
+          </div>
+
+          <!-- Card 2: Bản nháp -->
+          <div class="stat-card" (click)="navigateToRequests(RequestStatus.Draft, 'all')">
+            <div class="stat-content">
+              <div class="stat-label">Lưu nháp</div>
+              <div class="stat-value text-muted">{{ getStatusCount(allRequests, RequestStatus.Draft) }}</div>
+              <div class="stat-hint">Chưa gửi duyệt</div>
+            </div>
+          </div>
+
+          <!-- Card 3: Chờ duyệt -->
+          <div class="stat-card stat-card-warning" (click)="navigateToRequests(RequestStatus.Submitted, 'all')">
+            <div class="stat-content">
+              <div class="stat-label">Chờ phê duyệt</div>
+              <div class="stat-value text-warning">{{ getStatusCount(allRequests, RequestStatus.Submitted) }}</div>
+              <div class="stat-hint">Cần xử lý ngay</div>
+            </div>
+          </div>
+
+          <!-- Card 4: Đã duyệt -->
+          <div class="stat-card stat-card-success" (click)="navigateToRequests(RequestStatus.Approved, 'all')">
+            <div class="stat-content">
+              <div class="stat-label">Đã phê duyệt</div>
+              <div class="stat-value text-success">{{ getStatusCount(allRequests, RequestStatus.Approved) }}</div>
+              <div class="stat-hint">Tỷ lệ: {{ adminApprovalRate }}%</div>
+            </div>
+          </div>
+
+          <!-- Card 5: Bị từ chối -->
+          <div class="stat-card" (click)="navigateToRequests(RequestStatus.Rejected, 'all')">
+            <div class="stat-content">
+              <div class="stat-label">Đã từ chối</div>
+              <div class="stat-value text-danger">{{ getStatusCount(allRequests, RequestStatus.Rejected) }}</div>
+              <div class="stat-hint">Hồ sơ không duyệt</div>
+            </div>
+          </div>
+
+          <!-- Card 6: Tổng giá trị tài chính -->
+          <div class="stat-card">
+            <div class="stat-content">
+              <div class="stat-label">Tổng kinh phí</div>
+              <div class="stat-value stat-money">{{ formatMoney(adminTotalAmount) }}</div>
+              <div class="stat-hint">Đã duyệt: {{ formatMoney(adminApprovedAmount) }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- HÀNG 2: 2 BẢNG THỐNG KÊ (LOẠI HÌNH & PHÒNG BAN) -->
+        <div class="middle-grid-2col">
+          <!-- Cột Trái: Phân bổ theo loại hình -->
+          <nz-card [nzBordered]="false" class="dashboard-panel" nzTitle="Phân bổ theo loại đề xuất" [nzExtra]="typeLegendExtra">
+            <ng-template #typeLegendExtra>
+              <span class="panel-extra-text">{{ adminTypeStats.length }} danh mục</span>
+            </ng-template>
+            <div class="compact-type-list">
+              <div *ngFor="let item of adminTypeStats" class="compact-type-item">
+                <div class="type-item-header">
+                  <div class="type-title">
+                    <span class="type-dot" [style.backgroundColor]="item.color"></span>
+                    <span class="type-name">{{ item.label }}</span>
+                  </div>
+                  <div class="type-stats">
+                    <span class="type-count"><strong>{{ item.count }}</strong> phiếu</span>
+                    <span class="type-percent">({{ item.percent }}%)</span>
+                    <span class="type-sum" *ngIf="item.amount > 0"> · {{ formatMoney(item.amount) }}</span>
+                  </div>
+                </div>
+                <nz-progress [nzPercent]="item.percent" [nzStrokeColor]="item.color" [nzShowInfo]="false" [nzStrokeWidth]="4"></nz-progress>
+              </div>
+            </div>
+          </nz-card>
+
+          <!-- Cột Phải: Phân bổ theo phòng ban (TƯƠNG TÁC LỌC DỮ LIỆU) -->
+          <nz-card [nzBordered]="false" class="dashboard-panel" nzTitle="Phân bổ dữ liệu theo phòng ban" [nzExtra]="deptFilterExtra">
+            <ng-template #deptFilterExtra>
+              <div class="dept-quick-actions">
+                <button
+                  nz-button
+                  nzType="text"
+                  nzSize="small"
+                  class="btn-filter-tag"
+                  [class.active]="selectedDepartmentFilter === 'all'"
+                  (click)="onDepartmentFilterChange('all')"
+                >
+                  Tất cả ({{ adminTotalCount }})
+                </button>
+              </div>
+            </ng-template>
+
+            <div class="dept-cards-grid">
+              <div
+                *ngFor="let dept of adminDepartmentStats"
+                class="dept-stat-box"
+                [class.selected]="selectedDepartmentFilter === dept.code"
+                (click)="onDepartmentFilterChange(dept.code)"
+                nz-tooltip
+                [nzTooltipTitle]="'Bấm để lọc danh sách đề xuất của ' + dept.name"
+              >
+                <div class="dept-box-top">
+                  <nz-tag [nzColor]="dept.color" class="dept-badge">{{ dept.code }}</nz-tag>
+                  <span class="dept-count-badge">{{ dept.count }} phiếu</span>
+                </div>
+                <div class="dept-name-text">{{ dept.name }}</div>
+                <div class="dept-amount-text">{{ formatMoney(dept.totalAmount) }}</div>
+                <nz-progress [nzPercent]="dept.percent" [nzStrokeColor]="dept.color" [nzShowInfo]="false" [nzStrokeWidth]="3"></nz-progress>
+              </div>
+            </div>
+          </nz-card>
+        </div>
+
+        <!-- HÀNG 3: BẢNG ĐỀ XUẤT MỚI NHẤT TOÀN HỆ THỐNG CĂN ĐỀU, TRANG NHÃ -->
+        <nz-card [nzBordered]="false" class="dashboard-panel recent-table-panel" [nzTitle]="adminTableTitle" [nzExtra]="viewAllLink">
+          <ng-template #adminTableTitle>
+            <div class="panel-header-title">
+              <span>Đề xuất gần đây</span>
+              <nz-tag *ngIf="selectedDepartmentFilter !== 'all'" nzColor="default" class="filter-indicator-tag">
+                Đang lọc: <strong>{{ selectedDepartmentFilter }}</strong>
+                <span (click)="onDepartmentFilterChange('all')" style="cursor: pointer; margin-left: 6px; font-weight: bold;">✕</span>
+              </nz-tag>
+              <span class="text-muted" style="font-size: 11.5px; font-weight: normal; margin-left: 4px;">(Hiển thị 5 hồ sơ mới nhất)</span>
+            </div>
+          </ng-template>
+          <ng-template #viewAllLink>
+            <a (click)="navigateToRequests(undefined, 'all')" class="view-all-link">
+              Xem tất cả trên trang Quản lý
+            </a>
+          </ng-template>
+
+          <nz-table
+            #adminTable
+            [nzData]="adminRecentRequests"
+            [nzFrontPagination]="false"
+            [nzShowPagination]="false"
+            nzSize="small"
+            class="compact-dashboard-table"
+          >
+            <thead>
+              <tr>
+                <th nzWidth="95px">Mã phiếu</th>
+                <th>Tiêu đề & Loại đề xuất</th>
+                <th nzWidth="175px">Phòng ban</th>
+                <th nzWidth="165px">Người đề xuất</th>
+                <th nzWidth="130px" nzAlign="right">Số tiền</th>
+                <th nzWidth="125px">Trạng thái</th>
+                <th nzWidth="130px">Thời gian tạo</th>
+                <th nzWidth="80px" nzAlign="center">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let req of adminTable.data">
+                <td>
+                  <span class="code-badge">#{{ req.id.substring(0, 8) }}</span>
+                </td>
+                <td>
+                  <div class="table-req-title" (click)="viewRequest(req.id)">{{ req.title }}</div>
+                  <span class="subtle-type-tag">{{ getTypeTag(req.type).label }}</span>
+                </td>
+                <td>
+                  <span class="dept-name-cell" nz-tooltip [nzTooltipTitle]="req.departmentName">
+                    {{ req.departmentName || 'Chưa gán' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="creator-name-cell">{{ req.creatorName || 'N/A' }}</span>
+                </td>
+                <td nzAlign="right">
+                  <span class="amount-text" *ngIf="req.amount && req.amount > 0">
+                    {{ formatMoney(req.amount) }}
+                  </span>
+                  <span class="text-muted" *ngIf="!req.amount || req.amount === 0">-</span>
+                </td>
+                <td>
+                  <nz-badge [nzStatus]="getStatusTag(req.status).badgeStatus" [nzText]="getStatusTag(req.status).label"></nz-badge>
+                </td>
+                <td>
+                  <span class="text-muted">{{ req.creationTime | date: 'dd/MM/yyyy HH:mm' }}</span>
+                </td>
+                <td nzAlign="center">
+                  <button
+                    nz-button
+                    nzType="text"
+                    nzSize="small"
+                    (click)="viewRequest(req.id)"
+                    class="action-icon-btn"
+                    nz-tooltip
+                    nzTooltipTitle="Xem chi tiết"
+                  >
+                    <span nz-icon nzType="eye" nzTheme="outline"></span>
+                  </button>
+                </td>
+              </tr>
+              <tr *ngIf="adminRecentRequests.length === 0">
+                <td colspan="8">
+                  <nz-empty nzNotFoundImage="simple" nzNotFoundContent="Không có đề xuất nào phù hợp với bộ lọc"></nz-empty>
+                </td>
+              </tr>
+            </tbody>
+          </nz-table>
+        </nz-card>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- VIEW 2: GÓC NHÌN NGƯỜI DUYỆT (APPROVER / MANAGER DASHBOARD)    -->
+      <!-- ============================================================== -->
+      <div *ngIf="activeRoleView === 'approver'" class="role-dashboard-view">
+        <div class="stats-grid-4col">
+          <!-- Cần tôi duyệt ngay -->
+          <div class="stat-card stat-card-warning" (click)="navigateToRequests(RequestStatus.Submitted, 'all')">
+            <div class="stat-content">
+              <div class="stat-label">Cần xử lý phê duyệt</div>
+              <div class="stat-value text-warning">{{ approverPendingCount }}</div>
+              <div class="stat-hint">Hồ sơ chờ bạn duyệt</div>
+            </div>
+          </div>
+
+          <!-- Đã duyệt -->
+          <div class="stat-card stat-card-success" (click)="navigateToRequests(RequestStatus.Approved, 'all')">
+            <div class="stat-content">
+              <div class="stat-label">Đã phê duyệt</div>
+              <div class="stat-value text-success">{{ approverApprovedCount }}</div>
+              <div class="stat-hint">Phê duyệt thành công</div>
+            </div>
+          </div>
+
+          <!-- Bị từ chối -->
+          <div class="stat-card" (click)="navigateToRequests(RequestStatus.Rejected, 'all')">
+            <div class="stat-content">
+              <div class="stat-label">Đã từ chối</div>
+              <div class="stat-value text-danger">{{ approverRejectedCount }}</div>
+              <div class="stat-hint">Hồ sơ không duyệt</div>
+            </div>
+          </div>
+
+          <!-- Tổng tiền đã duyệt -->
+          <div class="stat-card">
+            <div class="stat-content">
+              <div class="stat-label">Ngân sách đã thông qua</div>
+              <div class="stat-value stat-money">{{ formatMoney(approverTotalApprovedAmount) }}</div>
+              <div class="stat-hint">Tổng kinh phí đã duyệt</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bảng danh sách phiếu cần xử lý ngay -->
+        <nz-card [nzBordered]="false" class="dashboard-panel recent-table-panel" [nzTitle]="approverTableTitle" [nzExtra]="approverExtra">
+          <ng-template #approverTableTitle>
+            <div class="panel-header-title">
+              <span>Danh sách hồ sơ đang chờ bạn xem xét & phê duyệt</span>
+              <nz-tag *ngIf="approverPendingCount > 0" nzColor="default" style="margin-left: 8px;">
+                {{ approverPendingCount }} phiếu cần xử lý
+              </nz-tag>
+            </div>
+          </ng-template>
+          <ng-template #approverExtra>
+            <button nz-button nzType="primary" nzSize="small" (click)="navigateToRequests(RequestStatus.Submitted, 'all')" class="btn-primary-black">
+              Mở trang phê duyệt
+            </button>
+          </ng-template>
+
+          <nz-table
+            #approverTable
+            [nzData]="approverActionableRequests"
+            [nzFrontPagination]="false"
+            [nzShowPagination]="false"
+            nzSize="small"
+            class="compact-dashboard-table"
+          >
+            <thead>
+              <tr>
+                <th nzWidth="95px">Mã phiếu</th>
+                <th>Tiêu đề đề xuất</th>
+                <th nzWidth="175px">Phòng ban</th>
+                <th nzWidth="130px">Loại hình</th>
+                <th nzWidth="165px">Người gửi</th>
+                <th nzWidth="130px" nzAlign="right">Số tiền</th>
+                <th nzWidth="130px">Thời gian gửi</th>
+                <th nzWidth="100px" nzAlign="center">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let req of approverTable.data">
+                <td>
+                  <span class="code-badge">#{{ req.id.substring(0, 8) }}</span>
+                </td>
+                <td>
+                  <div class="table-req-title" (click)="viewRequest(req.id)">{{ req.title }}</div>
+                </td>
+                <td>
+                  <span class="dept-name-cell" nz-tooltip [nzTooltipTitle]="req.departmentName">
+                    {{ req.departmentName || 'Chưa gán' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="subtle-type-tag">{{ getTypeTag(req.type).label }}</span>
+                </td>
+                <td>
+                  <span class="creator-name-cell">{{ req.creatorName || 'N/A' }}</span>
+                </td>
+                <td nzAlign="right">
+                  <span class="amount-text" *ngIf="req.amount && req.amount > 0">
+                    {{ formatMoney(req.amount) }}
+                  </span>
+                  <span class="text-muted" *ngIf="!req.amount || req.amount === 0">-</span>
+                </td>
+                <td>
+                  <span class="text-muted">{{ req.creationTime | date: 'dd/MM/yyyy HH:mm' }}</span>
+                </td>
+                <td nzAlign="center">
+                  <button
+                    nz-button
+                    nzType="text"
+                    nzSize="small"
+                    class="action-icon-btn"
+                    (click)="viewRequest(req.id)"
+                    nz-tooltip
+                    nzTooltipTitle="Xem chi tiết & Phê duyệt"
+                  >
+                    <span nz-icon nzType="eye" nzTheme="outline"></span>
+                  </button>
+                </td>
+              </tr>
+              <tr *ngIf="approverActionableRequests.length === 0">
+                <td colspan="8">
+                  <div class="empty-state-box">
+                    <h4>Hiện không có hồ sơ nào đang chờ duyệt.</h4>
+                    <p class="text-muted">Tất cả đề xuất đã được xử lý xong.</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </nz-table>
+        </nz-card>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- VIEW 3: GÓC NHÌN NHÂN VIÊN / CÁ NHÂN (MY REQUESTS DASHBOARD)   -->
+      <!-- ============================================================== -->
+      <div *ngIf="activeRoleView === 'employee'" class="role-dashboard-view">
+        <!-- Hàng thẻ thống kê cá nhân -->
+        <div class="stats-grid-5col">
+          <!-- Card 1: Tổng đề xuất -->
+          <div class="stat-card" (click)="navigateToRequests(undefined, 'my')">
+            <div class="stat-content">
+              <div class="stat-label">Tổng đề xuất</div>
+              <div class="stat-value">{{ employeeTotalCount }}</div>
+              <div class="stat-hint">Hồ sơ của bạn</div>
+            </div>
+          </div>
+
+          <!-- Card 2: Lưu nháp -->
+          <div class="stat-card" (click)="navigateToRequests(RequestStatus.Draft, 'my')">
+            <div class="stat-content">
+              <div class="stat-label">Bản nháp</div>
+              <div class="stat-value text-muted">{{ employeeDraftCount }}</div>
+              <div class="stat-hint">Đang lưu tạm</div>
+            </div>
+          </div>
+
+          <!-- Card 3: Chờ phê duyệt -->
+          <div class="stat-card stat-card-warning" (click)="navigateToRequests(RequestStatus.Submitted, 'my')">
+            <div class="stat-content">
+              <div class="stat-label">Chờ phê duyệt</div>
+              <div class="stat-value text-warning">{{ getStatusCount(allRequests, RequestStatus.Submitted) }}</div>
+              <div class="stat-hint">Đang được xem xét</div>
+            </div>
+          </div>
+
+          <!-- Card 4: Đã phê duyệt -->
+          <div class="stat-card stat-card-success" (click)="navigateToRequests(RequestStatus.Approved, 'my')">
+            <div class="stat-content">
+              <div class="stat-label">Đã phê duyệt</div>
+              <div class="stat-value text-success">{{ getStatusCount(allRequests, RequestStatus.Approved) }}</div>
+              <div class="stat-hint">Đã thông qua</div>
+            </div>
+          </div>
+
+          <!-- Card 5: Tổng kinh phí đã đề xuất -->
+          <div class="stat-card">
+            <div class="stat-content">
+              <div class="stat-label">Kinh phí đề xuất</div>
+              <div class="stat-value stat-money">{{ formatMoney(employeeTotalAmount) }}</div>
+              <div class="stat-hint">Tổng ngân sách yêu cầu</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bảng danh sách đề xuất gần đây của cá nhân -->
+        <nz-card [nzBordered]="false" class="dashboard-panel recent-table-panel" [nzTitle]="employeeTableTitle">
+          <ng-template #employeeTableTitle>
+            <div class="panel-header-title">
+              <span>Đề xuất gần đây của bạn</span>
+              <span class="text-muted" style="font-size: 11.5px; font-weight: normal; margin-left: 6px;">(5 hồ sơ mới nhất)</span>
+            </div>
+          </ng-template>
+
+          <nz-table
+            #employeeTable
+            [nzData]="employeeRecentRequests"
+            [nzFrontPagination]="false"
+            [nzShowPagination]="false"
+            nzSize="small"
+            class="compact-dashboard-table"
+          >
+            <thead>
+              <tr>
+                <th nzWidth="95px">Mã phiếu</th>
+                <th>Tiêu đề & Loại</th>
+                <th nzWidth="175px">Phòng ban</th>
+                <th nzWidth="130px" nzAlign="right">Số tiền</th>
+                <th nzWidth="125px">Trạng thái</th>
+                <th nzWidth="165px">Người duyệt</th>
+                <th nzWidth="130px">Ngày gửi</th>
+                <th nzWidth="80px" nzAlign="center">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let req of employeeTable.data">
+                <td>
+                  <span class="code-badge">#{{ req.id.substring(0, 8) }}</span>
+                </td>
+                <td>
+                  <div class="table-req-title" (click)="viewRequest(req.id)">{{ req.title }}</div>
+                  <span class="subtle-type-tag">{{ getTypeTag(req.type).label }}</span>
+                </td>
+                <td>
+                  <span class="dept-name-cell" nz-tooltip [nzTooltipTitle]="req.departmentName">
+                    {{ req.departmentName || 'Chưa gán' }}
+                  </span>
+                </td>
+                <td nzAlign="right">
+                  <span class="amount-text" *ngIf="req.amount && req.amount > 0">
+                    {{ formatMoney(req.amount) }}
+                  </span>
+                  <span class="text-muted" *ngIf="!req.amount || req.amount === 0">-</span>
+                </td>
+                <td>
+                  <nz-badge [nzStatus]="getStatusTag(req.status).badgeStatus" [nzText]="getStatusTag(req.status).label"></nz-badge>
+                </td>
+                <td>
+                  <span class="creator-name-cell" *ngIf="req.approverName">{{ req.approverName }}</span>
+                  <span class="text-muted" *ngIf="!req.approverName">Đang phân công</span>
+                </td>
+                <td>
+                  <span class="text-muted">{{ req.creationTime | date: 'dd/MM/yyyy HH:mm' }}</span>
+                </td>
+                <td nzAlign="center">
+                  <button
+                    nz-button
+                    nzType="text"
+                    nzSize="small"
+                    (click)="viewRequest(req.id)"
+                    class="action-icon-btn"
+                    nz-tooltip
+                    nzTooltipTitle="Xem chi tiết"
+                  >
+                    <span nz-icon nzType="eye" nzTheme="outline"></span>
+                  </button>
+                </td>
+              </tr>
+              <tr *ngIf="employeeRecentRequests.length === 0">
+                <td colspan="8">
+                  <div class="empty-state-box">
+                    <h4>Bạn chưa tạo đề xuất nào.</h4>
+                    <p class="text-muted">Bắt đầu tạo hồ sơ xin nghỉ phép, tạm ứng hoặc mua sắm thiết bị ngay hôm nay.</p>
+                    <button *ngIf="!isAdmin" nz-button nzType="primary" nzSize="small" (click)="navigateToCreate()" class="btn-primary-black" style="margin-top: 8px;">
+                      + Tạo đề xuất đầu tiên
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </nz-table>
+        </nz-card>
+      </div>
+    </nz-spin>
+  </div>
+</div>

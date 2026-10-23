@@ -1,0 +1,158 @@
+{
+  "departments": [
+    {
+      "id": "11111111-1111-1111-1111-111111111111",
+      "code": "IT",
+      "name": "Phòng Công nghệ Thông tin"
+    },
+    {
+      "id": "22222222-2222-2222-2222-222222222222",
+      "code": "HR",
+      "name": "Phòng Nhân sự"
+    },
+    {
+      "id": "33333333-3333-3333-3333-333333333333",
+      "code": "FIN",
+      "name": "Phòng Kế toán & Tài chính"
+    }
+  ],
+  "employees": [
+    {
+      "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "userId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "userName": "tuan.le",
+      "fullName": "Lê Minh Tuấn",
+      "email": "tuan.le@company.com",
+      "phoneNumber": "0901234567",
+      "departmentId": "11111111-1111-1111-1111-111111111111",
+      "departmentCode": "IT",
+      "departmentName": "Phòng Công nghệ Thông tin",
+      "position": "Kỹ Sư Phần Mềm Cao Cấp",
+      "isManager": false,
+      "joinDate": "2024-05-15T00:00:00Z",
+      "creationTime": "2024-05-10T08:00:00Z"
+    },
+    {
+      "id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      "userId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      "userName": "hoa.nguyen",
+      "fullName": "Nguyễn Thị Hoa",
+      "email": "hoa.nguyen@company.com",
+      "phoneNumber": "0912345678",
+      "departmentId": "22222222-2222-2222-2222-222222222222",
+      "departmentCode": "HR",
+      "departmentName": "Phòng Nhân sự",
+      "position": "Chuyên Viên Tuyển Dụng",
+      "isManager": false,
+      "joinDate": "2026-02-15T00:00:00Z",
+      "creationTime": "2026-02-10T09:30:00Z"
+    },
+    {
+      "id": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+      "userId": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+      "userName": "nam.tran",
+      "fullName": "Trần Hải Nam",
+      "email": "nam.tran@company.com",
+      "phoneNumber": "0988776655",
+      "departmentId": "11111111-1111-1111-1111-111111111111",
+      "departmentCode": "IT",
+      "departmentName": "Phòng Công nghệ Thông tin",
+      "position": "Trưởng Phòng CNTT",
+      "isManager": true,
+      "joinDate": "2023-10-22T00:00:00Z",
+      "creationTime": "2023-10-01T07:00:00Z"
+    },
+    {
+      "id": "dddddddd-dddd-dddd-dddd-dddddddddddd",
+      "userId": "dddddddd-dddd-dddd-dddd-dddddddddddd",
+      "userName": "anh.do",
+      "fullName": "Đỗ Quỳnh Anh",
+      "email": "anh.do@company.com",
+      "phoneNumber": "0933445566",
+      "departmentId": "33333333-3333-3333-3333-333333333333",
+      "departmentCode": "FIN",
+      "departmentName": "Phòng Kế toán & Tài chính",
+      "position": "Kế Toán Viên",
+      "isManager": false,
+      "joinDate": null,
+      "creationTime": "2026-10-05T10:00:00Z"
+    }
+  ],
+  "requests": [
+    {
+      "id": "req-0001",
+      "creatorId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "creatorName": "Lê Minh Tuấn",
+      "departmentId": "11111111-1111-1111-1111-111111111111",
+      "title": "Nghỉ phép năm 2 ngày giải quyết việc gia đình",
+      "description": "Tôi xin phép nghỉ 2 ngày từ 25/10 đến 26/10, công việc đã bàn giao cho đồng nghiệp.",
+      "type": 1,
+      "status": 2,
+      "amount": null,
+      "approverId": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+      "approverName": "Trần Hải Nam",
+      "approvalTime": "2026-10-21T09:00:00Z",
+      "creationTime": "2026-10-20T08:30:00Z"
+    },
+    {
+      "id": "req-0002",
+      "creatorId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "creatorName": "Lê Minh Tuấn",
+      "departmentId": "11111111-1111-1111-1111-111111111111",
+      "title": "Mua màn hình phụ lập trình Dell UltraSharp",
+      "description": "Mua màn hình 27 inch 4K hỗ trợ công việc lập trình.",
+      "type": 2,
+      "status": 2,
+      "amount": 9500000,
+      "approverId": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+      "approverName": "Trần Hải Nam",
+      "approvalTime": "2026-06-15T10:00:00Z",
+      "creationTime": "2026-06-10T14:00:00Z"
+    },
+    {
+      "id": "req-0003",
+      "creatorId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "creatorName": "Lê Minh Tuấn",
+      "departmentId": "11111111-1111-1111-1111-111111111111",
+      "title": "Tạm ứng chi phí tham dự hội thảo công nghệ TechExpo",
+      "description": "Chi phí vé máy bay và khách sạn 3 ngày tại TP.HCM",
+      "type": 3,
+      "status": 1,
+      "amount": 5000000,
+      "approverId": null,
+      "approvalTime": null,
+      "creationTime": "2026-10-18T11:00:00Z"
+    },
+    {
+      "id": "req-0004",
+      "creatorId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      "creatorName": "Nguyễn Thị Hoa",
+      "departmentId": "22222222-2222-2222-2222-222222222222",
+      "title": "Xin nghỉ 1 ngày khám sức khỏe định kỳ",
+      "description": "Xin nghỉ phép 1 ngày vào ngày 15/09",
+      "type": 1,
+      "status": 2,
+      "amount": null,
+      "approverId": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+      "approverName": "Trần Hải Nam",
+      "approvalTime": "2026-09-14T16:00:00Z",
+      "creationTime": "2026-09-12T09:00:00Z"
+    },
+    {
+      "id": "req-0005",
+      "creatorId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      "creatorName": "Nguyễn Thị Hoa",
+      "departmentId": "22222222-2222-2222-2222-222222222222",
+      "title": "Mua thiết bị máy in thẻ nhân viên",
+      "description": "Mua máy in thẻ nhựa phục vụ onboard nhân sự mới",
+      "type": 2,
+      "status": 3,
+      "amount": 15000000,
+      "approverId": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+      "approverName": "Trần Hải Nam",
+      "approvalTime": "2026-08-01T15:00:00Z",
+      "rejectionReason": "Ngân sách quý 3 chưa được phê duyệt hạng mục này",
+      "creationTime": "2026-07-28T10:00:00Z"
+    }
+  ]
+}

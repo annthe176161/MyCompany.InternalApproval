@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50" width="50" height="50">
+  <defs>
+    <linearGradient id="thumbLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#27272a" />
+      <stop offset="100%" stop-color="#09090b" />
+    </linearGradient>
+    <filter id="thumbShadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.6" />
+    </filter>
+  </defs>
+
+  <!-- Logo Icon Badge Monochromatic -->
+  <g transform="translate(5, 5)" filter="url(#thumbShadow)">
+    <rect width="40" height="40" rx="10" fill="url(#thumbLogoGrad)" />
+    <!-- Subtle Inner Border -->
+    <rect x="0.5" y="0.5" width="39" height="39" rx="9.5" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1" />
+    <!-- Approval Shield & Checkmark -->
+    <path d="M20 9L11 13V19.5C11 25.5 14.8 30.5 20 32C25.2 30.5 29 25.5 29 19.5V13L20 9Z" 
+          fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+    <!-- Bold Checkmark in Center -->
+    <path d="M15.5 20.5L18.5 23.5L24.5 17.5" 
+          fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+</svg>

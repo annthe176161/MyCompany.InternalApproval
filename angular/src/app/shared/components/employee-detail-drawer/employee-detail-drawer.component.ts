@@ -1,0 +1,312 @@
+import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { ConfigStateService, PermissionService } from '@abp/ng.core';
+import { NzMessageService } from 'ng-zorro-antd/message';
+import { EmployeeService } from '../../../proxy/employees/employee.service';
+import type {
+  EmployeeProfileDto,
+  EmployeeYearlyStatsDto,
+  LeaveTimelineItemDto,
+  UpdateEmployeeJoinDateDto,
+} from '../../../proxy/employees/models';
+import {
+  RequestDto,
+  RequestStatus,
+  RequestType,
+} from '../../../proxy/requests';
+import {
+  REQUEST_STATUS_LIST,
+  getRequestStatusMeta,
+  RequestStatusMeta,
+} from '../../constants/request-status.constant';
+import {
+  REQUEST_TYPE_LIST,
+  getRequestTypeMeta,
+  RequestTypeMeta,
+} from '../../constants/request-type.constant';
+
+@Component({
+  selector: 'app-employee-detail-drawer',
+  templateUrl: './employee-detail-drawer.component.html',
+  styleUrls: ['./employee-detail-drawer.component.scss'],
+})
+export class EmployeeDetailDrawerComponent implements OnInit {
+  @Output() joinDateUpdated = new EventEmitter<EmployeeProfileDto>();
+
+  isVisible = false;
+  userId: string | null = null;
+  loadingProfile = false;
+  profile: EmployeeProfileDto | null = null;
+
+  // Tab navigation
+  selectedTabIndex = 0;
+
+  // Quyền cập nhật JoinDate
+  canEditJoinDate = false;
+  isEditingJoinDate = false;
+  editJoinDate: Date | null = null;
+  isSavingJoinDate = false;
+
+  // Tab 2: Leave Timeline
+  loadingTimeline = false;
+  leaveTimeline: LeaveTimelineItemDto[] = [];
+  leaveStats = {
+    totalApprovedDays: 0,
+    totalLeaves: 0,
+    approvedCount: 0,
+    pendingCount: 0,
+    rejectedCount: 0,
+  };
+
+  // Tab 3: Request History
+  loadingRequests = false;
+  requests: RequestDto[] = [];
+  totalRequests = 0;
+  requestPageIndex = 1;
+  requestPageSize = 5;
+  selectedStatus: RequestStatus | null = null;
+  selectedType: RequestType | null = null;
+
+  // Tab 4: Yearly Stats
+  loadingStats = false;
+  selectedYear: number = new Date().getFullYear();
+  availableYears: number[] = [2026, 2025, 2024, 2023];
+  yearlyStats: EmployeeYearlyStatsDto | null = null;
+
+  // Constants
+  RequestType = RequestType;
+  RequestStatus = RequestStatus;
+  statusList: RequestStatusMeta[] = REQUEST_STATUS_LIST;
+  typeList: RequestTypeMeta[] = REQUEST_TYPE_LIST;
+
+  constructor(
+    private employeeService: EmployeeService,
+    private configState: ConfigStateService,
+    private permissionService: PermissionService,
+    private message: NzMessageService
+  ) {}
+
+  ngOnInit(): void {
+    this.checkEditPermission();
+  }
+
+  private checkEditPermission(): void {
+    const user = this.configState.getOne('currentUser');
+    const roles = (user?.roles || []).map(r => r.toLowerCase());
+    const isAdmin =
+      roles.includes('admin') ||
+      user?.userName?.toLowerCase() === 'admin' ||
+      this.permissionService.getGrantedPolicy('AbpIdentity.Roles');
+    const hasEditPermission = this.permissionService.getGrantedPolicy('Employees.Edit');
+    this.canEditJoinDate = isAdmin || hasEditPermission;
+  }
+
+  open(userId: string, tabIndex: number = 0): void {
+    if (!userId) return;
+    this.userId = userId;
+    this.selectedTabIndex = tabIndex;
+    this.isVisible = true;
+    this.isEditingJoinDate = false;
+    this.requestPageIndex = 1;
+    this.selectedStatus = null;
+    this.selectedType = null;
+    this.selectedYear = new Date().getFullYear();
+
+    this.loadProfile();
+    this.loadLeaveTimeline();
+    this.loadRequests();
+    this.loadYearlyStats();
+  }
+
+  close(): void {
+    this.isVisible = false;
+    this.isEditingJoinDate = false;
+  }
+
+  loadProfile(): void {
+    if (!this.userId) return;
+    this.loadingProfile = true;
+    this.employeeService.get(this.userId).subscribe({
+      next: res => {
+        this.profile = res;
+        this.loadingProfile = false;
+      },
+      error: err => {
+        this.loadingProfile = false;
+        const msg = err.error?.error?.message || 'Không thể tải thông tin hồ sơ nhân viên!';
+        this.message.error(msg);
+      },
+    });
+  }
+
+  startEditJoinDate(): void {
+    if (!this.profile) return;
+    this.isEditingJoinDate = true;
+    const dateStr = this.profile.rawJoinDate || this.profile.joinDate;
+    this.editJoinDate = dateStr ? new Date(dateStr) : new Date();
+  }
+
+  cancelEditJoinDate(): void {
+    this.isEditingJoinDate = false;
+    this.editJoinDate = null;
+  }
+
+  saveJoinDate(): void {
+    if (!this.userId || !this.editJoinDate) return;
+    this.isSavingJoinDate = true;
+    const input: UpdateEmployeeJoinDateDto = {
+      joinDate: this.editJoinDate.toISOString(),
+    };
+
+    this.employeeService.updateJoinDate(this.userId, input).subscribe({
+      next: updated => {
+        this.isSavingJoinDate = false;
+        this.isEditingJoinDate = false;
+        this.profile = updated;
+        this.joinDateUpdated.emit(updated);
+        this.message.success('Đã cập nhật ngày vào làm việc thành công!');
+      },
+      error: err => {
+        this.isSavingJoinDate = false;
+        const msg = err.error?.error?.message || 'Không thể cập nhật ngày vào làm việc!';
+        this.message.error(msg);
+      },
+    });
+  }
+
+  loadLeaveTimeline(): void {
+    if (!this.userId) return;
+    this.loadingTimeline = true;
+    this.employeeService.getLeaveTimeline(this.userId, this.selectedYear).subscribe({
+      next: res => {
+        this.leaveTimeline = res || [];
+        this.calculateLeaveStats();
+        this.loadingTimeline = false;
+      },
+      error: () => {
+        this.loadingTimeline = false;
+      },
+    });
+  }
+
+  private calculateLeaveStats(): void {
+    const list = this.leaveTimeline;
+    let approvedDays = 0;
+    let approved = 0;
+    let pending = 0;
+    let rejected = 0;
+
+    list.forEach(item => {
+      if (item.status === RequestStatus.Approved) {
+        approvedDays += item.days;
+        approved++;
+      } else if (item.status === RequestStatus.Submitted) {
+        pending++;
+      } else if (item.status === RequestStatus.Rejected) {
+        rejected++;
+      }
+    });
+
+    this.leaveStats = {
+      totalApprovedDays: Math.round(approvedDays * 10) / 10,
+      totalLeaves: list.length,
+      approvedCount: approved,
+      pendingCount: pending,
+      rejectedCount: rejected,
+    };
+  }
+
+  loadRequests(): void {
+    if (!this.userId) return;
+    this.loadingRequests = true;
+    this.employeeService
+      .getRequests(this.userId, {
+        status: this.selectedStatus !== null ? this.selectedStatus : undefined,
+        type: this.selectedType !== null ? this.selectedType : undefined,
+        skipCount: (this.requestPageIndex - 1) * this.requestPageSize,
+        maxResultCount: this.requestPageSize,
+      })
+      .subscribe({
+        next: res => {
+          this.requests = res.items || [];
+          this.totalRequests = res.totalCount || 0;
+          this.loadingRequests = false;
+        },
+        error: () => {
+          this.loadingRequests = false;
+        },
+      });
+  }
+
+  onRequestFilterChange(): void {
+    this.requestPageIndex = 1;
+    this.loadRequests();
+  }
+
+  onRequestPageChange(page: number): void {
+    this.requestPageIndex = page;
+    this.loadRequests();
+  }
+
+  loadYearlyStats(): void {
+    if (!this.userId) return;
+    this.loadingStats = true;
+    this.employeeService.getYearlyStats(this.userId, this.selectedYear).subscribe({
+      next: res => {
+        this.yearlyStats = res;
+        this.loadingStats = false;
+      },
+      error: () => {
+        this.loadingStats = false;
+      },
+    });
+  }
+
+  onYearChange(year: number): void {
+    this.selectedYear = year;
+    this.loadYearlyStats();
+    this.loadLeaveTimeline();
+  }
+
+  // Helpers
+  getTypeTag(type: RequestType): RequestTypeMeta {
+    return getRequestTypeMeta(type);
+  }
+
+  getStatusTag(status: RequestStatus): RequestStatusMeta {
+    return getRequestStatusMeta(status);
+  }
+
+  trackRequestById(_: number, item: RequestDto): string {
+    return item.id;
+  }
+
+  trackTimelineById(_: number, item: LeaveTimelineItemDto): string {
+    return item.requestId;
+  }
+
+  getAvatarInitial(): string {
+    if (!this.profile?.fullName) return 'U';
+    const parts = this.profile.fullName.trim().split(' ');
+    return parts[parts.length - 1].charAt(0).toUpperCase();
+  }
+
+  getTenureProgressPercentage(): number {
+    const months = this.profile?.tenureMonths || 0;
+    // Cap at 36 months for 100%
+    return Math.min(100, Math.round((months / 36) * 100));
+  }
+
+  getTenureMilestoneLabel(): { label: string; color: string } {
+    const months = this.profile?.tenureMonths || 0;
+    if (months < 2) {
+      return { label: 'Thử việc (< 2 tháng)', color: '#8c8c8c' };
+    }
+    if (months < 12) {
+      return { label: 'Nhân viên chính thức (< 1 năm)', color: '#1890ff' };
+    }
+    if (months < 36) {
+      return { label: 'Nhân sự gắn bó (1 - 3 năm)', color: '#52c41a' };
+    }
+    return { label: 'Nhân sự kỳ cựu (> 3 năm)', color: '#722ed1' };
+  }
+}

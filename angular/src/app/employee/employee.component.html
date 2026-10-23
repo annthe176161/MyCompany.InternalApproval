@@ -1,0 +1,612 @@
+<div class="employee-page-container">
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <div class="header-left">
+      <div class="header-title-row">
+        <div class="header-icon-box">
+          <i class="fas fa-id-card"></i>
+        </div>
+        <div>
+          <h2 class="page-title">Hồ sơ Nhân viên & Thâm niên</h2>
+          <p class="page-subtitle">
+            Quản lý hồ sơ nhân sự, theo dõi thâm niên công tác, lịch sử đề xuất và phân tích nguồn nhân lực
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button
+        nz-button
+        nzType="default"
+        (click)="refreshCurrentTab()"
+        [nzLoading]="loadingEmployees || loadingAnalytics || loadingLeaveReport"
+        class="btn-refresh"
+      >
+        <span nz-icon nzType="reload"></span>
+        <span>Làm mới</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN TABSET -->
+  <nz-tabset
+    [nzAnimated]="false"
+    [(nzSelectedIndex)]="selectedMainTabIndex"
+    (nzSelectedIndexChange)="onMainTabChange($event)"
+    class="main-employee-tabs"
+  >
+    <!-- ================= TAB 1: DANH SÁCH NHÂN VIÊN ================= -->
+    <nz-tab [nzTitle]="tab1Title">
+      <ng-template #tab1Title>
+        <span nz-icon nzType="team"></span>
+        <span>Danh sách nhân viên</span>
+      </ng-template>
+
+      <div class="tab-pane-container">
+        <!-- HR ANALYTICS KPI CARDS -->
+        <div class="analytics-section">
+          <nz-spin [nzSpinning]="loadingAnalytics">
+      <div class="kpi-grid">
+        <!-- Card 1: Headcount -->
+        <div class="kpi-card">
+          <div class="kpi-icon-box kpi-icon-blue">
+            <span nz-icon nzType="team"></span>
+          </div>
+          <div class="kpi-content">
+            <div class="kpi-label">Tổng nhân sự</div>
+            <div class="kpi-value">{{ analytics?.companySummary?.totalEmployees ?? 0 }}</div>
+            <div class="kpi-subtext">
+              <span class="subtext-accent">{{ analytics?.companySummary?.totalDepartments ?? 0 }}</span> phòng ban hoạt động
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: Average Tenure -->
+        <div class="kpi-card">
+          <div class="kpi-icon-box kpi-icon-emerald">
+            <span nz-icon nzType="history"></span>
+          </div>
+          <div class="kpi-content">
+            <div class="kpi-label">Thâm niên trung bình</div>
+            <div class="kpi-value tenure-val">
+              {{ analytics?.companySummary?.companyAverageTenureFormatted || '0 tháng' }}
+            </div>
+            <div class="kpi-subtext">Bình quân toàn công ty</div>
+          </div>
+        </div>
+
+        <!-- Card 3: Yearly Requests -->
+        <div class="kpi-card">
+          <div class="kpi-icon-box kpi-icon-amber">
+            <span nz-icon nzType="file-done"></span>
+          </div>
+          <div class="kpi-content">
+            <div class="kpi-label">Tổng đề xuất năm {{ currentYear }}</div>
+            <div class="kpi-value">{{ analytics?.companySummary?.totalRequestsThisYear ?? 0 }}</div>
+            <div class="kpi-subtext">
+              Giải ngân: {{ (analytics?.companySummary?.totalDisbursedAmountThisYear || 0) | number:'1.0-0' }} đ
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 4: Department Distribution -->
+        <div class="kpi-card department-distribution-card">
+          <div class="dept-dist-header">
+            <div class="kpi-label">Phân bổ theo phòng ban</div>
+            <span class="dept-count-badge">{{ analytics?.headcountByDepartment?.length || 0 }} bộ phận</span>
+          </div>
+          <div class="dept-chips-container" *ngIf="analytics?.headcountByDepartment?.length; else emptyDeptDist">
+            <div
+              *ngFor="let d of analytics?.headcountByDepartment"
+              class="dept-chip"
+              [class.active]="selectedDepartmentId === d.departmentId"
+              (click)="selectedDepartmentId = (selectedDepartmentId === d.departmentId ? null : d.departmentId); onDepartmentChange();"
+              [nz-tooltip]="d.departmentName + ': ' + d.headcount + ' nhân sự (' + d.percentage + '%)'"
+            >
+              <span class="chip-code">{{ d.departmentCode }}</span>
+              <span class="chip-count">{{ d.headcount }}</span>
+              <span class="chip-percent">{{ d.percentage }}%</span>
+            </div>
+          </div>
+          <ng-template #emptyDeptDist>
+            <div class="text-muted text-center py-2" style="font-size: 12px;">Chưa có dữ liệu phòng ban</div>
+          </ng-template>
+        </div>
+      </div>
+    </nz-spin>
+  </div>
+
+  <!-- FILTER & SEARCH BAR -->
+  <div class="filter-section">
+    <div class="filter-bar">
+      <!-- Search Input -->
+      <nz-input-group [nzPrefix]="searchPrefix" [nzSuffix]="searchSuffix" class="search-input">
+        <input
+          type="text"
+          nz-input
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="onSearchChange($event)"
+          placeholder="Tìm theo họ tên, username, email, vị trí..."
+        />
+      </nz-input-group>
+      <ng-template #searchPrefix>
+        <span nz-icon nzType="search" class="text-muted"></span>
+      </ng-template>
+      <ng-template #searchSuffix>
+        <span
+          *ngIf="searchTerm"
+          nz-icon
+          nzType="close-circle"
+          nzTheme="fill"
+          class="clear-icon"
+          (click)="onSearchClear()"
+        ></span>
+      </ng-template>
+
+      <!-- Department Filter -->
+      <nz-select
+        class="dept-select"
+        [(ngModel)]="selectedDepartmentId"
+        (ngModelChange)="onDepartmentChange()"
+        nzPlaceHolder="Tất cả phòng ban"
+        [nzAllowClear]="isAdmin || managedDepartments.length > 1"
+        [nzLoading]="loadingDepartments"
+        [nzDisabled]="!isAdmin && managedDepartments.length <= 1"
+      >
+        <nz-option *ngIf="isAdmin" [nzValue]="null" nzLabel="Tất cả phòng ban"></nz-option>
+        <nz-option *ngIf="isDepartmentManager && managedDepartments.length > 1" [nzValue]="null" nzLabel="Tất cả phòng ban quản lý"></nz-option>
+        <nz-option
+          *ngFor="let dept of availableDepartments; trackBy: trackDeptById"
+          [nzValue]="dept.id"
+          [nzLabel]="dept.name + ' (' + dept.code + ')'"
+        ></nz-option>
+      </nz-select>
+
+      <!-- Results Count Info -->
+      <div class="filter-info">
+        <span class="text-muted">Tổng số:</span>
+        <strong class="text-dark ms-1">{{ totalCount }}</strong>
+        <span class="text-muted ms-1">nhân sự</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- EMPLOYEES DATA TABLE -->
+  <div class="table-container">
+    <nz-table
+      #employeeTable
+      [nzData]="employees"
+      [nzLoading]="loadingEmployees"
+      [nzTotal]="totalCount"
+      [nzPageIndex]="pageIndex"
+      [nzPageSize]="pageSize"
+      [nzShowSizeChanger]="true"
+      [nzPageSizeOptions]="[10, 20, 50]"
+      [nzFrontPagination]="false"
+      [nzScroll]="{ y: 'calc(100vh - 410px)', x: '1200px' }"
+      [nzSize]="'middle'"
+      (nzQueryParams)="onQueryParamsChange($event)"
+    >
+      <thead>
+        <tr>
+          <th nzWidth="60px" nzAlign="center">STT</th>
+          <th nzWidth="270px" nzColumnKey="fullName" [nzSortFn]="true">Nhân viên</th>
+          <th nzWidth="190px" nzColumnKey="departmentName">Phòng ban</th>
+          <th nzWidth="170px" nzColumnKey="position">Vị trí & Chức danh</th>
+          <th nzWidth="150px" nzColumnKey="joinDate" [nzSortFn]="true">Ngày vào làm</th>
+          <th nzWidth="180px" nzColumnKey="tenureMonths" [nzSortFn]="true">Thâm niên công tác</th>
+          <th nzWidth="130px" nzAlign="center" nzColumnKey="currentYearRequestCount" [nzSortFn]="true">
+            Đề xuất {{ currentYear }}
+          </th>
+          <th nzWidth="120px" nzAlign="center" nzRight>Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let emp of employeeTable.data; let idx = index; trackBy: trackById">
+          <!-- STT -->
+          <td nzAlign="center" class="text-muted font-monospace">
+            {{ (pageIndex - 1) * pageSize + idx + 1 }}
+          </td>
+
+          <!-- Nhân viên (Avatar, Tên, Username, Email) -->
+          <td>
+            <div class="employee-cell">
+              <div
+                class="employee-avatar"
+                [style.backgroundColor]="getAvatarColor(emp.fullName)"
+              >
+                {{ getInitials(emp.fullName) }}
+              </div>
+              <div class="employee-meta">
+                <a
+                  class="employee-name-link"
+                  (click)="openEmployeeDrawer(emp.id)"
+                  nz-tooltip="Nhấp để xem hồ sơ nhân viên"
+                >
+                  {{ emp.fullName }}
+                </a>
+                <div class="employee-submeta">
+                  <span class="employee-username">&#64;{{ emp.userName }}</span>
+                  <span class="employee-email" *ngIf="emp.email" [nz-tooltip]="emp.email">
+                    • {{ emp.email }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </td>
+
+          <!-- Phòng ban -->
+          <td>
+            <div *ngIf="emp.departmentName; else noDept">
+              <div class="dept-name">{{ emp.departmentName }}</div>
+              <nz-tag nzColor="blue" class="dept-badge">{{ emp.departmentCode }}</nz-tag>
+            </div>
+            <ng-template #noDept>
+              <span class="text-muted fst-italic">Chưa phân bổ</span>
+            </ng-template>
+          </td>
+
+          <!-- Vị trí & Chức vụ -->
+          <td>
+            <div class="position-info">
+              <div class="position-title">{{ emp.position || 'Nhân viên' }}</div>
+              <nz-tag *ngIf="emp.isManager" nzColor="gold" class="manager-tag">
+                <i class="fas fa-crown me-1"></i>Trưởng phòng
+              </nz-tag>
+            </div>
+          </td>
+
+          <!-- Ngày vào làm (JoinDate) -->
+          <td>
+            <div class="join-date-cell">
+              <span class="date-text">{{ emp.joinDate | date:'dd/MM/yyyy' }}</span>
+              <span
+                *ngIf="!emp.rawJoinDate"
+                class="fallback-icon"
+                nz-icon
+                nzType="info-circle"
+                nzTheme="outline"
+                nz-tooltip="Tự động tính từ ngày tạo tài khoản"
+              ></span>
+            </div>
+          </td>
+
+          <!-- Thâm niên công tác -->
+          <td>
+            <div class="tenure-cell">
+              <nz-tag [nzColor]="getTenureBadgeStatus(emp.tenureMonths).color" class="tenure-tag">
+                {{ emp.tenureFormatted }}
+              </nz-tag>
+              <span class="tenure-status-label">{{ getTenureBadgeStatus(emp.tenureMonths).label }}</span>
+            </div>
+          </td>
+
+          <!-- Đề xuất năm hiện tại -->
+          <td nzAlign="center">
+            <nz-badge
+              [nzCount]="emp.currentYearRequestCount"
+              [nzStyle]="{
+                backgroundColor: emp.currentYearRequestCount > 0 ? '#10b981' : '#e2e8f0',
+                color: emp.currentYearRequestCount > 0 ? '#ffffff' : '#64748b',
+                boxShadow: 'none'
+              }"
+              [nzOverflowCount]="999"
+              [nz-tooltip]="'Tổng số đề xuất trong năm ' + currentYear + ': ' + emp.currentYearRequestCount"
+            ></nz-badge>
+          </td>
+
+          <!-- Thao tác -->
+          <td nzAlign="center" nzRight>
+            <button
+              nz-button
+              nzType="primary"
+              nzSize="small"
+              class="btn-view-profile"
+              (click)="openEmployeeDrawer(emp.id)"
+            >
+              <span nz-icon nzType="idcard"></span>
+              <span>Xem hồ sơ</span>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </nz-table>
+  </div>
+      </div>
+    </nz-tab>
+
+    <!-- ================= TAB 2: BÁO CÁO NGÀY NGHỈ PHÉP ================= -->
+    <nz-tab [nzTitle]="tab2Title">
+      <ng-template #tab2Title>
+        <span nz-icon nzType="calendar"></span>
+        <span>Báo cáo ngày nghỉ phép</span>
+      </ng-template>
+
+      <div class="tab-pane-container">
+        <!-- FILTER & SEARCH BAR -->
+        <div class="filter-section">
+          <div class="filter-bar leave-filter-bar">
+            <!-- Year Selector -->
+            <div class="filter-group year-group">
+              <label class="filter-label">Năm:</label>
+              <nz-select
+                class="year-select"
+                [(ngModel)]="selectedLeaveYear"
+                (ngModelChange)="onLeaveYearChange()"
+              >
+                <nz-option *ngFor="let yr of availableYears" [nzValue]="yr" [nzLabel]="yr + ''"></nz-option>
+              </nz-select>
+            </div>
+
+            <!-- Department Filter -->
+            <div class="filter-group dept-group">
+              <label class="filter-label">Phòng ban:</label>
+              <nz-select
+                class="leave-dept-select"
+                [(ngModel)]="selectedLeaveDepartmentId"
+                (ngModelChange)="onLeaveDepartmentChange()"
+                nzPlaceHolder="Tất cả phòng ban"
+                [nzAllowClear]="isAdmin || managedDepartments.length > 1"
+                [nzLoading]="loadingDepartments"
+                [nzDisabled]="!isAdmin && managedDepartments.length <= 1"
+              >
+                <nz-option *ngIf="isAdmin" [nzValue]="null" nzLabel="Tất cả phòng ban"></nz-option>
+                <nz-option *ngIf="isDepartmentManager && managedDepartments.length > 1" [nzValue]="null" nzLabel="Tất cả phòng ban quản lý"></nz-option>
+                <nz-option
+                  *ngFor="let dept of availableDepartments; trackBy: trackDeptById"
+                  [nzValue]="dept.id"
+                  [nzLabel]="dept.name + ' (' + dept.code + ')'"
+                ></nz-option>
+              </nz-select>
+            </div>
+
+            <!-- Search Input -->
+            <nz-input-group [nzPrefix]="leaveSearchPrefix" [nzSuffix]="leaveSearchSuffix" class="search-input leave-search-input">
+              <input
+                type="text"
+                nz-input
+                [(ngModel)]="leaveSearchTerm"
+                (ngModelChange)="onLeaveSearchChange($event)"
+                placeholder="Tìm theo họ tên, username, email, vị trí..."
+              />
+            </nz-input-group>
+            <ng-template #leaveSearchPrefix>
+              <span nz-icon nzType="search" class="text-muted"></span>
+            </ng-template>
+            <ng-template #leaveSearchSuffix>
+              <span
+                *ngIf="leaveSearchTerm"
+                nz-icon
+                nzType="close-circle"
+                nzTheme="fill"
+                class="clear-icon"
+                (click)="onLeaveSearchClear()"
+              ></span>
+            </ng-template>
+
+            <!-- Actions: Refresh & Xuất Excel -->
+            <div class="filter-actions-right">
+              <button
+                nz-button
+                nzType="default"
+                (click)="loadLeaveReport()"
+                [nzLoading]="loadingLeaveReport"
+                nz-tooltip="Tải lại dữ liệu báo cáo"
+                class="btn-refresh-leave"
+              >
+                <span nz-icon nzType="reload"></span>
+              </button>
+
+              <button
+                nz-button
+                nzType="primary"
+                (click)="exportLeaveReport()"
+                [nzLoading]="isExportingLeaveExcel"
+                class="btn-export-excel"
+              >
+                <span nz-icon nzType="file-excel"></span>
+                <span>Xuất Excel</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUMMARY METRICS BAR -->
+        <div class="summary-metrics-bar">
+          <div class="summary-metric-item">
+            <div class="metric-icon-box metric-blue">
+              <span nz-icon nzType="team"></span>
+            </div>
+            <div class="metric-text">
+              <span class="metric-label">Tổng số nhân sự</span>
+              <strong class="metric-value">{{ leaveTotalCount }}</strong>
+            </div>
+          </div>
+
+          <div class="summary-metric-divider"></div>
+
+          <div class="summary-metric-item">
+            <div class="metric-icon-box metric-green">
+              <span nz-icon nzType="calendar"></span>
+            </div>
+            <div class="metric-text">
+              <span class="metric-label">Tổng ngày nghỉ đã duyệt (năm {{ selectedLeaveYear }})</span>
+              <strong class="metric-value text-success">{{ totalApprovedLeaveDays }} ngày</strong>
+            </div>
+          </div>
+
+          <div class="summary-metric-divider"></div>
+
+          <div class="summary-metric-item">
+            <div class="metric-icon-box metric-purple">
+              <span nz-icon nzType="check-circle"></span>
+            </div>
+            <div class="metric-text">
+              <span class="metric-label">Tổng số đợt nghỉ đã duyệt</span>
+              <strong class="metric-value text-purple">{{ totalApprovedLeaveRequests }} đợt</strong>
+            </div>
+          </div>
+
+          <div class="summary-metric-divider"></div>
+
+          <div class="summary-metric-item">
+            <div class="metric-icon-box metric-amber">
+              <span nz-icon nzType="send"></span>
+            </div>
+            <div class="metric-text">
+              <span class="metric-label">Tổng số đợt nghỉ đã gửi</span>
+              <strong class="metric-value text-amber">{{ totalSentLeaveRequests }} đợt</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- LEAVE REPORT DATA TABLE (9 COLUMNS + ACTIONS) -->
+        <div class="table-container">
+          <nz-table
+            #leaveTable
+            [nzData]="leaveReportItems"
+            [nzLoading]="loadingLeaveReport"
+            [nzTotal]="leaveTotalCount"
+            [nzPageIndex]="leavePageIndex"
+            [nzPageSize]="leavePageSize"
+            [nzShowSizeChanger]="true"
+            [nzPageSizeOptions]="[10, 20, 50]"
+            [nzFrontPagination]="false"
+            [nzScroll]="{ y: 'calc(100vh - 350px)', x: '1320px' }"
+            [nzSize]="'middle'"
+            (nzQueryParams)="onLeaveQueryParamsChange($event)"
+          >
+            <thead>
+              <tr>
+                <th nzWidth="60px" nzAlign="center">STT</th>
+                <th nzWidth="150px" nzColumnKey="userName" [nzSortFn]="true">Mã NV / Username</th>
+                <th nzWidth="220px" nzColumnKey="fullName" [nzSortFn]="true">Họ và tên</th>
+                <th nzWidth="200px" nzColumnKey="email">Email</th>
+                <th nzWidth="180px" nzColumnKey="departmentName">Phòng ban</th>
+                <th nzWidth="150px" nzColumnKey="position">Chức vụ</th>
+                <th nzWidth="160px" nzAlign="center" nzColumnKey="totalApprovedLeaveDays" [nzSortFn]="true">
+                  Tổng ngày nghỉ phép
+                </th>
+                <th nzWidth="140px" nzAlign="center" nzColumnKey="totalApprovedLeaveRequests" [nzSortFn]="true">
+                  Số đợt gửi / duyệt
+                </th>
+                <th nzWidth="220px">Đợt nghỉ gần nhất</th>
+                <th nzWidth="130px" nzAlign="center" nzRight>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of leaveTable.data; let idx = index; trackBy: trackByLeaveItem">
+                <!-- 1. STT -->
+                <td nzAlign="center" class="text-muted font-monospace">
+                  {{ (leavePageIndex - 1) * leavePageSize + idx + 1 }}
+                </td>
+
+                <!-- 2. Mã NV / Username -->
+                <td>
+                  <span class="employee-username font-monospace">&#64;{{ item.userName }}</span>
+                </td>
+
+                <!-- 3. Họ và tên (clickable avatar + name) -->
+                <td>
+                  <div class="employee-cell">
+                    <div
+                      class="employee-avatar"
+                      [style.backgroundColor]="getAvatarColor(item.fullName)"
+                    >
+                      {{ getInitials(item.fullName) }}
+                    </div>
+                    <div class="employee-meta">
+                      <a
+                        class="employee-name-link"
+                        (click)="openEmployeeDrawer(item.id, 0)"
+                        nz-tooltip="Nhấp để xem hồ sơ nhân viên"
+                      >
+                        {{ item.fullName }}
+                      </a>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- 4. Email -->
+                <td>
+                  <span class="employee-email" *ngIf="item.email; else noEmail" [nz-tooltip]="item.email">
+                    {{ item.email }}
+                  </span>
+                  <ng-template #noEmail>
+                    <span class="text-muted">---</span>
+                  </ng-template>
+                </td>
+
+                <!-- 5. Phòng ban -->
+                <td>
+                  <div *ngIf="item.departmentName; else noDept">
+                    <div class="dept-name">{{ item.departmentName }}</div>
+                    <nz-tag *ngIf="item.departmentCode" nzColor="blue" class="dept-badge">{{ item.departmentCode }}</nz-tag>
+                  </div>
+                  <ng-template #noDept>
+                    <span class="text-muted fst-italic">Chưa phân bổ</span>
+                  </ng-template>
+                </td>
+
+                <!-- 6. Chức vụ -->
+                <td>
+                  <span class="position-title">{{ item.position || 'Nhân viên' }}</span>
+                </td>
+
+                <!-- 7. Tổng ngày nghỉ phép (đã duyệt) -->
+                <td nzAlign="center">
+                  <nz-tag nzColor="success" class="leave-days-tag">
+                    {{ item.totalApprovedLeaveDays }} ngày
+                  </nz-tag>
+                </td>
+
+                <!-- 8. Số đợt gửi / duyệt -->
+                <td nzAlign="center">
+                  <div class="leave-counts-cell">
+                    <span class="count-approved" nz-tooltip="Đã duyệt">{{ item.totalApprovedLeaveRequests }} duyệt</span>
+                    <span class="count-slash">/</span>
+                    <span class="count-sent" nz-tooltip="Đã gửi">{{ item.totalSentLeaveRequests }} gửi</span>
+                  </div>
+                </td>
+
+                <!-- 9. Đợt nghỉ gần nhất -->
+                <td>
+                  <div *ngIf="item.latestLeavePeriodFormatted && item.latestLeavePeriodFormatted !== 'Chưa có'; else noLeave">
+                    <span class="latest-leave-text">
+                      <span nz-icon nzType="calendar" class="me-1 text-primary"></span>
+                      {{ item.latestLeavePeriodFormatted }}
+                    </span>
+                  </div>
+                  <ng-template #noLeave>
+                    <span class="text-muted fst-italic">Chưa có đợt nghỉ</span>
+                  </ng-template>
+                </td>
+
+                <!-- 10. Thao tác -->
+                <td nzAlign="center" nzRight>
+                  <button
+                    nz-button
+                    nzType="primary"
+                    nzSize="small"
+                    class="btn-view-leave"
+                    (click)="openEmployeeDrawer(item.id, 1)"
+                    nz-tooltip="Xem timeline các đợt nghỉ phép"
+                  >
+                    <span nz-icon nzType="calendar"></span>
+                    <span>Chi tiết</span>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </nz-table>
+        </div>
+      </div>
+    </nz-tab>
+  </nz-tabset>
+
+  <!-- REUSABLE 4-TAB DRAWER COMPONENT -->
+  <app-employee-detail-drawer
+    #employeeDrawer
+    (joinDateUpdated)="onJoinDateUpdated()"
+  ></app-employee-detail-drawer>
+</div>

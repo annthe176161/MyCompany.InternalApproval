@@ -1,0 +1,12 @@
+{
+  "culture": "vi",
+  "texts": {
+    "Menu:IdentityManagement": "Tài khoản & Phân quyền",
+    "Permission:IdentityManagement": "Tài khoản & Phân quyền",
+    "Roles": "Vai trò & Quyền hạn",
+    "Users": "Quản lý tài khoản",
+    "RoleManagement": "Vai trò & Quyền hạn",
+    "UserManagement": "Quản lý tài khoản"
+  }
+}
+
