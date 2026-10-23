@@ -181,36 +181,67 @@ body.abp-account-layout .input-group #PasswordVisibilityButton:hover {
   background-color: #18181b !important;
 }
 
+body.abp-account-layout .card form > .row,
+body.abp-account-layout .card form > div.row {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+body.abp-account-layout .card form > .row > .col,
+body.abp-account-layout .card form > div.row > div.col {
+  padding: 0 !important;
+  margin: 0 !important;
+  flex: 0 0 100% !important;
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
 /* Checkbox 'Ghi nhớ' */
 body.abp-account-layout .form-check {
   display: flex !important;
   align-items: center !important;
   gap: 8px !important;
-  margin-top: 4px !important;
-  margin-bottom: 8px !important;
+  margin: 8px 0 !important;
+  padding: 0 !important;
+  min-height: auto !important;
 }
 
-body.abp-account-layout .form-check-input {
+body.abp-account-layout .form-check-input,
+body.abp-account-layout .form-check .form-check-input {
+  float: none !important;
+  margin: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  margin-bottom: 0 !important;
+  margin-top: 0 !important;
   background-color: #09090b !important;
   border: 1px solid #3f3f46 !important;
   border-radius: 4px !important;
   width: 16px !important;
+  min-width: 16px !important;
   height: 16px !important;
-  margin: 0 !important;
   cursor: pointer !important;
+  flex-shrink: 0 !important;
+  position: static !important;
 }
 
-body.abp-account-layout .form-check-input:checked {
+body.abp-account-layout .form-check-input:checked,
+body.abp-account-layout .form-check .form-check-input:checked {
   background-color: #ffffff !important;
   border-color: #ffffff !important;
 }
 
-body.abp-account-layout .form-check-label {
+body.abp-account-layout .form-check-label,
+body.abp-account-layout .form-check .form-check-label {
   font-size: 13.5px !important;
   color: #a1a1aa !important;
   cursor: pointer !important;
   user-select: none !important;
   margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  display: inline-flex !important;
+  align-items: center !important;
 }
 
 /* 7. NÚT ĐĂNG NHẬP ĐƠN SẮC TRẮNG - ĐEN TƯƠNG PHẢN CAO CẤP */
