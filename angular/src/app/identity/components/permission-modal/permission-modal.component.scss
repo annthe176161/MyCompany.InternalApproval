@@ -1,476 +1,119 @@
-.perm-modal-header {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-
-  .perm-header-icon {
-    width: 42px;
-    height: 42px;
-    border-radius: 10px;
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    color: #38bdf8;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    flex-shrink: 0;
-  }
-
-  .perm-header-text {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-
-    .perm-title-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-
-      .perm-main-title {
-        font-size: 17px;
-        font-weight: 700;
-        color: #0f172a;
-      }
-
-      .perm-target-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        background: #e0f2fe;
-        color: #0369a1;
-        font-size: 12.5px;
-        padding: 2px 10px;
-        border-radius: 20px;
-        border: 1px solid #bae6fd;
-
-        &.is-user-badge {
-          background: #f3e8ff;
-          color: #6d28d9;
-          border-color: #ddd6fe;
-        }
-      }
-    }
-
-    .perm-subtitle {
-      margin: 0;
-      font-size: 12.5px;
-      font-weight: 400;
-      color: #64748b;
-    }
-  }
-}
-
-.admin-notice-banner {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 10px 14px;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  border-radius: 8px;
-  margin-bottom: 14px;
-  font-size: 12.5px;
-  color: #1e3a8a;
-
-  .banner-icon {
-    color: #2563eb;
-    font-size: 16px;
-    margin-top: 2px;
-  }
-
-  .banner-content {
-    line-height: 1.45;
-  }
-}
-
-.perm-toolbar {
+.perm-top-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 12px 16px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #e5e7eb;
 
-  .search-box-wrapper {
-    flex: 1;
-    min-width: 260px;
-
-    .clear-search-icon {
-      color: #94a3b8;
-      cursor: pointer;
-
-      &:hover {
-        color: #475569;
-      }
-    }
+  .select-all-label {
+    font-weight: 600;
+    color: #111827;
   }
 
-  .master-grant-box {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: #ffffff;
-    padding: 6px 14px;
-    border-radius: 8px;
-    border: 1px solid #cbd5e1;
-
-    .master-label {
-      font-weight: 600;
-      font-size: 13px;
-      color: #0f172a;
-    }
-
-    .total-counter-pill {
-      background: #0f172a;
-      color: #ffffff;
-      font-size: 11.5px;
-      font-weight: 600;
-      padding: 2px 8px;
-      border-radius: 12px;
-    }
+  .perm-search-input {
+    width: 240px;
   }
 }
 
-.perm-layout-body {
+.perm-body-grid {
   display: flex;
-  gap: 16px;
-  min-height: 440px;
-  max-height: 60vh;
+  gap: 20px;
+  min-height: 360px;
+  max-height: 55vh;
 }
 
-.perm-sidebar {
-  width: 255px;
+.perm-left-groups {
+  width: 230px;
   flex-shrink: 0;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 12px 10px;
+  border-right: 1px solid #e5e7eb;
+  padding-right: 12px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   overflow-y: auto;
 
-  .sidebar-heading {
-    font-size: 11px;
-    font-weight: 700;
-    color: #64748b;
-    letter-spacing: 0.5px;
-    padding: 4px 10px 6px;
-  }
-
-  .group-nav-item {
+  .group-tab-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 12px;
-    border-radius: 8px;
+    padding: 9px 12px;
+    border-radius: 6px;
     cursor: pointer;
-    transition: all 0.15s ease;
-    color: #334155;
-    font-weight: 500;
-    font-size: 13px;
+    font-size: 13.5px;
+    color: #374151;
+    transition: background-color 0.15s;
 
     &:hover {
-      background: #e2e8f0;
-      color: #0f172a;
+      background-color: #f3f4f6;
     }
 
     &.active {
-      background: #0f172a;
-      color: #ffffff;
+      background-color: #eff6ff;
+      color: #1d4ed8;
       font-weight: 600;
-      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.18);
-
-      .group-icon {
-        color: #38bdf8;
-      }
-
-      .group-count-badge {
-        background: rgba(255, 255, 255, 0.18);
-        color: #ffffff;
-      }
     }
 
-    .group-nav-left {
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      min-width: 0;
-
-      .group-icon {
-        font-size: 16px;
-        color: #64748b;
-      }
-
-      .group-title {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-    }
-
-    .group-count-badge {
-      font-size: 11.5px;
-      font-weight: 600;
-      padding: 2px 7px;
-      border-radius: 10px;
-      background: #e2e8f0;
-      color: #475569;
-
-      &.all-granted {
-        background: #dcfce7;
-        color: #15803d;
-      }
+    .group-tab-count {
+      font-size: 12px;
+      color: #6b7280;
     }
   }
 }
 
-.perm-content-area {
+.perm-right-list {
   flex: 1;
   display: flex;
   flex-direction: column;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  background: #ffffff;
   overflow: hidden;
 
-  &.full-width {
-    width: 100%;
+  .group-check-all-row {
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #f3f4f6;
   }
 
-  .content-group-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 18px;
-    background: #f8fafc;
-    border-bottom: 1px solid #e2e8f0;
-
-    .group-header-info {
-      h4 {
-        margin: 0;
-        font-size: 15px;
-        font-weight: 700;
-        color: #0f172a;
-      }
-
-      span {
-        font-size: 12px;
-        color: #64748b;
-      }
-    }
-
-    .group-select-all-checkbox {
-      font-weight: 600;
-      color: #0f172a;
-      background: #ffffff;
-      padding: 5px 12px;
-      border-radius: 6px;
-      border: 1px solid #cbd5e1;
-    }
-  }
-
-  .permission-cards-container {
-    padding: 16px;
+  .perm-items-scroll {
+    flex: 1;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 14px;
-  }
-}
-
-.permission-module-card {
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  background: #ffffff;
-  overflow: hidden;
-  transition: all 0.2s ease;
-
-  &.module-granted {
-    border-color: #cbd5e1;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+    gap: 8px;
+    padding-right: 6px;
   }
 
-  .permission-parent-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 12px 16px;
-    background: #f8fafc;
-    border-bottom: 1px solid #f1f5f9;
-    cursor: pointer;
-    transition: background 0.15s ease;
-
-    &:hover {
-      background: #f1f5f9;
-    }
-
-    .perm-check-col {
-      padding-top: 2px;
-    }
-
-    .perm-info-col {
-      flex: 1;
-
-      .perm-name-line {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex-wrap: wrap;
-
-        .perm-title {
-          font-size: 14px;
-          font-weight: 700;
-          color: #0f172a;
-        }
-
-        .perm-code-tag {
-          font-size: 11px;
-          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-          color: #64748b;
-          background: #e2e8f0;
-          padding: 1px 6px;
-          border-radius: 4px;
-        }
-      }
-
-      .perm-desc-text {
-        margin: 3px 0 0 0;
-        font-size: 12.5px;
-        color: #475569;
-      }
-    }
-  }
-
-  .permission-children-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 10px;
-    padding: 12px 16px;
-    background: #ffffff;
-  }
-
-  .permission-child-item {
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 10px 12px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    background: #ffffff;
-
-    &:hover {
-      border-color: #94a3b8;
-      background: #f8fafc;
-    }
-
-    &.child-granted {
-      border-color: #bae6fd;
-      background: #f0f9ff;
-    }
-
-    &.child-disabled {
-      cursor: not-allowed;
-      opacity: 0.85;
-    }
-
-    .child-top-line {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 6px;
-
-      .child-title {
-        font-weight: 600;
-        font-size: 13px;
-        color: #0f172a;
-      }
-    }
-
-    .child-desc-text {
-      margin: 4px 0 0 24px;
-      font-size: 12px;
-      color: #64748b;
-      line-height: 1.35;
-    }
-
-    .permission-grandchildren-list {
-      margin-top: 8px;
-      margin-left: 24px;
-      padding-top: 8px;
-      border-top: 1px dashed #cbd5e1;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-
-      .grandchild-item {
-        font-size: 12px;
-
-        .grandchild-title {
-          font-weight: 600;
-          color: #1e293b;
-        }
-
-        .grandchild-desc {
-          color: #64748b;
-          font-size: 11.5px;
-        }
-      }
-    }
-  }
-}
-
-.inherited-role-tag,
-.inherited-mini-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  font-weight: 600;
-  background: #fef3c7;
-  color: #b45309;
-  border: 1px solid #fde68a;
-  padding: 1px 7px;
-  border-radius: 10px;
-}
-
-.empty-perm-state {
-  padding: 48px 16px;
-}
-
-.perm-modal-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-
-  .footer-hint {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    color: #64748b;
-  }
-
-  .footer-actions {
+  .perm-row-item {
     display: flex;
     align-items: center;
     gap: 8px;
+    padding: 4px 0;
+    font-size: 13.5px;
+    color: #1f2937;
 
-    .btn-save-perms {
-      background: #0f172a;
-      border-color: #0f172a;
-      font-weight: 600;
+    &.is-parent-row {
+      margin-top: 6px;
 
-      &:hover {
-        background: #1e293b;
+      &:first-child {
+        margin-top: 0;
       }
+    }
+
+    .fw-semibold {
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .role-inherited-note {
+      font-size: 12px;
+      color: #6b7280;
     }
   }
 }
 
+.empty-box {
+  padding: 40px 0;
+  text-align: center;
+  color: #6b7280;
+  font-size: 13.5px;
+}

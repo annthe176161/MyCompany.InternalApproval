@@ -1,239 +1,91 @@
 <nz-modal
   [(nzVisible)]="visible"
-  (nzOnCancel)="closeModal()"
-  [nzWidth]="920"
-  [nzTitle]="modalTitleTpl"
+  [nzTitle]="'Phân quyền — ' + entityTitle"
+  [nzWidth]="760"
+  (nzOnCancel)="close()"
   [nzFooter]="modalFooterTpl"
   [nzMaskClosable]="false"
-  nzClassName="custom-permission-modal"
 >
-  <!-- TIÊU ĐỀ MODAL -->
-  <ng-template #modalTitleTpl>
-    <div class="perm-modal-header">
-      <div class="perm-header-icon">
-        <span nz-icon nzType="safety-certificate" nzTheme="outline"></span>
-      </div>
-      <div class="perm-header-text">
-        <div class="perm-title-row">
-          <span class="perm-main-title">Thiết lập Quyền hạn truy cập</span>
-          <span class="perm-target-badge" [class.is-user-badge]="providerName === 'U'">
-            <span nz-icon [nzType]="providerName === 'R' ? 'team' : 'user'"></span>
-            {{ providerName === 'R' ? 'Vai trò:' : 'Tài khoản:' }}
-            <strong>{{ entityTitle || providerKey }}</strong>
-          </span>
-        </div>
-        <p class="perm-subtitle">
-          Bật hoặc tắt các chức năng mà {{ providerName === 'R' ? 'những người thuộc vai trò này' : 'tài khoản này' }} được phép thao tác trên hệ thống
-        </p>
-      </div>
-    </div>
-  </ng-template>
-
-  <!-- NỘI DUNG MODAL -->
   <ng-container *nzModalContent>
-    <nz-spin [nzSpinning]="isLoading" nzTip="Đang tải danh sách quyền hạn...">
-      <!-- Banner nhắc nhở thông minh khi đang sửa quyền của vai trò Admin hệ thống -->
-      <div
-        class="admin-notice-banner"
-        *ngIf="providerName === 'R' && providerKey?.toLowerCase() === 'admin'"
-      >
-        <span nz-icon nzType="info-circle" nzTheme="fill" class="banner-icon"></span>
-        <div class="banner-content">
-          <strong>Lưu ý dành cho vai trò Quản trị viên (admin):</strong>
-          Đây là vai trò quản trị cao nhất của hệ thống. Bạn nên giữ toàn bộ các quyền quản lý cốt lõi để tránh tự khóa quyền truy cập của chính mình.
-        </div>
+    <nz-spin [nzSpinning]="isLoading">
+      <!-- Thanh trên cùng: Chọn tất cả + Tìm kiếm nhanh -->
+      <div class="perm-top-bar">
+        <label
+          nz-checkbox
+          [ngModel]="isAllGranted"
+          [nzIndeterminate]="isAllIndeterminate"
+          (ngModelChange)="toggleAllPermissions($event)"
+          class="select-all-label"
+        >
+          Cấp tất cả các quyền
+        </label>
+
+        <input
+          type="text"
+          nz-input
+          class="perm-search-input"
+          placeholder="Tìm tên quyền..."
+          [(ngModel)]="searchKeyword"
+          (ngModelChange)="onSearchChange()"
+        />
       </div>
 
-      <!-- Thanh công cụ phía trên: Tìm kiếm nhanh + Công tắc cấp toàn bộ quyền -->
-      <div class="perm-toolbar">
-        <div class="search-box-wrapper">
-          <nz-input-group [nzPrefix]="prefixSearch" [nzSuffix]="suffixClear">
-            <input
-              type="text"
-              nz-input
-              [(ngModel)]="searchKeyword"
-              placeholder="Tìm nhanh quyền hạn (VD: duyệt đề xuất, phòng ban, xóa...)"
-            />
-          </nz-input-group>
-          <ng-template #prefixSearch>
-            <span nz-icon nzType="search" style="color: #94a3b8;"></span>
-          </ng-template>
-          <ng-template #suffixClear>
-            <span
-              *ngIf="searchKeyword"
-              nz-icon
-              nzType="close-circle"
-              nzTheme="fill"
-              class="clear-search-icon"
-              (click)="searchKeyword = ''"
-            ></span>
-          </ng-template>
-        </div>
-
-        <div class="master-grant-box">
-          <label
-            nz-checkbox
-            [ngModel]="isAllSystemGranted"
-            [nzIndeterminate]="isSystemIndeterminate"
-            (ngModelChange)="toggleAllSystemPermissions($event)"
-            class="master-checkbox"
-          >
-            <span class="master-label">Cấp toàn bộ quyền hệ thống</span>
-          </label>
-          <span class="total-counter-pill">
-            Đã bật {{ totalGrantedCount }}/{{ totalPermissionsCount }} quyền
-          </span>
-        </div>
-      </div>
-
-      <!-- Bố cục 2 cột: Danh mục phân hệ bên trái + Chi tiết quyền bên phải -->
-      <div class="perm-layout-body">
-        <!-- Cột trái: Danh sách Nhóm quyền (ẩn đi khi đang tìm kiếm toàn cục) -->
-        <div class="perm-sidebar" *ngIf="!searchKeyword.trim()">
-          <div class="sidebar-heading">PHÂN HỆ CHỨC NĂNG</div>
+      <!-- Bố cục 2 cột đơn giản, rõ ràng -->
+      <div class="perm-body-grid">
+        <!-- Cột trái: Danh sách nhóm quyền -->
+        <div class="perm-left-groups" *ngIf="!searchKeyword.trim()">
           <div
             *ngFor="let grp of groups; let idx = index"
-            class="group-nav-item"
+            class="group-tab-item"
             [class.active]="idx === selectedGroupIndex"
-            (click)="selectedGroupIndex = idx"
+            (click)="selectGroup(idx)"
           >
-            <div class="group-nav-left">
-              <span nz-icon [nzType]="getGroupIcon(grp)" class="group-icon"></span>
-              <span class="group-title">{{ getGroupDisplayName(grp) }}</span>
-            </div>
-            <span
-              class="group-count-badge"
-              [class.all-granted]="getGrantedCountInGroup(grp) === (grp.permissions?.length || 0)"
-            >
-              {{ getGrantedCountInGroup(grp) }}/{{ grp.permissions?.length || 0 }}
+            <span class="group-tab-name">{{ getGroupDisplayName(grp) }}</span>
+            <span class="group-tab-count">
+              ({{ getGrantedCountInGroup(grp) }}/{{ grp.permissions?.length || 0 }})
             </span>
           </div>
         </div>
 
-        <!-- Cột phải: Danh sách quyền chi tiết kèm giải thích -->
-        <div class="perm-content-area" [class.full-width]="!!searchKeyword.trim()">
-          <!-- Tiêu đề nhóm hiện tại & nút Chọn tất cả trong nhóm -->
-          <div class="content-group-header" *ngIf="!searchKeyword.trim() && currentGroup">
-            <div class="group-header-info">
-              <h4>{{ getGroupDisplayName(currentGroup) }}</h4>
-              <span>Chọn các quyền thao tác cụ thể bên dưới</span>
-            </div>
+        <!-- Cột phải: Danh sách checkbox quyền -->
+        <div class="perm-right-list">
+          <!-- Chọn tất cả trong nhóm hiện tại -->
+          <div class="group-check-all-row" *ngIf="!searchKeyword.trim() && groups.length > 0">
             <label
               nz-checkbox
               [ngModel]="isCurrentGroupAllGranted"
               [nzIndeterminate]="isCurrentGroupIndeterminate"
               (ngModelChange)="toggleCurrentGroupPermissions($event)"
-              class="group-select-all-checkbox"
             >
-              Chọn tất cả phân hệ này
+              <strong>Chọn tất cả mục này</strong>
             </label>
           </div>
 
-          <div class="content-group-header search-mode" *ngIf="searchKeyword.trim()">
-            <div class="group-header-info">
-              <h4>Kết quả tìm kiếm cho "{{ searchKeyword }}"</h4>
-              <span>Tìm thấy {{ displayedParentPermissions.length }} quyền phù hợp</span>
-            </div>
-          </div>
-
-          <!-- Danh sách các khối quyền Cha - Con -->
-          <div class="permission-cards-container" *ngIf="displayedParentPermissions.length > 0; else emptyPermsTpl">
+          <div class="perm-items-scroll" *ngIf="displayedPermissions.length > 0; else emptyTpl">
             <div
-              *ngFor="let parentItem of displayedParentPermissions"
-              class="permission-module-card"
-              [class.module-granted]="parentItem.isGranted"
+              *ngFor="let item of displayedPermissions"
+              class="perm-row-item"
+              [class.is-parent-row]="item.level === 0"
+              [style.padding-left.px]="item.level * 24"
             >
-              <!-- Dòng Quyền Cha (Quyền gốc của phân hệ) -->
-              <div
-                class="permission-parent-row"
-                (click)="!parentItem.isDisabled && onPermissionToggle(parentItem.name, !parentItem.isGranted)"
+              <label
+                nz-checkbox
+                [ngModel]="item.isGranted"
+                [nzDisabled]="item.isDisabled"
+                (ngModelChange)="onTogglePermission(item, $event)"
               >
-                <div class="perm-check-col" (click)="$event.stopPropagation()">
-                  <label
-                    nz-checkbox
-                    [ngModel]="parentItem.isGranted"
-                    [nzDisabled]="parentItem.isDisabled"
-                    (ngModelChange)="onPermissionToggle(parentItem.name, $event)"
-                  ></label>
-                </div>
-                <div class="perm-info-col">
-                  <div class="perm-name-line">
-                    <span class="perm-title">{{ parentItem.displayName }}</span>
-                    <span class="perm-code-tag">{{ parentItem.name }}</span>
-                    <span
-                      *ngIf="parentItem.grantedByRoles.length > 0"
-                      class="inherited-role-tag"
-                      nz-tooltip
-                      nzTooltipTitle="Quyền này đã được cấp sẵn thông qua Vai trò của người dùng. Muốn tắt quyền này, hãy gỡ Vai trò tương ứng."
-                    >
-                      <span nz-icon nzType="lock"></span>
-                      Kế thừa từ vai trò: {{ parentItem.grantedByRoles.join(', ') }}
-                    </span>
-                  </div>
-                  <p class="perm-desc-text">{{ parentItem.description }}</p>
-                </div>
-              </div>
+                <span [class.fw-semibold]="item.level === 0">{{ item.displayName }}</span>
+              </label>
 
-              <!-- Danh sách các Quyền Con bên trong (Thêm, Sửa, Xóa, Duyệt...) -->
-              <div class="permission-children-grid" *ngIf="parentItem.children && parentItem.children.length > 0">
-                <ng-container *ngFor="let childItem of parentItem.children">
-                  <div
-                    class="permission-child-item"
-                    [class.child-granted]="childItem.isGranted"
-                    [class.child-disabled]="childItem.isDisabled"
-                    (click)="!childItem.isDisabled && onPermissionToggle(childItem.name, !childItem.isGranted)"
-                  >
-                    <div class="child-top-line" (click)="$event.stopPropagation()">
-                      <label
-                        nz-checkbox
-                        [ngModel]="childItem.isGranted"
-                        [nzDisabled]="childItem.isDisabled"
-                        (ngModelChange)="onPermissionToggle(childItem.name, $event)"
-                      >
-                        <span class="child-title">{{ childItem.displayName }}</span>
-                      </label>
-                      <span
-                        *ngIf="childItem.grantedByRoles.length > 0"
-                        class="inherited-mini-badge"
-                        nz-tooltip
-                        [nzTooltipTitle]="'Được cấp từ vai trò: ' + childItem.grantedByRoles.join(', ')"
-                      >
-                        Theo vai trò
-                      </span>
-                    </div>
-                    <p class="child-desc-text">{{ childItem.description }}</p>
-
-                    <!-- Nếu có quyền cháu cấp 3 (ví dụ: Quản lý người dùng -> Sửa -> Quản lý vai trò) -->
-                    <div
-                      class="permission-grandchildren-list"
-                      *ngIf="childItem.children && childItem.children.length > 0"
-                      (click)="$event.stopPropagation()"
-                    >
-                      <div
-                        *ngFor="let grandChild of childItem.children"
-                        class="grandchild-item"
-                        [class.grandchild-granted]="grandChild.isGranted"
-                      >
-                        <label
-                          nz-checkbox
-                          [ngModel]="grandChild.isGranted"
-                          [nzDisabled]="grandChild.isDisabled"
-                          (ngModelChange)="onPermissionToggle(grandChild.name, $event)"
-                        >
-                          <span class="grandchild-title">{{ grandChild.displayName }}</span>
-                        </label>
-                        <span class="grandchild-desc"> — {{ grandChild.description }}</span>
-                      </div>
-                    </div>
-                  </div>
-                </ng-container>
-              </div>
+              <span class="role-inherited-note" *ngIf="item.grantedByRoles.length > 0">
+                (Từ vai trò: {{ item.grantedByRoles.join(', ') }})
+              </span>
             </div>
           </div>
 
-          <ng-template #emptyPermsTpl>
-            <div class="empty-perm-state">
-              <nz-empty nzNotFoundContent="Không tìm thấy quyền hạn nào khớp với từ khóa của bạn"></nz-empty>
+          <ng-template #emptyTpl>
+            <div class="empty-box" *ngIf="!isLoading">
+              Không có quyền nào khớp với tìm kiếm.
             </div>
           </ng-template>
         </div>
@@ -241,29 +93,12 @@
     </nz-spin>
   </ng-container>
 
-  <!-- CHÂN MODAL -->
   <ng-template #modalFooterTpl>
-    <div class="perm-modal-footer">
-      <div class="footer-hint">
-        <span nz-icon nzType="bulb" nzTheme="outline"></span>
-        <span>Mẹo: Khi bạn tích chọn một quyền con (VD: Thêm/Sửa/Xóa), quyền Xem danh sách tương ứng sẽ tự động được bật.</span>
-      </div>
-      <div class="footer-actions">
-        <button nz-button nzType="default" (click)="closeModal()" [disabled]="isSaving">
-          Hủy bỏ
-        </button>
-        <button
-          nz-button
-          nzType="primary"
-          class="btn-save-perms"
-          (click)="savePermissions()"
-          [nzLoading]="isSaving"
-        >
-          <span nz-icon nzType="check"></span>
-          Lưu thiết lập quyền
-        </button>
-      </div>
-    </div>
+    <button nz-button nzType="default" (click)="close()" [disabled]="isSaving">
+      Hủy
+    </button>
+    <button nz-button nzType="primary" (click)="save()" [nzLoading]="isSaving">
+      Lưu thay đổi
+    </button>
   </ng-template>
 </nz-modal>
-

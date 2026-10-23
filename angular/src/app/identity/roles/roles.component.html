@@ -1,23 +1,13 @@
 <div class="identity-page-container">
-  <!-- HEADER TRANG VAI TRÒ & QUYỀN HẠN -->
+  <!-- TIÊU ĐỀ TRANG -->
   <div class="page-header">
-    <div class="header-left">
-      <div class="header-icon-box">
-        <span nz-icon nzType="safety-certificate" nzTheme="outline"></span>
-      </div>
-      <div>
-        <div class="header-title-row">
-          <h2>Vai trò & Quyền hạn</h2>
-          <span class="count-badge">{{ totalCount }} vai trò</span>
-        </div>
-        <p class="header-subtitle">
-          Tạo các nhóm chức danh (Trưởng phòng, Nhân viên, Kế toán...) và thiết lập những chức năng mà họ được phép sử dụng
-        </p>
-      </div>
+    <div>
+      <h2>Vai trò & Quyền hạn</h2>
+      <p class="text-muted mb-0">Danh sách các vai trò và thiết lập quyền truy cập trên hệ thống</p>
     </div>
 
-    <div class="header-right">
-      <nz-input-group [nzSuffix]="suffixIconSearch" class="search-input">
+    <div class="header-actions">
+      <nz-input-group [nzSuffix]="suffixSearch" class="search-input">
         <input
           type="text"
           nz-input
@@ -26,57 +16,19 @@
           (keyup.enter)="onSearch()"
         />
       </nz-input-group>
-      <ng-template #suffixIconSearch>
-        <span
-          nz-icon
-          nzType="search"
-          (click)="onSearch()"
-          style="cursor: pointer; color: #64748b;"
-        ></span>
+      <ng-template #suffixSearch>
+        <span nz-icon nzType="search" (click)="onSearch()" style="cursor: pointer;"></span>
       </ng-template>
 
-      <button nz-button nzType="default" (click)="loadRoles()" nz-tooltip nzTooltipTitle="Làm mới danh sách">
-        <span nz-icon nzType="reload"></span>
-      </button>
+      <button nz-button nzType="default" (click)="loadRoles()">Làm mới</button>
 
-      <button
-        *ngIf="canCreate"
-        nz-button
-        nzType="primary"
-        class="btn-primary-dark"
-        (click)="openCreateModal()"
-      >
-        <span nz-icon nzType="plus"></span>
-        Thêm vai trò mới
+      <button *ngIf="canCreate" nz-button nzType="primary" (click)="openCreateModal()">
+        Thêm vai trò
       </button>
     </div>
   </div>
 
-  <!-- THẺ CHÚ THÍCH NHANH GIÚP NGƯỜI DÙNG HIỂU CÁC NHÃN TRONG BẢNG -->
-  <div class="quick-guide-bar">
-    <div class="guide-item">
-      <span class="role-badge badge-static">
-        <span nz-icon nzType="lock"></span> Cốt lõi hệ thống
-      </span>
-      <span class="guide-text">Vai trò gốc của phần mềm (không thể đổi tên hoặc xóa)</span>
-    </div>
-    <div class="guide-divider"></div>
-    <div class="guide-item">
-      <span class="role-badge badge-default">
-        <span nz-icon nzType="user-add"></span> Tự động gán (Mặc định)
-      </span>
-      <span class="guide-text">Tài khoản nhân viên mới tạo sẽ tự động nhận vai trò này</span>
-    </div>
-    <div class="guide-divider"></div>
-    <div class="guide-item">
-      <span class="role-badge badge-public">
-        <span nz-icon nzType="eye"></span> Hiển thị công khai
-      </span>
-      <span class="guide-text">Mọi người trong công ty có thể nhìn thấy chức danh vai trò này</span>
-    </div>
-  </div>
-
-  <!-- BẢNG DANH SÁCH VAI TRÒ -->
+  <!-- BẢNG DỮ LIỆU -->
   <div class="table-card">
     <nz-table
       #roleTable
@@ -93,125 +45,47 @@
     >
       <thead>
         <tr>
-          <th nzWidth="65px" nzAlign="center">STT</th>
+          <th nzWidth="60px" nzAlign="center">STT</th>
           <th nzWidth="260px">Tên vai trò</th>
-          <th nzWidth="320px">Đặc điểm cấu hình</th>
-          <th>Ý nghĩa & Phạm vi áp dụng</th>
-          <th nzWidth="250px" nzAlign="center">Thao tác quản lý</th>
+          <th>Thiết lập</th>
+          <th nzWidth="220px" nzAlign="center">Thao tác</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let role of roleTable.data; let i = index">
-          <td nzAlign="center" class="text-secondary">
-            {{ (pageIndex - 1) * pageSize + i + 1 }}
-          </td>
+          <td nzAlign="center">{{ (pageIndex - 1) * pageSize + i + 1 }}</td>
 
-          <!-- Cột Tên vai trò -->
           <td>
-            <div class="role-name-cell">
-              <div class="role-avatar" [class.is-admin]="role.isStatic">
-                <span nz-icon [nzType]="role.isStatic ? 'crown' : 'idcard'"></span>
-              </div>
-              <div class="role-name-info">
-                <span class="role-title">{{ role.name }}</span>
-                <span class="role-sub-code" *ngIf="role.isStatic">Quản trị viên cao nhất</span>
-              </div>
-            </div>
+            <span class="fw-semibold">{{ role.name }}</span>
           </td>
 
-          <!-- Cột Đặc điểm cấu hình (Các nhãn giải thích trực quan) -->
           <td>
-            <div class="badges-wrap">
-              <span
-                *ngIf="role.isStatic"
-                class="role-badge badge-static"
-                nz-tooltip
-                nzTooltipTitle="Vai trò gốc của hệ thống, được bảo vệ không cho phép xóa hoặc đổi tên"
-              >
-                <span nz-icon nzType="lock"></span> Cốt lõi hệ thống
-              </span>
-
-              <span
-                *ngIf="role.isDefault"
-                class="role-badge badge-default"
-                nz-tooltip
-                nzTooltipTitle="Khi tạo tài khoản nhân viên mới, hệ thống sẽ tự động tích sẵn vai trò này"
-              >
-                <span nz-icon nzType="user-add"></span> Tự động gán (Mặc định)
-              </span>
-
-              <span
-                *ngIf="role.isPublic"
-                class="role-badge badge-public"
-                nz-tooltip
-                nzTooltipTitle="Chức danh vai trò này được hiển thị công khai trên hồ sơ nhân sự"
-              >
-                <span nz-icon nzType="eye"></span> Hiển thị công khai
-              </span>
-
-              <span
-                *ngIf="!role.isStatic && !role.isDefault && !role.isPublic"
-                class="role-badge badge-internal"
-              >
-                Nội bộ (Gán thủ công)
-              </span>
-            </div>
+            <nz-tag *ngIf="role.isStatic" nzColor="default">Hệ thống (Cố định)</nz-tag>
+            <nz-tag *ngIf="role.isDefault" nzColor="blue">Mặc định (Tự gán cho tài khoản mới)</nz-tag>
+            <nz-tag *ngIf="role.isPublic" nzColor="cyan">Công khai</nz-tag>
+            <span *ngIf="!role.isStatic && !role.isDefault && !role.isPublic" class="text-muted">
+              Thông thường
+            </span>
           </td>
 
-          <!-- Cột Mô tả dễ hiểu -->
-          <td>
-            <span class="role-desc-text">{{ getRoleSummaryDescription(role) }}</span>
-          </td>
-
-          <!-- Cột Thao tác -->
           <td nzAlign="center">
-            <div class="action-buttons">
-              <button
-                *ngIf="canManagePermissions"
-                nz-button
-                nzType="default"
-                nzSize="small"
-                class="btn-perm-action"
-                (click)="openPermissionsModal(role)"
-                nz-tooltip
-                nzTooltipTitle="Bật/tắt các quyền hạn cụ thể cho vai trò này"
-              >
-                <span nz-icon nzType="safety-certificate"></span>
-                <span>Phân quyền</span>
-              </button>
-
-              <button
-                *ngIf="canEdit"
-                nz-button
-                nzType="text"
-                nzSize="small"
-                class="btn-action-edit"
-                (click)="openEditModal(role)"
-                nz-tooltip
-                nzTooltipTitle="Sửa thiết lập vai trò"
-              >
-                <span nz-icon nzType="edit"></span>
-              </button>
-
-              <!-- Ẩn nút Xóa đối với vai trò hệ thống (admin) để tránh người dùng bấm nhầm -->
-              <button
+            <div class="action-links">
+              <a *ngIf="canManagePermissions" (click)="permModal.open('R', role.name!, role.name)">
+                Phân quyền
+              </a>
+              <a *ngIf="canEdit" (click)="openEditModal(role)">Sửa</a>
+              <a
                 *ngIf="canDelete && !role.isStatic"
-                nz-button
-                nzType="text"
-                nzDanger
-                nzSize="small"
-                class="btn-action-delete"
+                class="text-danger"
                 nz-popconfirm
-                [nzPopconfirmTitle]="'Bạn có chắc chắn muốn xóa vai trò [' + role.name + '] không? Các tài khoản đang giữ vai trò này sẽ mất quyền tương ứng.'"
-                nzOkText="Xóa vai trò"
+                [nzPopconfirmTitle]="'Bạn có chắc chắn muốn xóa vai trò ' + role.name + ' không?'"
+                nzOkText="Xóa"
                 nzCancelText="Hủy"
                 [nzOkDanger]="true"
                 (nzOnConfirm)="deleteRole(role)"
-                nz-tooltip
-                nzTooltipTitle="Xóa vai trò này"
               >
-                <span nz-icon nzType="delete"></span>
-              </button>
+                Xóa
+              </a>
             </div>
           </td>
         </tr>
@@ -220,149 +94,56 @@
   </div>
 </div>
 
-<!-- =========================================================================
-     MODAL THÊM MỚI / CHỈNH SỬA VAI TRÒ (THIẾT KẾ DỄ HIỂU, TRỰC QUAN)
-     ========================================================================= -->
+<!-- MODAL THÊM / SỬA VAI TRÒ -->
 <nz-modal
   [(nzVisible)]="isRoleModalVisible"
-  [nzTitle]="roleModalTitleTpl"
+  [nzTitle]="isEditMode ? 'Sửa vai trò' : 'Thêm vai trò mới'"
   [nzFooter]="roleModalFooterTpl"
   (nzOnCancel)="closeRoleModal()"
-  [nzWidth]="560"
+  [nzWidth]="480"
   [nzMaskClosable]="false"
 >
-  <ng-template #roleModalTitleTpl>
-    <div class="modal-custom-header">
-      <div class="modal-header-icon">
-        <span nz-icon [nzType]="isEditMode ? 'edit' : 'plus-circle'"></span>
-      </div>
-      <div>
-        <div class="modal-header-title">
-          {{ isEditMode ? 'Chỉnh sửa thiết lập Vai trò' : 'Tạo Vai trò (Nhóm quyền) mới' }}
-        </div>
-        <div class="modal-header-sub">
-          {{ isEditMode ? 'Cập nhật cấu hình cho vai trò: ' + selectedRole?.name : 'Đặt tên vai trò và chọn cách thức áp dụng cho nhân viên' }}
-        </div>
-      </div>
-    </div>
-  </ng-template>
-
   <ng-container *nzModalContent>
-    <form nz-form [formGroup]="roleForm" nzLayout="vertical" class="role-custom-form">
-      <!-- Hộp giải thích vì sao vai trò Admin bị khóa tên (khi sửa vai trò tĩnh) -->
-      <div class="static-role-alert" *ngIf="isEditMode && selectedRole?.isStatic">
-        <span nz-icon nzType="lock" class="lock-icon"></span>
-        <div class="alert-text">
-          <strong>Vì sao không sửa được tên "{{ selectedRole?.name }}"?</strong>
-          <p>
-            Đây là <b>vai trò cốt lõi của hệ thống</b>. Nhiều chức năng bảo mật đang nhận diện quản trị viên qua tên <code>{{ selectedRole?.name }}</code>, nên hệ thống khóa ô đổi tên để tránh lỗi mất quyền truy cập. Bạn vẫn có thể bật/tắt 2 tùy chọn bên dưới.
-          </p>
-        </div>
-      </div>
-
-      <!-- Ô nhập Tên vai trò -->
+    <form nz-form [formGroup]="roleForm" nzLayout="vertical">
       <nz-form-item>
-        <nz-form-label nzRequired>Tên vai trò (Chức danh nhóm quyền)</nz-form-label>
-        <nz-form-control nzErrorTip="Vui lòng nhập tên vai trò (tối đa 256 ký tự)!">
-          <nz-input-group [nzPrefix]="prefixRoleIcon">
-            <input
-              nz-input
-              formControlName="name"
-              placeholder="Ví dụ: Trưởng phòng, Nhân viên, Kế toán, Nhân sự..."
-            />
-          </nz-input-group>
-          <ng-template #prefixRoleIcon>
-            <span nz-icon nzType="idcard" style="color: #94a3b8;"></span>
-          </ng-template>
-          <div class="field-helper" *ngIf="!selectedRole?.isStatic">
-            Đặt tên ngắn gọn, đúng với vị trí công việc để dễ phân biệt khi gán cho nhân viên.
+        <nz-form-label nzRequired>Tên vai trò</nz-form-label>
+        <nz-form-control nzErrorTip="Vui lòng nhập tên vai trò!">
+          <input
+            nz-input
+            formControlName="name"
+            placeholder="Nhập tên vai trò (VD: Trưởng phòng, Nhân viên...)"
+          />
+          <div class="field-note" *ngIf="isEditMode && selectedRole?.isStatic">
+            * Đây là vai trò quản trị mặc định của hệ thống nên không thể đổi tên.
           </div>
         </nz-form-control>
       </nz-form-item>
 
-      <!-- Khu vực Thiết lập nâng cao: Thay 2 checkbox "Mặc định / Công khai" khó hiểu bằng 2 Thẻ tùy chọn có giải thích rõ ràng -->
-      <div class="options-section-label">Thiết lập cách hoạt động của vai trò này:</div>
+      <div class="checkbox-group-box">
+        <div class="checkbox-item">
+          <label nz-checkbox formControlName="isDefault">
+            <strong>Mặc định</strong> (Tự động gán vai trò này khi tạo tài khoản mới)
+          </label>
+        </div>
 
-      <!-- Thẻ 1: Tự động gán cho nhân viên mới (isDefault) -->
-      <div
-        class="option-card"
-        [class.option-active]="roleForm.get('isDefault')?.value"
-        (click)="toggleOptionCard('isDefault')"
-      >
-        <div class="option-card-icon default-icon">
-          <span nz-icon nzType="user-add"></span>
-        </div>
-        <div class="option-card-body">
-          <div class="option-title-line">
-            <span class="option-title">Tự động gán cho tài khoản mới</span>
-            <span class="option-origin-tag">Mặc định</span>
-          </div>
-          <p class="option-desc">
-            Khi tạo tài khoản cho nhân viên mới, hệ thống sẽ <b>tự động gán sẵn vai trò này</b> mà bạn không cần chọn lại bằng tay.
-            <br />
-            <span class="option-recommend">
-              👉 <i>Khuyên dùng cho vai trò "Nhân viên", không nên bật cho "Admin" hoặc "Trưởng phòng".</i>
-            </span>
-          </p>
-        </div>
-        <div class="option-card-switch" (click)="$event.stopPropagation()">
-          <nz-switch formControlName="isDefault"></nz-switch>
-        </div>
-      </div>
-
-      <!-- Thẻ 2: Hiển thị công khai trong công ty (isPublic) -->
-      <div
-        class="option-card"
-        [class.option-active]="roleForm.get('isPublic')?.value"
-        (click)="toggleOptionCard('isPublic')"
-      >
-        <div class="option-card-icon public-icon">
-          <span nz-icon nzType="eye"></span>
-        </div>
-        <div class="option-card-body">
-          <div class="option-title-line">
-            <span class="option-title">Hiển thị chức danh công khai</span>
-            <span class="option-origin-tag">Công khai</span>
-          </div>
-          <p class="option-desc">
-            Cho phép các nhân viên khác trong công ty nhìn thấy nhãn vai trò này trên danh bạ và khi chọn người phê duyệt.
-            <br />
-            <span class="option-recommend">
-              👉 <i>Nên bật cho hầu hết các vai trò thông thường trong công ty.</i>
-            </span>
-          </p>
-        </div>
-        <div class="option-card-switch" (click)="$event.stopPropagation()">
-          <nz-switch formControlName="isPublic"></nz-switch>
+        <div class="checkbox-item">
+          <label nz-checkbox formControlName="isPublic">
+            <strong>Công khai</strong> (Hiển thị chức danh vai trò này cho mọi người thấy)
+          </label>
         </div>
       </div>
     </form>
   </ng-container>
 
   <ng-template #roleModalFooterTpl>
-    <div class="modal-footer-btns">
-      <button nz-button nzType="default" (click)="closeRoleModal()" [disabled]="isSubmitting">
-        Hủy bỏ
-      </button>
-      <button
-        nz-button
-        nzType="primary"
-        class="btn-primary-dark"
-        (click)="saveRole()"
-        [nzLoading]="isSubmitting"
-      >
-        <span nz-icon nzType="check"></span>
-        {{ isEditMode ? 'Lưu thay đổi' : 'Tạo vai trò' }}
-      </button>
-    </div>
+    <button nz-button nzType="default" (click)="closeRoleModal()" [disabled]="isSubmitting">
+      Hủy
+    </button>
+    <button nz-button nzType="primary" (click)="saveRole()" [nzLoading]="isSubmitting">
+      Lưu
+    </button>
   </ng-template>
 </nz-modal>
 
-<!-- POPUP PHÂN QUYỀN CHI TIẾT CHO VAI TRÒ -->
-<app-permission-modal
-  [(visible)]="isPermModalVisible"
-  providerName="R"
-  [providerKey]="permTargetKey"
-  [entityTitle]="permTargetTitle"
-></app-permission-modal>
-
+<!-- MODAL PHÂN QUYỀN -->
+<app-permission-modal #permModal></app-permission-modal>

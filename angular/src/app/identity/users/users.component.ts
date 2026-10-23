@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import {
   IdentityRoleDto,
@@ -10,6 +10,7 @@ import {
 import { PermissionService } from '@abp/ng.core';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { finalize } from 'rxjs/operators';
+import { PermissionModalComponent } from '../components/permission-modal/permission-modal.component';
 
 @Component({
   selector: 'app-users',
@@ -18,39 +19,31 @@ import { finalize } from 'rxjs/operators';
   styleUrls: ['./users.component.scss'],
 })
 export class UsersComponent implements OnInit {
+  @ViewChild('permModal') permModal!: PermissionModalComponent;
+
   users: IdentityUserDto[] = [];
   totalCount = 0;
   isLoading = false;
 
-  // Tìm kiếm & phân trang
   filterText = '';
   pageIndex = 1;
   pageSize = 10;
 
-  // Quyền thao tác của người dùng đang đăng nhập
   canCreate = false;
   canEdit = false;
   canDelete = false;
   canManagePermissions = false;
   canManageRoles = false;
 
-  // Danh sách các Vai trò có thể gán trong hệ thống
   assignableRoles: IdentityRoleDto[] = [];
   selectedRoleNames: Set<string> = new Set<string>();
 
-  // Trạng thái Modal Thêm / Sửa Tài khoản
   isUserModalVisible = false;
   isEditMode = false;
   isSubmitting = false;
   activeTabIndex = 0;
-  passwordVisible = false;
   selectedUser: IdentityUserDto | null = null;
   userForm!: FormGroup;
-
-  // Trạng thái Modal Phân quyền cá nhân
-  isPermModalVisible = false;
-  permTargetKey = '';
-  permTargetTitle = '';
 
   constructor(
     private userService: IdentityUserService,
@@ -58,28 +51,6 @@ export class UsersComponent implements OnInit {
     private fb: FormBuilder,
     private message: NzMessageService
   ) {
-    this.initForm();
-  }
-
-  ngOnInit(): void {
-    this.checkPermissions();
-    this.loadUsers();
-    this.loadAssignableRoles();
-  }
-
-  private checkPermissions(): void {
-    this.canCreate = this.permissionService.getGrantedPolicy('AbpIdentity.Users.Create');
-    this.canEdit = this.permissionService.getGrantedPolicy('AbpIdentity.Users.Update');
-    this.canDelete = this.permissionService.getGrantedPolicy('AbpIdentity.Users.Delete');
-    this.canManagePermissions = this.permissionService.getGrantedPolicy(
-      'AbpIdentity.Users.ManagePermissions'
-    );
-    this.canManageRoles = this.permissionService.getGrantedPolicy(
-      'AbpIdentity.Users.Update.ManageRoles'
-    );
-  }
-
-  private initForm(): void {
     this.userForm = this.fb.group({
       userName: ['', [Validators.required, Validators.maxLength(256)]],
       password: [''],
@@ -92,7 +63,21 @@ export class UsersComponent implements OnInit {
     });
   }
 
-  // Tải danh sách tài khoản người dùng
+  ngOnInit(): void {
+    this.canCreate = this.permissionService.getGrantedPolicy('AbpIdentity.Users.Create');
+    this.canEdit = this.permissionService.getGrantedPolicy('AbpIdentity.Users.Update');
+    this.canDelete = this.permissionService.getGrantedPolicy('AbpIdentity.Users.Delete');
+    this.canManagePermissions = this.permissionService.getGrantedPolicy(
+      'AbpIdentity.Users.ManagePermissions'
+    );
+    this.canManageRoles = this.permissionService.getGrantedPolicy(
+      'AbpIdentity.Users.Update.ManageRoles'
+    );
+
+    this.loadUsers();
+    this.loadAssignableRoles();
+  }
+
   loadUsers(): void {
     this.isLoading = true;
     this.userService
@@ -109,12 +94,11 @@ export class UsersComponent implements OnInit {
           this.totalCount = res.totalCount || 0;
         },
         error: () => {
-          this.message.error('Không thể tải danh sách tài khoản người dùng!');
+          this.message.error('Không thể tải danh sách tài khoản!');
         },
       });
   }
 
-  // Tải danh sách tất cả vai trò để gán cho tài khoản
   loadAssignableRoles(): void {
     this.userService.getAssignableRoles().subscribe({
       next: res => {
@@ -139,26 +123,16 @@ export class UsersComponent implements OnInit {
     this.loadUsers();
   }
 
-  // Ghép Họ và Tên đầy đủ của người dùng
   getFullName(user: IdentityUserDto): string {
     const parts = [user.surname, user.name].filter(Boolean);
-    return parts.length > 0 ? parts.join(' ') : user.userName || 'Chưa cập nhật tên';
+    return parts.length > 0 ? parts.join(' ') : '—';
   }
 
-  // Lấy chữ cái đầu làm Avatar
-  getAvatarInitial(user: IdentityUserDto): string {
-    const source = user.name || user.userName || 'U';
-    return source.charAt(0).toUpperCase();
-  }
-
-  // Mở Modal Tạo tài khoản mới
   openCreateModal(): void {
     this.isEditMode = false;
     this.selectedUser = null;
     this.activeTabIndex = 0;
-    this.passwordVisible = false;
 
-    // Khi tạo mới thì bắt buộc nhập mật khẩu
     this.userForm.get('password')?.setValidators([Validators.required, Validators.minLength(6)]);
     this.userForm.get('password')?.updateValueAndValidity();
 
@@ -173,7 +147,6 @@ export class UsersComponent implements OnInit {
       lockoutEnabled: true,
     });
 
-    // Tự động tích chọn các vai trò có cờ "Mặc định" (isDefault = true)
     this.selectedRoleNames.clear();
     this.assignableRoles
       .filter(r => r.isDefault && r.name)
@@ -182,15 +155,12 @@ export class UsersComponent implements OnInit {
     this.isUserModalVisible = true;
   }
 
-  // Mở Modal Chỉnh sửa tài khoản (có thể mở thẳng vào tab Vai trò nếu truyền tabIndex = 1)
-  openEditModal(user: IdentityUserDto, initialTab = 0): void {
+  openEditModal(user: IdentityUserDto): void {
     if (!user.id) return;
     this.isEditMode = true;
     this.selectedUser = user;
-    this.activeTabIndex = initialTab;
-    this.passwordVisible = false;
+    this.activeTabIndex = 0;
 
-    // Khi chỉnh sửa thì mật khẩu là tùy chọn (để trống nếu không muốn đổi mật khẩu)
     this.userForm.get('password')?.clearValidators();
     this.userForm.get('password')?.updateValueAndValidity();
 
@@ -205,7 +175,6 @@ export class UsersComponent implements OnInit {
       lockoutEnabled: user.lockoutEnabled !== false,
     });
 
-    // Tải các vai trò hiện tại của người dùng này
     this.selectedRoleNames.clear();
     this.userService.getRoles(user.id).subscribe({
       next: res => {
@@ -223,12 +192,10 @@ export class UsersComponent implements OnInit {
     this.selectedUser = null;
   }
 
-  // Kiểm tra 1 vai trò có đang được chọn cho user này không
   isRoleSelected(roleName?: string): boolean {
     return !!roleName && this.selectedRoleNames.has(roleName);
   }
 
-  // Bật / Tắt chọn vai trò cho tài khoản
   toggleRoleSelection(roleName?: string): void {
     if (!roleName) return;
     if (this.selectedRoleNames.has(roleName)) {
@@ -238,15 +205,6 @@ export class UsersComponent implements OnInit {
     }
   }
 
-  // Đảo trạng thái thẻ công tắc trong form User
-  toggleUserOption(controlName: 'isActive' | 'lockoutEnabled'): void {
-    const ctrl = this.userForm.get(controlName);
-    if (ctrl) {
-      ctrl.setValue(!ctrl.value);
-    }
-  }
-
-  // Lưu thông tin Tài khoản (Tạo mới hoặc Cập nhật)
   saveUser(): void {
     if (this.userForm.invalid) {
       Object.values(this.userForm.controls).forEach(control => {
@@ -254,13 +212,11 @@ export class UsersComponent implements OnInit {
         control.updateValueAndValidity({ onlySelf: true });
       });
       this.activeTabIndex = 0;
-      this.message.warning('Vui lòng kiểm tra lại các thông tin bắt buộc!');
       return;
     }
 
     const raw = this.userForm.getRawValue();
     const roleNames = Array.from(this.selectedRoleNames);
-
     this.isSubmitting = true;
 
     if (this.isEditMode && this.selectedUser?.id) {
@@ -276,7 +232,6 @@ export class UsersComponent implements OnInit {
         concurrencyStamp: this.selectedUser.concurrencyStamp,
       };
 
-      // Chỉ gửi mật khẩu mới nếu người dùng có nhập vào ô Đổi mật khẩu
       if (raw.password && raw.password.trim().length > 0) {
         updateInput.password = raw.password.trim();
       }
@@ -286,9 +241,7 @@ export class UsersComponent implements OnInit {
         .pipe(finalize(() => (this.isSubmitting = false)))
         .subscribe({
           next: () => {
-            this.message.success(
-              `Đã cập nhật thông tin tài khoản "${updateInput.userName}" thành công!`
-            );
+            this.message.success('Đã cập nhật tài khoản thành công!');
             this.closeUserModal();
             this.loadUsers();
           },
@@ -296,7 +249,7 @@ export class UsersComponent implements OnInit {
             const msg =
               err?.error?.error?.message ||
               err?.error?.message ||
-              'Không thể cập nhật tài khoản. Vui lòng kiểm tra lại định dạng mật khẩu hoặc email!';
+              'Không thể cập nhật tài khoản!';
             this.message.error(msg);
           },
         });
@@ -318,9 +271,7 @@ export class UsersComponent implements OnInit {
         .pipe(finalize(() => (this.isSubmitting = false)))
         .subscribe({
           next: () => {
-            this.message.success(
-              `Đã tạo tài khoản "${createInput.userName}" thành công!`
-            );
+            this.message.success('Đã thêm tài khoản mới thành công!');
             this.closeUserModal();
             this.loadUsers();
           },
@@ -328,20 +279,15 @@ export class UsersComponent implements OnInit {
             const msg =
               err?.error?.error?.message ||
               err?.error?.message ||
-              'Không thể tạo tài khoản. Mật khẩu cần có chữ hoa, chữ thường, chữ số và ký tự đặc biệt!';
+              'Không thể tạo tài khoản!';
             this.message.error(msg);
           },
         });
     }
   }
 
-  // Xóa tài khoản người dùng
   deleteUser(user: IdentityUserDto): void {
-    if (!user.id) return;
-    if (user.userName?.toLowerCase() === 'admin') {
-      this.message.warning('Không thể xóa tài khoản Quản trị viên gốc (admin)!');
-      return;
-    }
+    if (!user.id || user.userName?.toLowerCase() === 'admin') return;
 
     this.isLoading = true;
     this.userService
@@ -349,21 +295,12 @@ export class UsersComponent implements OnInit {
       .pipe(finalize(() => (this.isLoading = false)))
       .subscribe({
         next: () => {
-          this.message.success(`Đã xóa tài khoản "${user.userName}" thành công!`);
+          this.message.success(`Đã xóa tài khoản "${user.userName}"!`);
           this.loadUsers();
         },
         error: () => {
-          this.message.error('Không thể xóa tài khoản này. Vui lòng thử lại!');
+          this.message.error('Không thể xóa tài khoản này!');
         },
       });
   }
-
-  // Mở popup Phân quyền riêng cho Tài khoản
-  openPermissionsModal(user: IdentityUserDto): void {
-    if (!user.id) return;
-    this.permTargetKey = user.id;
-    this.permTargetTitle = `${this.getFullName(user)} (@${user.userName})`;
-    this.isPermModalVisible = true;
-  }
 }
-

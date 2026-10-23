@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import {
   IdentityRoleCreateDto,
@@ -9,6 +9,7 @@ import {
 import { PermissionService } from '@abp/ng.core';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { finalize } from 'rxjs/operators';
+import { PermissionModalComponent } from '../components/permission-modal/permission-modal.component';
 
 @Component({
   selector: 'app-roles',
@@ -17,32 +18,26 @@ import { finalize } from 'rxjs/operators';
   styleUrls: ['./roles.component.scss'],
 })
 export class RolesComponent implements OnInit {
+  @ViewChild('permModal') permModal!: PermissionModalComponent;
+
   roles: IdentityRoleDto[] = [];
   totalCount = 0;
   isLoading = false;
 
-  // Tham số phân trang & tìm kiếm
   filterText = '';
   pageIndex = 1;
   pageSize = 10;
 
-  // Quyền hạn của người dùng hiện tại trên trang Vai trò
   canCreate = false;
   canEdit = false;
   canDelete = false;
   canManagePermissions = false;
 
-  // Trạng thái Modal Thêm / Sửa Vai trò
   isRoleModalVisible = false;
   isEditMode = false;
   isSubmitting = false;
   selectedRole: IdentityRoleDto | null = null;
   roleForm!: FormGroup;
-
-  // Trạng thái Modal Phân quyền
-  isPermModalVisible = false;
-  permTargetKey = '';
-  permTargetTitle = '';
 
   constructor(
     private roleService: IdentityRoleService,
@@ -50,26 +45,6 @@ export class RolesComponent implements OnInit {
     private fb: FormBuilder,
     private message: NzMessageService
   ) {
-    this.initForm();
-  }
-
-  ngOnInit(): void {
-    this.checkPermissions();
-    this.loadRoles();
-  }
-
-  // Kiểm tra quyền thao tác của tài khoản đang đăng nhập
-  private checkPermissions(): void {
-    this.canCreate = this.permissionService.getGrantedPolicy('AbpIdentity.Roles.Create');
-    this.canEdit = this.permissionService.getGrantedPolicy('AbpIdentity.Roles.Update');
-    this.canDelete = this.permissionService.getGrantedPolicy('AbpIdentity.Roles.Delete');
-    this.canManagePermissions = this.permissionService.getGrantedPolicy(
-      'AbpIdentity.Roles.ManagePermissions'
-    );
-  }
-
-  // Khởi tạo Form tạo/sửa vai trò
-  private initForm(): void {
     this.roleForm = this.fb.group({
       name: ['', [Validators.required, Validators.maxLength(256)]],
       isDefault: [false],
@@ -77,7 +52,16 @@ export class RolesComponent implements OnInit {
     });
   }
 
-  // Tải danh sách vai trò từ API
+  ngOnInit(): void {
+    this.canCreate = this.permissionService.getGrantedPolicy('AbpIdentity.Roles.Create');
+    this.canEdit = this.permissionService.getGrantedPolicy('AbpIdentity.Roles.Update');
+    this.canDelete = this.permissionService.getGrantedPolicy('AbpIdentity.Roles.Delete');
+    this.canManagePermissions = this.permissionService.getGrantedPolicy(
+      'AbpIdentity.Roles.ManagePermissions'
+    );
+    this.loadRoles();
+  }
+
   loadRoles(): void {
     this.isLoading = true;
     this.roleService
@@ -94,12 +78,11 @@ export class RolesComponent implements OnInit {
           this.totalCount = res.totalCount || 0;
         },
         error: () => {
-          this.message.error('Không thể tải danh sách vai trò. Vui lòng thử lại!');
+          this.message.error('Không thể tải danh sách vai trò!');
         },
       });
   }
 
-  // Tìm kiếm vai trò
   onSearch(): void {
     this.pageIndex = 1;
     this.loadRoles();
@@ -116,25 +99,6 @@ export class RolesComponent implements OnInit {
     this.loadRoles();
   }
 
-  // Giải thích ý nghĩa từng vai trò để bảng danh sách trực quan, dễ hiểu
-  getRoleSummaryDescription(role: IdentityRoleDto): string {
-    const name = (role.name || '').toLowerCase();
-    if (role.isStatic || name === 'admin') {
-      return 'Vai trò Quản trị viên tối cao mặc định của hệ thống. Không thể xóa hoặc đổi tên để đảm bảo an toàn.';
-    }
-    if (name.includes('manager') || name.includes('trưởng phòng') || name.includes('quản lý')) {
-      return 'Dành cho cấp quản lý/trưởng bộ phận có quyền xem và phê duyệt các đề xuất nội bộ.';
-    }
-    if (name.includes('employee') || name.includes('nhân viên') || name.includes('staff')) {
-      return 'Dành cho nhân viên tạo phiếu đề xuất và theo dõi tiến độ phê duyệt cá nhân.';
-    }
-    if (role.isDefault) {
-      return 'Vai trò tự động gán cho nhân viên mới khi tạo tài khoản trên hệ thống.';
-    }
-    return 'Vai trò tùy chỉnh dùng để phân nhóm quyền hạn theo nghiệp vụ công ty.';
-  }
-
-  // Mở popup Thêm vai trò mới
   openCreateModal(): void {
     this.isEditMode = false;
     this.selectedRole = null;
@@ -147,7 +111,6 @@ export class RolesComponent implements OnInit {
     this.isRoleModalVisible = true;
   }
 
-  // Mở popup Chỉnh sửa vai trò
   openEditModal(role: IdentityRoleDto): void {
     this.isEditMode = true;
     this.selectedRole = role;
@@ -157,7 +120,6 @@ export class RolesComponent implements OnInit {
       isPublic: !!role.isPublic,
     });
 
-    // Nếu là vai trò tĩnh cốt lõi (như admin) -> Khóa ô nhập tên và hiển thị giải thích rõ ràng trên giao diện
     if (role.isStatic) {
       this.roleForm.get('name')?.disable();
     } else {
@@ -172,29 +134,19 @@ export class RolesComponent implements OnInit {
     this.selectedRole = null;
   }
 
-  // Đảo trạng thái khi người dùng bấm vào thẻ tùy chọn Mặc định / Công khai
-  toggleOptionCard(controlName: 'isDefault' | 'isPublic'): void {
-    const ctrl = this.roleForm.get(controlName);
-    if (ctrl) {
-      ctrl.setValue(!ctrl.value);
-    }
-  }
-
-  // Lưu thông tin Vai trò (Tạo mới hoặc Cập nhật)
   saveRole(): void {
     if (this.roleForm.invalid) {
       Object.values(this.roleForm.controls).forEach(control => {
         control.markAsDirty();
         control.updateValueAndValidity({ onlySelf: true });
       });
-      this.message.warning('Vui lòng nhập tên vai trò hợp lệ!');
       return;
     }
 
     const rawValues = this.roleForm.getRawValue();
     const roleName = (rawValues.name || '').trim();
     if (!roleName) {
-      this.message.warning('Tên vai trò không được để trống!');
+      this.message.warning('Vui lòng nhập tên vai trò!');
       return;
     }
 
@@ -213,7 +165,7 @@ export class RolesComponent implements OnInit {
         .pipe(finalize(() => (this.isSubmitting = false)))
         .subscribe({
           next: () => {
-            this.message.success(`Đã cập nhật vai trò "${roleName}" thành công!`);
+            this.message.success('Đã cập nhật vai trò thành công!');
             this.closeRoleModal();
             this.loadRoles();
           },
@@ -221,7 +173,7 @@ export class RolesComponent implements OnInit {
             const msg =
               err?.error?.error?.message ||
               err?.error?.message ||
-              'Không thể cập nhật vai trò. Có thể tên vai trò đã tồn tại!';
+              'Không thể cập nhật vai trò!';
             this.message.error(msg);
           },
         });
@@ -236,35 +188,24 @@ export class RolesComponent implements OnInit {
         .create(createInput)
         .pipe(finalize(() => (this.isSubmitting = false)))
         .subscribe({
-          next: created => {
-            this.message.success(
-              `Đã tạo vai trò "${roleName}" thành công! Bạn có thể bấm "Phân quyền" để cấp quyền cho vai trò này.`
-            );
+          next: () => {
+            this.message.success('Đã thêm vai trò mới thành công!');
             this.closeRoleModal();
             this.loadRoles();
-            // Mở luôn cửa sổ phân quyền nếu người dùng có quyền cấu hình
-            if (this.canManagePermissions && created?.name) {
-              this.openPermissionsModal(created);
-            }
           },
           error: err => {
             const msg =
               err?.error?.error?.message ||
               err?.error?.message ||
-              'Không thể tạo vai trò mới. Có thể tên vai trò này đã trùng!';
+              'Không thể thêm vai trò mới!';
             this.message.error(msg);
           },
         });
     }
   }
 
-  // Xóa vai trò
   deleteRole(role: IdentityRoleDto): void {
-    if (!role.id) return;
-    if (role.isStatic) {
-      this.message.warning('Đây là vai trò cốt lõi của hệ thống, không thể xóa!');
-      return;
-    }
+    if (!role.id || role.isStatic) return;
 
     this.isLoading = true;
     this.roleService
@@ -272,21 +213,12 @@ export class RolesComponent implements OnInit {
       .pipe(finalize(() => (this.isLoading = false)))
       .subscribe({
         next: () => {
-          this.message.success(`Đã xóa vai trò "${role.name}" khỏi hệ thống!`);
+          this.message.success(`Đã xóa vai trò "${role.name}"!`);
           this.loadRoles();
         },
         error: () => {
-          this.message.error('Không thể xóa vai trò này. Vui lòng thử lại!');
+          this.message.error('Không thể xóa vai trò này!');
         },
       });
   }
-
-  // Mở popup Phân quyền chi tiết cho Vai trò
-  openPermissionsModal(role: IdentityRoleDto): void {
-    if (!role.name) return;
-    this.permTargetKey = role.name;
-    this.permTargetTitle = role.name;
-    this.isPermModalVisible = true;
-  }
 }
-
