@@ -5,65 +5,34 @@ using Volo.Abp.Domain.Entities.Auditing;
 
 namespace MyCompany.InternalApproval.Notifications;
 
-/// <summary>
-/// Thực thể Thông báo Phê duyệt (ApprovalNotification Entity).
-/// Gửi thông báo đến người liên quan khi trạng thái đề xuất thay đổi (được duyệt hoặc bị từ chối).
-/// Kế thừa CreationAuditedEntity để lưu vết thời điểm gửi thông báo.
-/// </summary>
+// Thông báo phê duyệt
 public class ApprovalNotification : CreationAuditedEntity<Guid>
 {
-    /// <summary>
-    /// Id của phiếu đề xuất liên quan đến thông báo này.
-    /// </summary>
+    // Id đề xuất
     public Guid RequestId { get; private set; }
 
-    /// <summary>
-    /// Tiêu đề của thông báo hiển thị trên chuông thông báo.
-    /// </summary>
+    // Tiêu đề thông báo
     public string Title { get; private set; } = string.Empty;
 
-    /// <summary>
-    /// Trạng thái mới của đề xuất gắn liền với thông báo (Approved / Rejected).
-    /// </summary>
+    // Trạng thái đề xuất
     public RequestStatus Status { get; private set; }
 
-    /// <summary>
-    /// Id tài khoản người nhận thông báo (thường là người tạo đề xuất).
-    /// </summary>
+    // Người nhận thông báo
     public Guid ReceiverId { get; private set; }
 
-    /// <summary>
-    /// Id của người đã phê duyệt / từ chối đề xuất (nếu có).
-    /// </summary>
+    // Người duyệt
     public Guid? ApproverId { get; private set; }
 
-    /// <summary>
-    /// Nội dung chi tiết của thông báo gửi tới người dùng.
-    /// </summary>
+    // Nội dung thông báo
     public string Message { get; private set; } = string.Empty;
 
-    /// <summary>
-    /// Trạng thái đã đọc của thông báo (true: đã đọc, false: chưa đọc).
-    /// </summary>
+    // Trạng thái đã đọc
     public bool IsRead { get; private set; }
 
-    /// <summary>
-    /// Hàm khởi tạo mặc định cho ORM (EF Core).
-    /// </summary>
     protected ApprovalNotification()
     {
     }
 
-    /// <summary>
-    /// Khởi tạo một thông báo mới gửi tới người dùng liên quan.
-    /// </summary>
-    /// <param name="id">Mã khóa chính GUID</param>
-    /// <param name="requestId">Id đề xuất liên quan</param>
-    /// <param name="title">Tiêu đề thông báo</param>
-    /// <param name="status">Trạng thái phê duyệt</param>
-    /// <param name="receiverId">Id người nhận thông báo</param>
-    /// <param name="approverId">Id người thực hiện duyệt</param>
-    /// <param name="message">Nội dung thông báo</param>
     public ApprovalNotification(
         Guid id,
         Guid requestId,
@@ -82,9 +51,7 @@ public class ApprovalNotification : CreationAuditedEntity<Guid>
         IsRead = false;
     }
 
-    /// <summary>
-    /// Đánh dấu thông báo là đã đọc.
-    /// </summary>
+    // Đánh dấu đã đọc
     public void MarkAsRead()
     {
         IsRead = true;
