@@ -1,17 +1,13 @@
 using Microsoft.EntityFrameworkCore;
-using Volo.Abp.AuditLogging.EntityFrameworkCore;
 using Volo.Abp.BackgroundJobs.EntityFrameworkCore;
 using Volo.Abp.Data;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.EntityFrameworkCore;
-using Volo.Abp.FeatureManagement.EntityFrameworkCore;
 using Volo.Abp.Identity;
 using Volo.Abp.Identity.EntityFrameworkCore;
 using Volo.Abp.OpenIddict.EntityFrameworkCore;
 using Volo.Abp.PermissionManagement.EntityFrameworkCore;
 using Volo.Abp.SettingManagement.EntityFrameworkCore;
-using Volo.Abp.TenantManagement;
-using Volo.Abp.TenantManagement.EntityFrameworkCore;
 using Volo.Abp.EntityFrameworkCore.Modeling;
 using MyCompany.InternalApproval.Requests;
 using MyCompany.InternalApproval.Notifications;
@@ -19,30 +15,14 @@ using MyCompany.InternalApproval.Departments;
 
 namespace MyCompany.InternalApproval.EntityFrameworkCore;
 
+// DbContext chính quản lý ánh xạ các bảng dữ liệu cần thiết của hệ thống
 [ReplaceDbContext(typeof(IIdentityDbContext))]
-[ReplaceDbContext(typeof(ITenantManagementDbContext))]
 [ConnectionStringName("Default")]
 public class InternalApprovalDbContext :
     AbpDbContext<InternalApprovalDbContext>,
-    IIdentityDbContext,
-    ITenantManagementDbContext
+    IIdentityDbContext
 {
-    /* Add DbSet properties for your Aggregate Roots / Entities here. */
-
-    #region Entities from the modules
-
-    /* Notice: We only implemented IIdentityDbContext and ITenantManagementDbContext
-     * and replaced them for this DbContext. This allows you to perform JOIN
-     * queries for the entities of these modules over the repositories easily. You
-     * typically don't need that for other modules. But, if you need, you can
-     * implement the DbContext interface of the needed module and use ReplaceDbContext
-     * attribute just like IIdentityDbContext and ITenantManagementDbContext.
-     *
-     * More info: Replacing a DbContext of a module ensures that the related module
-     * uses this DbContext on runtime. Otherwise, it will use its own DbContext class.
-     */
-
-    //Identity
+    // Các bảng thuộc phân hệ Tài khoản & Định danh (Identity)
     public DbSet<IdentityUser> Users { get; set; }
     public DbSet<IdentityRole> Roles { get; set; }
     public DbSet<IdentityClaimType> ClaimTypes { get; set; }
@@ -51,41 +31,31 @@ public class InternalApprovalDbContext :
     public DbSet<IdentityLinkUser> LinkUsers { get; set; }
     public DbSet<IdentityUserDelegation> UserDelegations { get; set; }
     public DbSet<IdentitySession> Sessions { get; set; }
-    // Tenant Management
-    public DbSet<Tenant> Tenants { get; set; }
-    public DbSet<TenantConnectionString> TenantConnectionStrings { get; set; }
 
+    // Các bảng nghiệp vụ chính của dự án Internal Approval
     public DbSet<Request> Requests { get; set; }
     public DbSet<RequestComment> RequestComments { get; set; }
     public DbSet<ApprovalNotification> ApprovalNotifications { get; set; }
     public DbSet<Department> Departments { get; set; }
     public DbSet<DepartmentMember> DepartmentMembers { get; set; }
 
-    #endregion
-
     public InternalApprovalDbContext(DbContextOptions<InternalApprovalDbContext> options)
         : base(options)
     {
-
     }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
 
-        /* Include modules to your migration db context */
-
+        // Cấu hình các bảng hệ thống cốt lõi (Phân quyền, Cài đặt, Tác vụ ngầm, Định danh, Xác thực OAuth)
         builder.ConfigurePermissionManagement();
         builder.ConfigureSettingManagement();
         builder.ConfigureBackgroundJobs();
-        builder.ConfigureAuditLogging();
         builder.ConfigureIdentity();
         builder.ConfigureOpenIddict();
-        builder.ConfigureFeatureManagement();
-        builder.ConfigureTenantManagement();
 
-        /* Configure your own tables/entities inside here */
-
+        // Cấu hình bảng Đề xuất nội bộ (AppRequests)
         builder.Entity<Request>(b =>
         {
             b.ToTable(InternalApprovalConsts.DbTablePrefix + "Requests", InternalApprovalConsts.DbSchema);
@@ -109,6 +79,7 @@ public class InternalApprovalDbContext :
             b.HasIndex(x => x.CreationTime);
         });
 
+        // Cấu hình bảng Bình luận đề xuất (AppRequestComments)
         builder.Entity<RequestComment>(b =>
         {
             b.ToTable(InternalApprovalConsts.DbTablePrefix + "RequestComments", InternalApprovalConsts.DbSchema);
@@ -118,6 +89,7 @@ public class InternalApprovalDbContext :
             b.HasIndex(x => x.RequestId);
         });
 
+        // Cấu hình bảng Thông báo phê duyệt (AppApprovalNotifications)
         builder.Entity<ApprovalNotification>(b =>
         {
             b.ToTable(InternalApprovalConsts.DbTablePrefix + "ApprovalNotifications", InternalApprovalConsts.DbSchema);
@@ -131,6 +103,7 @@ public class InternalApprovalDbContext :
             b.HasIndex(x => x.CreationTime);
         });
 
+        // Cấu hình bảng Phòng ban (AppDepartments)
         builder.Entity<Department>(b =>
         {
             b.ToTable(InternalApprovalConsts.DbTablePrefix + "Departments", InternalApprovalConsts.DbSchema);
@@ -149,6 +122,7 @@ public class InternalApprovalDbContext :
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
+        // Cấu hình bảng Thành viên thuộc phòng ban (AppDepartmentMembers)
         builder.Entity<DepartmentMember>(b =>
         {
             b.ToTable(InternalApprovalConsts.DbTablePrefix + "DepartmentMembers", InternalApprovalConsts.DbSchema);

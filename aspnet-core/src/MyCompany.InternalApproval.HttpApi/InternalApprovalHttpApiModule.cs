@@ -1,25 +1,20 @@
 using Localization.Resources.AbpUi;
 using MyCompany.InternalApproval.Localization;
 using Volo.Abp.Account;
-using Volo.Abp.FeatureManagement;
 using Volo.Abp.Identity;
 using Volo.Abp.Localization;
 using Volo.Abp.Modularity;
 using Volo.Abp.PermissionManagement.HttpApi;
-using Volo.Abp.SettingManagement;
-using Volo.Abp.TenantManagement;
 
 namespace MyCompany.InternalApproval;
 
+// Cấu hình module HttpApi cung cấp các điểm cuối REST API
 [DependsOn(
     typeof(InternalApprovalApplicationContractsModule),
     typeof(AbpAccountHttpApiModule),
     typeof(AbpIdentityHttpApiModule),
-    typeof(AbpPermissionManagementHttpApiModule),
-    typeof(AbpTenantManagementHttpApiModule),
-    typeof(AbpFeatureManagementHttpApiModule),
-    typeof(AbpSettingManagementHttpApiModule)
-    )]
+    typeof(AbpPermissionManagementHttpApiModule)
+)]
 public class InternalApprovalHttpApiModule : AbpModule
 {
     public override void ConfigureServices(ServiceConfigurationContext context)

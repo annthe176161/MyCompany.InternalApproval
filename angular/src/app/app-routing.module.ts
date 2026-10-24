@@ -20,11 +20,6 @@ const routes: Routes = [
     loadChildren: () => import('./identity/identity.module').then(m => m.IdentityManagementModule),
   },
   {
-    path: 'tenant-management',
-    loadChildren: () =>
-      import('@abp/ng.tenant-management').then(m => m.TenantManagementModule.forLazy()),
-  },
-  {
     path: 'requests',
     loadChildren: () => import('./request/request.module').then(m => m.RequestModule),
   },

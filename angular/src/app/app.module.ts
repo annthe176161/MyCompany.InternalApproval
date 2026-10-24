@@ -5,10 +5,8 @@ import {
   ThemeSharedModule,
   provideAbpThemeShared,
 } from '@abp/ng.theme.shared';
-import { provideFeatureManagementConfig } from '@abp/ng.feature-management';
 import { provideAbpOAuth } from '@abp/ng.oauth';
 import { provideIdentityConfig } from '@abp/ng.identity/config';
-import { provideTenantManagementConfig } from '@abp/ng.tenant-management/config';
 import { provideAccountConfig } from '@abp/ng.account/config';
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
@@ -72,8 +70,6 @@ const ngZorroConfig: NzConfig = {
     provideAbpThemeShared(),
     provideAccountConfig(),
     provideIdentityConfig(),
-    provideTenantManagementConfig(),
-    provideFeatureManagementConfig(),
     { provide: NZ_I18N, useValue: vi_VN },
     { provide: NZ_CONFIG, useValue: ngZorroConfig },
   ],
