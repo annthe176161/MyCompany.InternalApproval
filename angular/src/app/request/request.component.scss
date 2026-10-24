@@ -5,8 +5,28 @@
 .request-page-container {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   padding-bottom: 24px;
+}
+
+/* Tùy chỉnh thanh cuộn chuột bên trong table */
+::ng-deep .ant-table-body {
+  overflow-y: auto !important;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: #d1d5db;
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: #9ca3af;
+  }
+  &::-webkit-scrollbar-track {
+    background: #f9fafb;
+  }
 }
 
 .page-header {
@@ -144,10 +164,11 @@
       font-weight: 600;
       color: #374151;
       border-bottom: 1px solid #e5e7eb;
+      white-space: nowrap;
     }
 
     .ant-table-tbody > tr > td {
-      padding: 12px 16px;
+      padding: 10px 16px;
       font-size: 13px;
       color: #1f2937;
       border-bottom: 1px solid #f3f4f6;
@@ -162,8 +183,11 @@
     }
 
     .ant-table-pagination.ant-pagination {
-      margin: 16px !important;
+      margin: 14px 16px !important;
       padding-right: 4px;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
     }
   }
 }

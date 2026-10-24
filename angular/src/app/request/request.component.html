@@ -135,7 +135,7 @@
       [nzPageSize]="pageSize"
       [nzShowSizeChanger]="true"
       [nzPageSizeOptions]="[10, 20, 50]"
-      [nzScroll]="{ x: tableScrollX }"
+      [nzScroll]="{ y: 'calc(100vh - 330px)', x: tableScrollX }"
       (nzQueryParams)="onQueryParamsChange($event)"
       nzSize="middle"
     >
