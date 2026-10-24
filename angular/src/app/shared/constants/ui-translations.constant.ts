@@ -65,7 +65,9 @@ export const ABP_CLIENT_LOCALIZATIONS: ABP.Localization[] = [
 
 // Bản đồ dịch thuật chính xác từ tiếng Việt sang tiếng Anh cho toàn bộ giao diện
 export const UI_EXACT_TRANSLATIONS: Record<string, string> = {
-  // Cột & Cài đặt cột bảng đề xuất
+  // Thống kê nhân sự phòng ban & trao đổi
+  'Bình luận': 'Comments',
+  'Trao đổi': 'Discussion',
   'Cột hiển thị': 'Visible Columns',
   'Đặt lại': 'Reset',
   '(cố định)': '(fixed)',
@@ -1157,5 +1159,15 @@ export const UI_PATTERN_TRANSLATIONS: UiPatternTranslation[] = [
   {
     pattern: /^(.+?):\s*(\d+)\s+nhân sự\s*\(([\d.,]+)%\)$/i,
     replace: (_full, dept, count, pct) => `${dept}: ${count} ${Number(count) === 1 ? 'employee' : 'employees'} (${pct}%)`,
+  },
+  // Dynamic header: "Danh sách nhân sự hiện tại (2)"
+  {
+    pattern: /^Danh sách nhân sự hiện tại\s*\((\d+)\)$/i,
+    replace: (_full, n) => `Current Staff List (${n})`,
+  },
+  // Dynamic header: "Bình luận trao đổi (0)"
+  {
+    pattern: /^Bình luận trao đổi\s*\((\d+)\)$/i,
+    replace: (_full, n) => `Comments & Discussion (${n})`,
   },
 ];
