@@ -43,15 +43,20 @@ public class UnifiedExceptionFilter : AbpExceptionFilter
         await services.GetRequiredService<IExceptionNotifier>()
             .NotifyAsync(new ExceptionNotificationContext(context.Exception));
 
+        var errorMessage = errorInfo.Message;
+        if (string.IsNullOrWhiteSpace(errorMessage) && errorInfo.ValidationErrors?.Length > 0)
+        {
+            errorMessage = string.Join("; ", System.Linq.Enumerable.Select(errorInfo.ValidationErrors, v => v.Message));
+        }
+
+        // Đảm bảo luôn trả về mã HTTP 200 OK kèm cấu trúc lỗi chuẩn của công ty (success, code, message, data)
         context.HttpContext.Response.StatusCode = StatusCodes.Status200OK;
         context.Result = new ObjectResult(new
         {
             success = false,
             code = errorInfo.Code ?? "InternalApproval:00000",
-            message = errorInfo.Message,
-            details = errorInfo.Details,
-            data = (object?)null,
-            validationErrors = errorInfo.ValidationErrors
+            message = errorMessage ?? "Đã xảy ra lỗi trong quá trình xử lý.",
+            data = (object?)null
         })
         {
             StatusCode = StatusCodes.Status200OK

@@ -92,7 +92,62 @@ PHẦN 2: QUY CHUẨN CLEAN CODE CỦA CÔNG TY (BẮT BUỘC TUÂN THỦ)
 
 PHẦN 3: QUY CHUẨN XỬ LÝ LỖI VÀ FORM BÁO LỖI
 
-3.1. Quy chuẩn ném lỗi phía Backend (.NET / ABP)
+3.1. Cấu trúc chuẩn phản hồi API của công ty (Luôn trả về mã HTTP 200 OK)
+
+Quy định bắt buộc: Mọi API nghiệp vụ (/api/app/...) khi xảy ra lỗi nghiệp vụ, lỗi kiểm tra dữ liệu hoặc lỗi phân quyền đều phải trả về mã trạng thái HTTP 200 OK kèm đối tượng JSON chuẩn (ApiResponse envelope) gồm đúng 4 trường: success, code, message, data. Tuyệt đối không để API văng mã lỗi HTTP 500, HTTP 403 hay HTTP 400 ra ngoài Client.
+
+1. Cấu trúc mẫu phản hồi khi gặp LỖI (Chuẩn của công ty đề ra):
+```json
+{
+  "success": false,
+  "code": "InternalApproval:00003",
+  "message": "Bạn không được phép tự phê duyệt đề xuất của chính mình!",
+  "data": null
+}
+```
+
+2. So sánh với cấu trúc mặc định của ABP Framework (Công ty KHÔNG sử dụng):
+```json
+{
+  "error": {
+    "code": "InternalApproval:00003",
+    "message": "Bạn không được phép tự phê duyệt đề xuất của chính mình!",
+    "details": null,
+    "data": {},
+    "validationErrors": null
+  }
+}
+```
+   - Lý do không sử dụng kiểu mặc định của ABP:
+     + ABP mặc định trả về mã HTTP 403 Forbidden hoặc HTTP 500 Internal Server Error làm trình duyệt và thư viện HTTP Client coi là sự cố mạng/hạ tầng, gây ngắt luồng xử lý và báo đỏ console không cần thiết.
+     + Cấu trúc lồng nhau trong đối tượng "error" cồng kềnh, chứa nhiều trường dư thừa (details, validationErrors, data rỗng) gây khó khăn cho việc bóc tách dữ liệu phía Frontend hoặc tích hợp với các hệ thống thứ ba.
+
+3. Cấu trúc mẫu phản hồi khi THÀNH CÔNG:
+```json
+{
+  "success": true,
+  "code": null,
+  "message": "Thành công",
+  "data": {
+    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "title": "Đề xuất mua sắm laptop mới",
+    "status": 1
+  }
+}
+```
+
+4. Cách cài đặt phía Backend (.NET / ABP):
+   - Hệ thống cài đặt bộ lọc UnifiedExceptionFilter (kế thừa AbpExceptionFilter) tại thư mục aspnet-core/src/MyCompany.InternalApproval.HttpApi.Host/Middleware/UnifiedExceptionFilter.cs.
+   - Bộ lọc được kích hoạt tự động với thuộc tính [Dependency(ReplaceServices = true)] để thay thế bộ lọc lỗi mặc định của ABP.
+   - Khi có bất kỳ Exception nào phát sinh từ các đường dẫn /api/app/*:
+     + Ghi log đầy đủ lỗi kèm StackTrace chi tiết vào hệ thống log máy chủ phục vụ lập trình viên điều tra, sửa lỗi.
+     + Chuyển đổi mã lỗi sang câu thông báo tiếng Việt tương ứng đã được cấu hình trong file Localization (vi.json).
+     + Gán context.HttpContext.Response.StatusCode = StatusCodes.Status200OK.
+     + Trả về đối tượng JSON đồng nhất { success = false, code, message, data = null }.
+   - Lớp ApiResponse<T> được định nghĩa tại Application.Contracts/Common/ApiResponse.cs hỗ trợ đóng gói dữ liệu phản hồi dạng type-safe khi cần thiết.
+
+
+3.2. Quy chuẩn ném lỗi phía Backend (.NET / ABP)
 
 1. Khai báo mã lỗi nghiệp vụ tại file Domain.Shared/InternalApprovalDomainErrorCodes.cs:
    - InternalApproval:00001: Chỉ người tạo mới có quyền gửi phê duyệt đề xuất này.
@@ -107,7 +162,7 @@ PHẦN 3: QUY CHUẨN XỬ LÝ LỖI VÀ FORM BÁO LỖI
 
 2. Khai báo câu thông báo tương ứng trong file Localization/InternalApproval/vi.json và en.json.
 
-3. Sử dụng đúng loại Exception theo ngữ cảnh:
+3. Sử dụng đúng loại Exception theo ngữ cảnh (UnifiedExceptionFilter sẽ tự động bắt và đóng gói):
    - Dùng BusinessException kèm mã lỗi trong InternalApprovalDomainErrorCodes khi vi phạm quy tắc nghiệp vụ Domain:
      throw new BusinessException(InternalApprovalDomainErrorCodes.CannotApproveOwnRequest);
    - Dùng UserFriendlyException khi cần trả về thông báo lỗi kiểm tra dữ liệu trực tiếp cho người dùng:
@@ -116,12 +171,16 @@ PHẦN 3: QUY CHUẨN XỬ LÝ LỖI VÀ FORM BÁO LỖI
      throw new AbpAuthorizationException("Bạn không có quyền truy cập thông tin nhân sự ngoài phạm vi quản lý.");
 
 
-3.2. Quy chuẩn hiển thị lỗi và kiểm tra Form phía Frontend (Angular)
+3.3. Quy chuẩn hiển thị lỗi và kiểm tra Form phía Frontend (Angular)
 
 1. Bóc tách và hiển thị lỗi khi gọi API:
-   - Luôn sử dụng hàm extractErrorMessage từ shared/utils kết hợp với NzMessageService:
+   - Luôn sử dụng hàm extractErrorMessage từ shared/utils kết hợp với NzMessageService để hiển thị thông báo lỗi thân thiện:
      this.requestService.approve(id, input).subscribe({
-       next: () => {
+       next: (res: any) => {
+         if (res && res.success === false) {
+           this.message.error(res.message || 'Không thể phê duyệt đề xuất!');
+           return;
+         }
          this.message.success('Phê duyệt đề xuất thành công!');
        },
        error: err => {
