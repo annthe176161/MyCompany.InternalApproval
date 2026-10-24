@@ -3,3 +3,4 @@ export interface UiPatternTranslation {
   pattern: RegExp;
   replace: (...matches: string[]) => string;
 }
+

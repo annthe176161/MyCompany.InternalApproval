@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, Inject, OnInit } from '@angular/core';
 import { ReplaceableComponentsService } from '@abp/ng.core';
 import { eThemeLeptonXComponents, eUserMenuItems } from '@abp/ng.theme.lepton-x';
 import { UserMenuService } from '@abp/ng.theme.shared';
@@ -17,7 +17,7 @@ export class AppComponent implements OnInit {
   constructor(
     private replaceableComponents: ReplaceableComponentsService,
     private userMenuService: UserMenuService,
-    private appLanguageService: AppLanguageService,
+    @Inject(AppLanguageService) private appLanguageService: AppLanguageService,
   ) {}
 
   ngOnInit(): void {

@@ -302,3 +302,4 @@ export class AppLanguageService implements OnDestroy {
     return segment;
   }
 }
+

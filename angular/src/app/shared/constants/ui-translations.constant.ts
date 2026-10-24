@@ -65,6 +65,25 @@ export const ABP_CLIENT_LOCALIZATIONS: ABP.Localization[] = [
 
 // Bản đồ dịch thuật chính xác từ tiếng Việt sang tiếng Anh cho toàn bộ giao diện
 export const UI_EXACT_TRANSLATIONS: Record<string, string> = {
+  // Cột & Cài đặt cột bảng đề xuất
+  'Cột hiển thị': 'Visible Columns',
+  'Đặt lại': 'Reset',
+  '(cố định)': '(fixed)',
+  'Mã phiếu': 'Request Code',
+  'Tiêu đề & Loại đề xuất': 'Title & Request Type',
+  'Người đề xuất': 'Requester',
+  'Tất cả đề xuất': 'All Requests',
+  'Tùy chỉnh cột': 'Customize Columns',
+  'Danh sách toàn bộ đề xuất trên hệ thống': 'List of all requests in the system',
+  'Danh sách các đề xuất của tài khoản đăng nhập': 'List of requests created by your account',
+  'Số tiền đề xuất': 'Requested Amount',
+
+  // Thông tin ô & hàng bảng
+  'Tất cả phòng ban quản lý': 'All Managed Departments',
+  'nhân sự': 'employees',
+  'Tổng số': 'Total',
+  'Mã:': 'Code:',
+
   // Menu, Header, Logo & Chung
   'HỆ THỐNG PHÊ DUYỆT': 'APPROVAL SYSTEM',
   'Trang chủ': 'Home',
