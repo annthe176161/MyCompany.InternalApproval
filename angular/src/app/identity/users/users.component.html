@@ -159,12 +159,22 @@
                 {{ isEditMode ? 'Mật khẩu mới (để trống nếu giữ nguyên)' : 'Mật khẩu' }}
               </nz-form-label>
               <nz-form-control nzErrorTip="Vui lòng nhập mật khẩu (ít nhất 6 ký tự)!">
-                <input
-                  type="password"
-                  nz-input
-                  formControlName="password"
-                  [placeholder]="isEditMode ? 'Nhập nếu muốn đổi mật khẩu...' : 'Nhập mật khẩu...'"
-                />
+                <nz-input-group [nzSuffix]="pwdSuffix">
+                  <input
+                    [type]="passwordVisible ? 'text' : 'password'"
+                    nz-input
+                    formControlName="password"
+                    [placeholder]="isEditMode ? 'Nhập nếu muốn đổi mật khẩu...' : 'Mặc định: ' + defaultPassword"
+                  />
+                </nz-input-group>
+                <ng-template #pwdSuffix>
+                  <span
+                    nz-icon
+                    [nzType]="passwordVisible ? 'eye-invisible' : 'eye'"
+                    (click)="passwordVisible = !passwordVisible"
+                    style="cursor: pointer; color: #9ca3af;"
+                  ></span>
+                </ng-template>
               </nz-form-control>
             </nz-form-item>
           </div>
@@ -204,9 +214,6 @@
           <div class="checkbox-group-box">
             <label nz-checkbox formControlName="isActive">
               <strong>Đang hoạt động</strong> (Cho phép đăng nhập vào hệ thống)
-            </label>
-            <label nz-checkbox formControlName="lockoutEnabled">
-              <strong>Tự động khóa tạm thời</strong> khi nhập sai mật khẩu quá số lần quy định
             </label>
           </div>
         </form>

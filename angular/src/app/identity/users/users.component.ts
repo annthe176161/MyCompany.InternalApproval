@@ -45,6 +45,9 @@ export class UsersComponent implements OnInit {
   selectedUser: IdentityUserDto | null = null;
   userForm!: FormGroup;
 
+  readonly defaultPassword = 'Company@2026';
+  passwordVisible = false;
+
   constructor(
     private userService: IdentityUserService,
     private permissionService: PermissionService,
@@ -53,13 +56,13 @@ export class UsersComponent implements OnInit {
   ) {
     this.userForm = this.fb.group({
       userName: ['', [Validators.required, Validators.maxLength(256)]],
-      password: [''],
+      password: [this.defaultPassword],
       surname: ['', [Validators.maxLength(64)]],
       name: ['', [Validators.maxLength(64)]],
       email: ['', [Validators.required, Validators.email, Validators.maxLength(256)]],
       phoneNumber: ['', [Validators.maxLength(16)]],
       isActive: [true],
-      lockoutEnabled: [true],
+      lockoutEnabled: [false],
     });
   }
 
@@ -132,19 +135,20 @@ export class UsersComponent implements OnInit {
     this.isEditMode = false;
     this.selectedUser = null;
     this.activeTabIndex = 0;
+    this.passwordVisible = false;
 
     this.userForm.get('password')?.setValidators([Validators.required, Validators.minLength(6)]);
     this.userForm.get('password')?.updateValueAndValidity();
 
     this.userForm.reset({
       userName: '',
-      password: '',
+      password: this.defaultPassword,
       surname: '',
       name: '',
       email: '',
       phoneNumber: '',
       isActive: true,
-      lockoutEnabled: true,
+      lockoutEnabled: false,
     });
 
     this.selectedRoleNames.clear();
@@ -160,6 +164,7 @@ export class UsersComponent implements OnInit {
     this.isEditMode = true;
     this.selectedUser = user;
     this.activeTabIndex = 0;
+    this.passwordVisible = false;
 
     this.userForm.get('password')?.clearValidators();
     this.userForm.get('password')?.updateValueAndValidity();
@@ -172,7 +177,7 @@ export class UsersComponent implements OnInit {
       email: user.email || '',
       phoneNumber: user.phoneNumber || '',
       isActive: user.isActive !== false,
-      lockoutEnabled: user.lockoutEnabled !== false,
+      lockoutEnabled: false,
     });
 
     this.selectedRoleNames.clear();
@@ -227,7 +232,7 @@ export class UsersComponent implements OnInit {
         email: (raw.email || '').trim(),
         phoneNumber: (raw.phoneNumber || '').trim(),
         isActive: !!raw.isActive,
-        lockoutEnabled: !!raw.lockoutEnabled,
+        lockoutEnabled: false,
         roleNames,
         concurrencyStamp: this.selectedUser.concurrencyStamp,
       };
@@ -256,13 +261,13 @@ export class UsersComponent implements OnInit {
     } else {
       const createInput: IdentityUserCreateDto = {
         userName: (raw.userName || '').trim(),
-        password: (raw.password || '').trim(),
+        password: (raw.password || '').trim() || this.defaultPassword,
         name: (raw.name || '').trim(),
         surname: (raw.surname || '').trim(),
         email: (raw.email || '').trim(),
         phoneNumber: (raw.phoneNumber || '').trim(),
         isActive: !!raw.isActive,
-        lockoutEnabled: !!raw.lockoutEnabled,
+        lockoutEnabled: false,
         roleNames,
       };
 
