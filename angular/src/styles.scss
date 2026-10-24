@@ -11,6 +11,11 @@
 :root {
   --lpx-logo: url('/assets/images/logo/logo-light.svg');
   --lpx-logo-icon: url('/assets/images/logo/logo-light-thumbnail.svg');
+  /* Thay thế triệt để mã màu hồng (#f72585) mặc định của LeptonX */
+  --lpx-brand: #2563eb !important;
+  --lpx-brand-hover: #1d4ed8 !important;
+  --lpx-brand-gradient: #2563eb !important;
+  --lpx-primary: #2563eb !important;
 }
 .donut {
   display: inline-block;
@@ -553,6 +558,7 @@
   color: #475569 !important;
   border-radius: 6px !important;
   white-space: nowrap !important;
+  transition: all 0.2s ease !important;
 
   .lpx-breadcrumb-item-icon,
   lpx-icon {
@@ -562,6 +568,8 @@
     line-height: 1 !important;
     margin: 0 !important;
     font-size: 14px !important;
+    color: #64748b !important;
+    transition: color 0.2s ease !important;
 
     i, .fas, .fa {
       display: inline-flex !important;
@@ -570,6 +578,7 @@
       line-height: 1 !important;
       vertical-align: middle !important;
       margin: 0 !important;
+      color: inherit !important;
     }
   }
 
@@ -583,14 +592,46 @@
     text-decoration: none !important;
     font-weight: 500 !important;
     margin: 0 !important;
+    transition: color 0.2s ease !important;
   }
 
   &:hover {
     color: #0f172a !important;
-    a {
+    background-color: #f1f5f9 !important;
+
+    .lpx-breadcrumb-item-icon,
+    lpx-icon,
+    i, .fas, .fa {
+      color: #2563eb !important; /* Xanh dịu mắt chuẩn corporate, triệt tiêu màu hồng */
+    }
+
+    a,
+    .lpx-breadcrumb-item-text {
       color: #0f172a !important;
     }
   }
+}
+
+/* ==========================================================================
+   TRIỆT TIÊU HOÀN TOÀN MÀU HỒNG (#f72585 / MAGENTA) TRÊN TOÀN BỘ HỆ THỐNG
+   ========================================================================== */
+.lpx-breadcrumb-item:hover .lpx-breadcrumb-item-icon,
+.lpx-breadcrumb-item:hover .lpx-caret,
+.lpx-breadcrumb-dropdown-item:hover:before,
+.lpx-breadcrumb-dropdown-item.active:before,
+.lpx-nav-menu .lpx-menu-item-link:hover .lpx-menu-item-icon,
+.lpx-nav-menu .lpx-menu-item-link.selected .lpx-menu-item-icon,
+.lpx-nav-menu .lpx-menu-item-link.expanded .lpx-menu-item-icon,
+.lpx-menu-item:hover .lpx-menu-item-icon,
+.lpx-menu-item.selected .lpx-menu-item-icon,
+.lpx-language-selection .dropdown-toggle .lpx-icon,
+.lpx-footbar-container .lpx-footbar a:hover {
+  color: #2563eb !important;
+}
+
+.bg-brand,
+.bg-brand-gradient {
+  background: #2563eb !important;
 }
 
 .lpx-breadcrumb-separator {
