@@ -1,13 +1,12 @@
 :host {
   display: block;
-  height: 100%;
 }
 
 .department-page-container {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 8px 0;
+  padding-bottom: 24px;
 }
 
 .page-header {
@@ -30,7 +29,7 @@
     gap: 8px;
 
     .search-input {
-      width: 250px;
+      width: 260px;
     }
   }
 }
@@ -41,9 +40,36 @@
   border: 1px solid #e5e7eb;
   overflow: hidden;
 
-  ::ng-deep .ant-table-pagination.ant-pagination {
-    margin: 16px !important;
-    padding-right: 4px;
+  ::ng-deep {
+    .ant-table-thead > tr > th {
+      background: #f9fafb;
+      padding: 12px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      border-bottom: 1px solid #e5e7eb;
+      white-space: nowrap;
+    }
+
+    .ant-table-tbody > tr > td {
+      padding: 12px 16px;
+      font-size: 13px;
+      color: #1f2937;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .ant-table-tbody > tr:last-child > td {
+      border-bottom: none;
+    }
+
+    .ant-table-tbody > tr:hover > td {
+      background: #f9fafb;
+    }
+
+    .ant-table-pagination.ant-pagination {
+      margin: 16px !important;
+      padding-right: 4px;
+    }
   }
 }
 
@@ -62,124 +88,111 @@
   justify-content: center !important;
   padding: 0 !important;
   border-radius: 6px !important;
-  font-size: 15px !important;
-  transition: all 0.2s ease;
+  font-size: 14px !important;
+  transition: all 0.15s ease;
   border: 1px solid transparent !important;
 
-  /* Nhân sự - Màu xanh dương */
+  span[nz-icon] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+
   &.members {
     color: #2563eb;
     background-color: #eff6ff;
+    border-color: #dbeafe !important;
     &:hover {
       background-color: #2563eb;
       color: #ffffff;
-      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+      border-color: #2563eb !important;
     }
   }
 
-  /* Chỉnh sửa - Màu cam */
   &.edit {
     color: #d97706;
     background-color: #fffbeb;
+    border-color: #fef3c7 !important;
     &:hover {
       background-color: #d97706;
       color: #ffffff;
-      box-shadow: 0 2px 6px rgba(217, 119, 6, 0.25);
+      border-color: #d97706 !important;
     }
   }
 
-  /* Xóa - Màu đỏ */
   &.delete {
     color: #dc2626;
     background-color: #fef2f2;
+    border-color: #fee2e2 !important;
     &:hover {
       background-color: #dc2626;
       color: #ffffff;
-      box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25);
+      border-color: #dc2626 !important;
     }
   }
 }
 
 .code-badge {
   display: inline-block;
-  padding: 3px 8px;
-  background: #f1f5f9;
-  color: #0f172a;
+  padding: 2px 6px;
+  background: #f3f4f6;
+  color: #374151;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-weight: 700;
-  font-size: 12px;
+  font-weight: 600;
+  font-size: 11.5px;
   border-radius: 4px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid #e5e7eb;
 }
 
 .dept-name {
   font-weight: 600;
-  color: #0f172a;
-  font-size: 14px;
+  color: #111827;
+  font-size: 13.5px;
 }
 
 .manager-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-
-  .manager-avatar {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: #e0f2fe;
-    color: #0284c7;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-  }
-
   .manager-name {
     font-weight: 600;
-    color: #1e293b;
+    color: #111827;
     font-size: 13px;
-    line-height: 1.2;
+    line-height: 1.3;
   }
+}
 
-  .manager-badge {
-    font-size: 11px;
-    color: #0284c7;
-    font-weight: 600;
-  }
+.cell-subbadge {
+  font-size: 11px;
+  font-weight: 500;
+  color: #4b5563;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 3px;
+  padding: 1px 6px;
+  display: inline-block;
+  margin-top: 2px;
+  line-height: 1.3;
 }
 
 .no-manager {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: #94a3b8;
+  color: #9ca3af;
   font-size: 12px;
-  font-style: italic;
 }
 
-.member-count-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  background: #eef2ff;
-  color: #4338ca;
-  font-size: 12px;
-  font-weight: 600;
-  border-radius: 12px;
+.member-count-link {
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
   user-select: none;
 
   &:hover {
-    background: #e0e7ff;
-    transform: translateY(-1px);
+    text-decoration: underline;
+    color: #1d4ed8;
   }
 }
 
 .text-secondary {
-  color: #64748b;
+  color: #6b7280;
   font-size: 13px;
 }
 
@@ -190,41 +203,6 @@
   text-overflow: ellipsis;
 }
 
-.action-buttons {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-
-  .btn-members {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-weight: 600;
-    font-size: 12px;
-    border-color: #cbd5e1;
-    color: #1e293b;
-
-    &:hover {
-      border-color: #0f172a;
-      color: #0f172a;
-    }
-  }
-
-  .btn-action-edit {
-    color: #0284c7;
-    font-size: 15px;
-
-    &:hover {
-      background: #f0f9ff;
-    }
-  }
-
-  .btn-action-delete {
-    font-size: 15px;
-  }
-}
-
 // ==========================================
 // DRAWER QUẢN LÝ NHÂN SỰ & CHỨC VỤ
 // ==========================================
@@ -232,25 +210,22 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 15px;
+  font-size: 14.5px;
   font-weight: 600;
-  color: #0f172a;
+  color: #111827;
 }
 
 .add-member-card {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
   padding: 14px 16px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 
   .section-title {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13.5px;
-    font-weight: 700;
-    color: #1e293b;
+    font-size: 13px;
+    font-weight: 600;
+    color: #111827;
     margin-bottom: 12px;
   }
 
@@ -263,23 +238,22 @@
 
     .quick-label {
       font-size: 12px;
-      color: #64748b;
-      font-weight: 500;
+      color: #6b7280;
     }
 
     .quick-pos-tag {
       cursor: pointer;
       border-radius: 4px;
-      font-size: 11px;
+      font-size: 11.5px;
       transition: all 0.15s ease;
-      background: #ffffff;
-      border-color: #cbd5e1;
-      color: #334155;
+      background: #f9fafb;
+      border-color: #e5e7eb;
+      color: #374151;
 
       &:hover {
-        background: #0f172a;
+        background: #111827;
         color: #ffffff;
-        border-color: #0f172a;
+        border-color: #111827;
       }
     }
   }
@@ -289,9 +263,14 @@
     justify-content: flex-end;
 
     .btn-add-member {
-      background: #0f172a;
-      border-color: #0f172a;
-      font-weight: 600;
+      background: #111827;
+      border-color: #111827;
+      font-weight: 500;
+      border-radius: 6px;
+      &:hover {
+        background: #1f2937;
+        border-color: #1f2937;
+      }
     }
   }
 }
@@ -299,45 +278,37 @@
 .members-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .member-item-card {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 14px;
+  padding: 10px 14px;
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  transition: all 0.2s ease;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  transition: border-color 0.15s ease;
 
   &:hover {
-    border-color: #cbd5e1;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
-  }
-
-  &.is-manager-card {
-    border-left: 3px solid #f59e0b;
-    background: #fffdfa;
+    border-color: #9ca3af;
   }
 
   .member-avatar-box {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    background: #f1f5f9;
-    color: #475569;
+    width: 34px;
+    height: 34px;
+    border-radius: 6px;
+    background: #f3f4f6;
+    color: #374151;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: 14px;
+    font-weight: 600;
     flex-shrink: 0;
-
-    &.manager-avatar-box {
-      background: #fef3c7;
-      color: #d97706;
-    }
+    cursor: pointer;
+    border: 1px solid #e5e7eb;
   }
 
   .member-info-content {
@@ -352,31 +323,19 @@
 
       .member-fullname {
         font-weight: 600;
-        font-size: 13.5px;
-        color: #0f172a;
+        font-size: 13px;
+        color: #111827;
       }
 
       .member-username {
         font-size: 12px;
-        color: #64748b;
-      }
-
-      .badge-manager-pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        background: #fef3c7;
-        color: #b45309;
-        font-size: 11px;
-        font-weight: 700;
-        padding: 1px 6px;
-        border-radius: 10px;
+        color: #6b7280;
       }
     }
 
     .member-email {
       font-size: 12px;
-      color: #64748b;
+      color: #6b7280;
       margin-top: 1px;
     }
 
@@ -384,20 +343,21 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      margin-top: 5px;
+      margin-top: 4px;
 
       .pos-label {
         font-size: 12px;
-        color: #64748b;
+        color: #6b7280;
       }
 
       .position-pill {
-        font-size: 12px;
-        font-weight: 600;
-        background: #e0f2fe;
-        color: #0369a1;
-        padding: 1px 8px;
-        border-radius: 4px;
+        font-size: 11.5px;
+        font-weight: 500;
+        background: #f3f4f6;
+        color: #374151;
+        border: 1px solid #e5e7eb;
+        padding: 1px 7px;
+        border-radius: 3px;
       }
 
       .btn-edit-pos {
@@ -405,15 +365,16 @@
         font-size: 12px;
         height: auto;
         line-height: 1;
+        color: #2563eb;
       }
 
       .input-edit-pos {
-        width: 160px;
+        width: 150px;
       }
 
       .btn-save-pos {
-        background: #0f172a;
-        border-color: #0f172a;
+        background: #111827;
+        border-color: #111827;
       }
     }
   }
@@ -425,12 +386,12 @@
     flex-shrink: 0;
 
     .btn-revoke-manager {
-      color: #d97706 !important;
-      border-color: #fde68a !important;
-      background: #fef3c7 !important;
+      color: #374151 !important;
+      border-color: #e5e7eb !important;
+      background: #f9fafb !important;
 
       &:hover {
-        background: #fde68a !important;
+        background: #f3f4f6 !important;
       }
     }
   }
@@ -440,56 +401,27 @@
   padding: 30px 0;
 }
 
-/* Quick-view clickable employee styles */
 .clickable-employee {
   cursor: pointer;
-  transition: all 0.2s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
+  transition: color 0.15s ease;
 
   &:hover {
-    color: #1890ff !important;
+    color: #2563eb !important;
     text-decoration: underline;
-
-    .quick-view-icon {
-      color: #1890ff;
-      opacity: 1;
-    }
-  }
-
-  .quick-view-icon {
-    font-size: 13px;
-    color: #94a3b8;
-    opacity: 0.7;
-    transition: all 0.2s ease;
-  }
-}
-
-.clickable-avatar {
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-
-  &:hover {
-    transform: scale(1.08);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   }
 }
 
 .btn-view-profile {
   font-size: 12px;
-  color: #3b82f6;
-  border-color: #bfdbfe;
-  background: #eff6ff;
+  color: #374151;
+  border-color: #e5e7eb;
+  background: #ffffff;
   display: inline-flex;
   align-items: center;
   gap: 4px;
 
   &:hover {
-    color: #1d4ed8;
-    border-color: #93c5fd;
-    background: #dbeafe;
+    color: #111827;
+    border-color: #9ca3af;
   }
 }
-
-

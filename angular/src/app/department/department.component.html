@@ -45,8 +45,10 @@
       [nzLoading]="loading"
       [nzPageSize]="10"
       [nzShowSizeChanger]="true"
+      [nzPageSizeOptions]="[10, 20, 50]"
       nzBordered="false"
       class="department-table"
+      nzSize="middle"
     >
       <thead>
         <tr>
@@ -54,9 +56,9 @@
           <th nzWidth="120px">Mã phòng</th>
           <th nzWidth="260px">Tên phòng ban</th>
           <th nzWidth="240px">Trưởng phòng</th>
-          <th nzWidth="140px" nzAlign="center">Nhân sự</th>
+          <th nzWidth="130px" nzAlign="center">Nhân sự</th>
           <th>Mô tả</th>
-          <th nzWidth="180px" nzAlign="center">Thao tác</th>
+          <th nzWidth="150px" nzAlign="center">Thao tác</th>
         </tr>
       </thead>
       <tbody>
@@ -71,15 +73,16 @@
           <td>
             <div *ngIf="dept.managerName" class="manager-info">
               <div>
-                <div
+                <span
                   class="manager-name clickable-employee"
                   (click)="openEmployeeDrawer(dept.managerId)"
                   nz-tooltip="Nhấp để xem nhanh hồ sơ Trưởng phòng"
                 >
                   {{ dept.managerName }}
-                  <span nz-icon nzType="idcard" class="quick-view-icon"></span>
+                </span>
+                <div>
+                  <span class="cell-subbadge">Trưởng phòng</span>
                 </div>
-                <span class="manager-badge">Trưởng phòng</span>
               </div>
             </div>
             <div *ngIf="!dept.managerName" class="no-manager">
@@ -87,12 +90,12 @@
             </div>
           </td>
           <td nzAlign="center">
-            <span class="member-count-pill" (click)="openMembersDrawer(dept)" nz-tooltip="Bấm để xem danh sách nhân sự">
-              {{ dept.memberCount }} nhân viên
+            <span class="member-count-link" (click)="openMembersDrawer(dept)" nz-tooltip="Bấm để quản lý nhân sự">
+              {{ dept.memberCount }} nhân sự
             </span>
           </td>
           <td class="text-secondary text-truncate" [nz-tooltip]="dept.description">
-            {{ dept.description || 'Chưa có mô tả' }}
+            {{ dept.description || '—' }}
           </td>
           <td nzAlign="center">
             <div class="action-btn-group">
@@ -100,7 +103,6 @@
               <button
                 nz-button
                 nzType="text"
-                nzShape="circle"
                 class="action-icon-btn members"
                 (click)="openMembersDrawer(dept)"
                 nz-tooltip
@@ -114,7 +116,6 @@
                 *ngIf="canEdit"
                 nz-button
                 nzType="text"
-                nzShape="circle"
                 class="action-icon-btn edit"
                 (click)="openEditModal(dept)"
                 nz-tooltip
@@ -128,7 +129,6 @@
                 *ngIf="canDelete"
                 nz-button
                 nzType="text"
-                nzShape="circle"
                 class="action-icon-btn delete"
                 nz-popconfirm
                 nzPopconfirmTitle="Bạn có chắc chắn muốn xóa phòng ban này? Tất cả dữ liệu liên quan sẽ bị xóa!"
@@ -313,13 +313,11 @@
         <div
           *ngFor="let m of members"
           class="member-item-card"
-          [class.is-manager-card]="m.isManager"
         >
           <div
-            class="member-avatar-box clickable-avatar"
-            [class.manager-avatar-box]="m.isManager"
+            class="member-avatar-box"
             (click)="openEmployeeDrawer(m.userId)"
-            nz-tooltip="Nhấp để xem nhanh hồ sơ nhân viên"
+            nz-tooltip="Nhấp để xem hồ sơ nhân viên"
           >
             <span>{{ m.fullName?.charAt(0) || 'U' }}</span>
           </div>
@@ -329,13 +327,12 @@
               <span
                 class="member-fullname clickable-employee"
                 (click)="openEmployeeDrawer(m.userId)"
-                nz-tooltip="Nhấp để xem nhanh hồ sơ nhân viên"
+                nz-tooltip="Nhấp để xem hồ sơ nhân viên"
               >
                 {{ m.fullName }}
-                <span nz-icon nzType="idcard" class="quick-view-icon"></span>
               </span>
               <span class="member-username">(&#64;{{ m.userName }})</span>
-              <span *ngIf="m.isManager" class="badge-manager-pill">
+              <span *ngIf="m.isManager" class="cell-subbadge">
                 Trưởng phòng
               </span>
             </div>
