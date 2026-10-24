@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
@@ -17,92 +16,63 @@ using Volo.Abp.Validation;
 
 namespace MyCompany.InternalApproval.Departments;
 
-// Dịch vụ quản lý phòng ban và thành viên
+// Dịch vụ quản lý cơ cấu phòng ban và phân bổ thành viên
 [Authorize]
+[RemoteService(IsEnabled = false)]
 public class DepartmentAppService : InternalApprovalAppService, IDepartmentAppService
 {
-    private readonly IRepository<Department, Guid> _departmentRepository;
+    private readonly IDepartmentRepository _departmentRepository;
     private readonly IRepository<DepartmentMember, Guid> _memberRepository;
     private readonly IRepository<IdentityUser, Guid> _userRepository;
-    private readonly IdentityUserManager _userManager;
 
     public DepartmentAppService(
-        IRepository<Department, Guid> departmentRepository,
+        IDepartmentRepository departmentRepository,
         IRepository<DepartmentMember, Guid> memberRepository,
-        IRepository<IdentityUser, Guid> userRepository,
-        IdentityUserManager userManager)
+        IRepository<IdentityUser, Guid> userRepository)
     {
         _departmentRepository = departmentRepository;
         _memberRepository = memberRepository;
         _userRepository = userRepository;
-        _userManager = userManager;
     }
 
-    // Lấy danh sách phòng ban có phân trang
+    // Lấy danh sách phòng ban có phân trang và sắp xếp
     public virtual async Task<PagedResultDto<DepartmentDto>> GetListAsync(PagedAndSortedResultRequestDto input)
     {
         try
         {
-            var deptQuery = await _departmentRepository.GetQueryableAsync();
-            var memberQuery = await _memberRepository.GetQueryableAsync();
-            var userQuery = await _userRepository.GetQueryableAsync();
-
-            var totalCount = await AsyncExecuter.CountAsync(deptQuery);
-
-            var sorting = !string.IsNullOrWhiteSpace(input.Sorting)
-                ? input.Sorting
-                : $"{nameof(Department.CreationTime)} desc";
-
-            var pagedDepts = await AsyncExecuter.ToListAsync(
-                deptQuery
-                    .OrderBy(sorting)
-                    .Skip(input.SkipCount)
-                    .Take(input.MaxResultCount)
+            var totalCount = await _departmentRepository.GetCountAsync();
+            var pagedDepts = await _departmentRepository.GetListWithDetailsAsync(
+                input.Sorting,
+                input.MaxResultCount,
+                input.SkipCount
             );
 
-            var deptIds = pagedDepts.Select(x => x.Id).ToList();
             var managerIds = pagedDepts
                 .Where(x => x.ManagerId.HasValue)
                 .Select(x => x.ManagerId!.Value)
                 .Distinct()
                 .ToList();
 
-            var memberCountList = await AsyncExecuter.ToListAsync(
-                memberQuery.Where(x => deptIds.Contains(x.DepartmentId))
-            );
-            var memberCountDict = memberCountList
-                .GroupBy(x => x.DepartmentId)
-                .ToDictionary(g => g.Key, g => g.Count());
+            var managers = managerIds.Any()
+                ? await _userRepository.GetListAsync(x => managerIds.Contains(x.Id))
+                : new List<IdentityUser>();
 
-            var managerList = await AsyncExecuter.ToListAsync(
-                userQuery.Where(x => managerIds.Contains(x.Id))
-            );
-            var managerDict = managerList.ToDictionary(
+            var managerDict = managers.ToDictionary(
                 x => x.Id,
                 x => (!string.IsNullOrWhiteSpace(x.Surname) ? x.Surname + " " : "") + x.Name
             );
 
-            var dtos = pagedDepts.Select(d =>
-            {
-                memberCountDict.TryGetValue(d.Id, out var count);
-                string? mgrName = null;
-                if (d.ManagerId.HasValue)
+            var dtos = MapWithExceptionHandling<List<Department>, List<DepartmentDto>>(pagedDepts)
+                .Select((dto, idx) =>
                 {
-                    managerDict.TryGetValue(d.ManagerId.Value, out mgrName);
-                }
-
-                return new DepartmentDto
-                {
-                    Id = d.Id,
-                    Code = d.Code,
-                    Name = d.Name,
-                    Description = d.Description,
-                    ManagerId = d.ManagerId,
-                    ManagerName = mgrName,
-                    MemberCount = count,
-                    CreationTime = d.CreationTime
-                };
-            }).ToList();
+                    var entity = pagedDepts[idx];
+                    dto.MemberCount = entity.Members.Count;
+                    if (dto.ManagerId.HasValue && managerDict.TryGetValue(dto.ManagerId.Value, out var mgrName))
+                    {
+                        dto.ManagerName = mgrName;
+                    }
+                    return dto;
+                }).ToList();
 
             return new PagedResultDto<DepartmentDto>(totalCount, dtos);
         }
@@ -119,31 +89,25 @@ public class DepartmentAppService : InternalApprovalAppService, IDepartmentAppSe
     {
         try
         {
-            var dept = await _departmentRepository.GetAsync(id);
-            var memberQuery = await _memberRepository.GetQueryableAsync();
-            var memberCount = await AsyncExecuter.CountAsync(memberQuery.Where(x => x.DepartmentId == id));
+            var dept = await _departmentRepository.GetWithDetailsAsync(id);
+            if (dept == null)
+            {
+                throw new EntityNotFoundException(typeof(Department), id);
+            }
 
-            string? managerName = null;
+            var dto = MapWithExceptionHandling<Department, DepartmentDto>(dept);
+            dto.MemberCount = dept.Members.Count;
+
             if (dept.ManagerId.HasValue)
             {
                 var manager = await _userRepository.FindAsync(dept.ManagerId.Value);
                 if (manager != null)
                 {
-                    managerName = (!string.IsNullOrWhiteSpace(manager.Surname) ? manager.Surname + " " : "") + manager.Name;
+                    dto.ManagerName = (!string.IsNullOrWhiteSpace(manager.Surname) ? manager.Surname + " " : "") + manager.Name;
                 }
             }
 
-            return new DepartmentDto
-            {
-                Id = dept.Id,
-                Code = dept.Code,
-                Name = dept.Name,
-                Description = dept.Description,
-                ManagerId = dept.ManagerId,
-                ManagerName = managerName,
-                MemberCount = memberCount,
-                CreationTime = dept.CreationTime
-            };
+            return dto;
         }
         catch (Exception ex) when (ex is not IBusinessException && ex is not EntityNotFoundException && ex is not AbpAuthorizationException && ex is not AbpValidationException)
         {
@@ -158,10 +122,11 @@ public class DepartmentAppService : InternalApprovalAppService, IDepartmentAppSe
     {
         try
         {
-            var existing = await _departmentRepository.FirstOrDefaultAsync(x => x.Code == input.Code);
+            var existing = await _departmentRepository.FindByCodeAsync(input.Code.Trim());
             if (existing != null)
             {
-                throw new UserFriendlyException($"Mã phòng ban '{input.Code}' đã tồn tại trong hệ thống.");
+                throw new BusinessException(InternalApprovalDomainErrorCodes.DepartmentCodeAlreadyExists)
+                    .WithData("Code", input.Code.Trim());
             }
 
             var dept = new Department(
@@ -172,14 +137,13 @@ public class DepartmentAppService : InternalApprovalAppService, IDepartmentAppSe
                 input.ManagerId
             );
 
-            await _departmentRepository.InsertAsync(dept, autoSave: true);
-
             // Nếu có chọn trưởng phòng, tự động thêm trưởng phòng vào danh sách thành viên với chức danh "Trưởng phòng"
             if (input.ManagerId.HasValue)
             {
-                var member = new DepartmentMember(GuidGenerator.Create(), dept.Id, input.ManagerId.Value, "Trưởng phòng");
-                await _memberRepository.InsertAsync(member, autoSave: true);
+                dept.AddMember(GuidGenerator.Create(), input.ManagerId.Value, "Trưởng phòng");
             }
+
+            await _departmentRepository.InsertAsync(dept, autoSave: true);
 
             return await GetAsync(dept.Id);
         }
@@ -198,16 +162,17 @@ public class DepartmentAppService : InternalApprovalAppService, IDepartmentAppSe
         {
             var dept = await _departmentRepository.GetAsync(id);
 
-            var existing = await _departmentRepository.FirstOrDefaultAsync(x => x.Code == input.Code && x.Id != id);
+            var existing = await _departmentRepository.FirstOrDefaultAsync(x => x.Code == input.Code.Trim() && x.Id != id);
             if (existing != null)
             {
-                throw new UserFriendlyException($"Mã phòng ban '{input.Code}' đã được sử dụng bởi phòng ban khác.");
+                throw new BusinessException(InternalApprovalDomainErrorCodes.DepartmentCodeAlreadyExists)
+                    .WithData("Code", input.Code.Trim());
             }
 
-            dept.SetCode(input.Code.Trim());
-            dept.SetName(input.Name.Trim());
-            dept.SetDescription(input.Description?.Trim());
-            dept.SetManager(input.ManagerId);
+            dept.SetCode(input.Code.Trim())
+                .SetName(input.Name.Trim())
+                .SetDescription(input.Description?.Trim())
+                .SetManager(input.ManagerId);
 
             await _departmentRepository.UpdateAsync(dept, autoSave: true);
 
@@ -237,7 +202,11 @@ public class DepartmentAppService : InternalApprovalAppService, IDepartmentAppSe
         try
         {
             var members = await _memberRepository.GetListAsync(x => x.DepartmentId == id);
-            await _memberRepository.DeleteManyAsync(members, autoSave: true);
+            if (members.Any())
+            {
+                await _memberRepository.DeleteManyAsync(members, autoSave: true);
+            }
+
             await _departmentRepository.DeleteAsync(id, autoSave: true);
         }
         catch (Exception ex) when (ex is not IBusinessException && ex is not EntityNotFoundException && ex is not AbpAuthorizationException && ex is not AbpValidationException)
@@ -247,19 +216,24 @@ public class DepartmentAppService : InternalApprovalAppService, IDepartmentAppSe
         }
     }
 
-    // Lấy danh sách thành viên trong phòng ban (dùng LINQ thay vì vòng lặp)
+    // Lấy danh sách thành viên trong phòng ban
     public virtual async Task<List<DepartmentMemberDto>> GetMembersAsync(Guid departmentId)
     {
         try
         {
-            var dept = await _departmentRepository.GetAsync(departmentId);
-            var memberQuery = await _memberRepository.GetQueryableAsync();
-            var userQuery = await _userRepository.GetQueryableAsync();
+            var dept = await _departmentRepository.GetWithDetailsAsync(departmentId);
+            if (dept == null)
+            {
+                throw new EntityNotFoundException(typeof(Department), departmentId);
+            }
 
-            var members = await AsyncExecuter.ToListAsync(memberQuery.Where(x => x.DepartmentId == departmentId));
+            var members = dept.Members.ToList();
             var userIds = members.Select(x => x.UserId).Distinct().ToList();
 
-            var users = await AsyncExecuter.ToListAsync(userQuery.Where(x => userIds.Contains(x.Id)));
+            var users = userIds.Any()
+                ? await _userRepository.GetListAsync(x => userIds.Contains(x.Id))
+                : new List<IdentityUser>();
+
             var userDict = users.ToDictionary(x => x.Id, x => x);
 
             return members
@@ -303,14 +277,14 @@ public class DepartmentAppService : InternalApprovalAppService, IDepartmentAppSe
     {
         try
         {
-            var dept = await _departmentRepository.GetAsync(departmentId);
+            await _departmentRepository.GetAsync(departmentId);
             var existing = await _memberRepository.FirstOrDefaultAsync(x => x.DepartmentId == departmentId && x.UserId == input.UserId);
             if (existing != null)
             {
-                existing.Position = input.Position.Trim();
+                existing.SetPosition(input.Position.Trim());
                 if (input.JoinDate.HasValue)
                 {
-                    existing.JoinDate = input.JoinDate.Value;
+                    existing.SetJoinDate(input.JoinDate.Value);
                 }
                 await _memberRepository.UpdateAsync(existing, autoSave: true);
                 return;
@@ -335,13 +309,13 @@ public class DepartmentAppService : InternalApprovalAppService, IDepartmentAppSe
             var member = await _memberRepository.FirstOrDefaultAsync(x => x.DepartmentId == departmentId && x.UserId == userId);
             if (member == null)
             {
-                throw new UserFriendlyException("Nhân viên không tồn tại trong phòng ban này.");
+                throw new BusinessException(InternalApprovalDomainErrorCodes.DepartmentMemberNotFound);
             }
 
-            member.Position = input.Position.Trim();
+            member.SetPosition(input.Position.Trim());
             if (input.JoinDate.HasValue)
             {
-                member.JoinDate = input.JoinDate.Value;
+                member.SetJoinDate(input.JoinDate.Value);
             }
             await _memberRepository.UpdateAsync(member, autoSave: true);
         }
@@ -398,7 +372,7 @@ public class DepartmentAppService : InternalApprovalAppService, IDepartmentAppSe
                 }
                 else if (string.IsNullOrWhiteSpace(member.Position) || member.Position == "Nhân viên")
                 {
-                    member.Position = "Trưởng phòng";
+                    member.SetPosition("Trưởng phòng");
                     await _memberRepository.UpdateAsync(member, autoSave: true);
                 }
             }
@@ -410,7 +384,7 @@ public class DepartmentAppService : InternalApprovalAppService, IDepartmentAppSe
         }
     }
 
-    // Lấy danh sách user khả dụng để gán vào phòng ban
+    // Lấy danh sách người dùng khả dụng để gán vào phòng ban
     public virtual async Task<List<DepartmentUserLookupDto>> GetAvailableUsersAsync(Guid departmentId)
     {
         try

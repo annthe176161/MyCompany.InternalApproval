@@ -26,14 +26,14 @@ public class RequestAppService : InternalApprovalAppService, IRequestAppService
     private readonly RequestManager _requestManager;
     private readonly IRepository<IdentityUser, Guid> _userRepository;
     private readonly IRepository<DepartmentMember, Guid> _memberRepository;
-    private readonly IRepository<Department, Guid> _departmentRepository;
+    private readonly IDepartmentRepository _departmentRepository;
 
     public RequestAppService(
         IRequestRepository requestRepository,
         RequestManager requestManager,
         IRepository<IdentityUser, Guid> userRepository,
         IRepository<DepartmentMember, Guid> memberRepository,
-        IRepository<Department, Guid> departmentRepository)
+        IDepartmentRepository departmentRepository)
     {
         _requestRepository = requestRepository;
         _requestManager = requestManager;

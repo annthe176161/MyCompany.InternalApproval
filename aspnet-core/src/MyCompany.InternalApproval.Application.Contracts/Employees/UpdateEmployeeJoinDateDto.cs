@@ -3,11 +3,11 @@ using System.ComponentModel.DataAnnotations;
 
 namespace MyCompany.InternalApproval.Employees;
 
-/// <summary>
-/// DTO tham số cập nhật ngày vào làm việc của nhân viên.
-/// </summary>
+// Tham số cập nhật ngày vào làm việc của nhân viên
 public class UpdateEmployeeJoinDateDto
 {
+    // Ngày bắt đầu làm việc mới
     [Required]
     public DateTime JoinDate { get; set; }
 }
+

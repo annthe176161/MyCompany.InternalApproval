@@ -11,6 +11,7 @@ using Volo.Abp.EntityFrameworkCore;
 
 namespace MyCompany.InternalApproval.Requests;
 
+// Triển khai EF Core Repository cho thực thể Đề xuất (Request)
 public class EfCoreRequestRepository : EfCoreRepository<InternalApprovalDbContext, Request, Guid>, IRequestRepository
 {
     public EfCoreRequestRepository(IDbContextProvider<InternalApprovalDbContext> dbContextProvider)
@@ -18,6 +19,7 @@ public class EfCoreRequestRepository : EfCoreRepository<InternalApprovalDbContex
     {
     }
 
+    // Lấy danh sách đề xuất kèm bình luận (có lọc, sắp xếp và phân trang)
     public virtual async Task<List<Request>> GetListWithDetailsAsync(
         string? filter = null,
         RequestStatus? status = null,
@@ -40,6 +42,7 @@ public class EfCoreRequestRepository : EfCoreRepository<InternalApprovalDbContex
             .ToListAsync(GetCancellationToken(cancellationToken));
     }
 
+    // Đếm tổng số đề xuất thỏa mãn điều kiện lọc
     public virtual async Task<long> GetCountAsync(
         string? filter = null,
         RequestStatus? status = null,
@@ -56,6 +59,7 @@ public class EfCoreRequestRepository : EfCoreRepository<InternalApprovalDbContex
             .LongCountAsync(GetCancellationToken(cancellationToken));
     }
 
+    // Lấy chi tiết đề xuất kèm danh sách bình luận theo Id
     public virtual async Task<Request?> GetWithDetailsAsync(
         Guid id,
         CancellationToken cancellationToken = default)
@@ -66,9 +70,9 @@ public class EfCoreRequestRepository : EfCoreRepository<InternalApprovalDbContex
             .FirstOrDefaultAsync(x => x.Id == id, GetCancellationToken(cancellationToken));
     }
 
+    // Tự động nạp kèm danh sách bình luận khi gọi WithDetailsAsync
     public override async Task<IQueryable<Request>> WithDetailsAsync()
     {
         return (await GetQueryableAsync()).Include(x => x.Comments);
     }
 }
-

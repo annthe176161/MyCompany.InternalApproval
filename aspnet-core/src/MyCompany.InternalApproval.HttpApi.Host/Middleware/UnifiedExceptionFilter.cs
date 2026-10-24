@@ -9,14 +9,10 @@ using Volo.Abp.AspNetCore.ExceptionHandling;
 using Volo.Abp.AspNetCore.Mvc.ExceptionHandling;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.ExceptionHandling;
-using Volo.Abp.Http;
 
 namespace MyCompany.InternalApproval.Middleware;
 
-/// <summary>
-/// Thay thế AbpExceptionFilter mặc định: với API nghiệp vụ (/api/app/...),
-/// mọi exception đều trả về HTTP 200 với cùng 1 form { success, code, message, data, validationErrors }.
-/// </summary>
+// Bộ lọc ngoại lệ chuẩn hóa phản hồi lỗi API nghiệp vụ (/api/app/...) về định dạng thống nhất
 [Dependency(ReplaceServices = true)]
 [ExposeServices(typeof(AbpExceptionFilter))]
 public class UnifiedExceptionFilter : AbpExceptionFilter
@@ -34,10 +30,10 @@ public class UnifiedExceptionFilter : AbpExceptionFilter
         var logger = services.GetRequiredService<ILogger<UnifiedExceptionFilter>>();
         var converter = services.GetRequiredService<IExceptionToErrorInfoConverter>();
 
-        // Vẫn ghi log đầy đủ StackTrace để dev/leader debug
+        // Ghi log đầy đủ StackTrace phục vụ theo dõi và gỡ lỗi
         logger.LogError(context.Exception, "Lỗi API {Path}: {Message}", path, context.Exception.Message);
 
-        // Dùng converter của ABP để lấy message đã được localize (vi/en)
+        // Chuyển đổi thông tin lỗi đã được bản địa hóa (vi/en)
         var errorInfo = converter.Convert(context.Exception, options =>
         {
             options.SendExceptionsDetailsToClients = false;

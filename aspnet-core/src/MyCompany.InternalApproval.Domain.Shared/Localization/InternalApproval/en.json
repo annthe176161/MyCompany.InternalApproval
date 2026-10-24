@@ -60,6 +60,8 @@
     "Permission:Employees.Edit": "Update Join Date & Info",
     "Permission:Employees.Analytics": "View HR Analytics",
     "InternalApproval:00013": "Invalid date range. End date cannot be earlier than start date.",
-    "InternalApproval:00014": "Join date cannot be in the future."
+    "InternalApproval:00014": "Join date cannot be in the future.",
+    "InternalApproval:00015": "Department code '{Code}' already exists.",
+    "InternalApproval:00016": "Employee does not exist in this department."
   }
 }

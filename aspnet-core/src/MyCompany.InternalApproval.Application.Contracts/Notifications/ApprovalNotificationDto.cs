@@ -4,54 +4,33 @@ using Volo.Abp.Application.Dtos;
 
 namespace MyCompany.InternalApproval.Notifications;
 
-/// <summary>
-/// DTO chứa thông tin thông báo phê duyệt/từ chối gửi tới người dùng.
-/// </summary>
+// Thông tin thông báo phê duyệt hoặc từ chối gửi tới người dùng
 public class ApprovalNotificationDto : EntityDto<Guid>
 {
-    /// <summary>
-    /// Id của đề xuất liên quan.
-    /// </summary>
+    // Id của đề xuất liên quan
     public Guid RequestId { get; set; }
 
-    /// <summary>
-    /// Tiêu đề của đề xuất.
-    /// </summary>
+    // Tiêu đề của đề xuất
     public string Title { get; set; } = string.Empty;
 
-    /// <summary>
-    /// Trạng thái phê duyệt (2: Đã duyệt, 3: Đã từ chối).
-    /// </summary>
+    // Trạng thái phê duyệt
     public RequestStatus Status { get; set; }
 
-    /// <summary>
-    /// Id người nhận thông báo (người tạo đơn).
-    /// </summary>
+    // Id người nhận thông báo
     public Guid ReceiverId { get; set; }
 
-    /// <summary>
-    /// Id người thực hiện duyệt/từ chối.
-    /// </summary>
+    // Id người thực hiện duyệt hoặc từ chối
     public Guid? ApproverId { get; set; }
 
-    /// <summary>
-    /// Tên hiển thị của người duyệt/từ chối.
-    /// </summary>
+    // Tên hiển thị của người duyệt hoặc từ chối
     public string? ApproverName { get; set; }
 
-    /// <summary>
-    /// Nội dung thông báo.
-    /// </summary>
+    // Nội dung chi tiết thông báo
     public string Message { get; set; } = string.Empty;
 
-    /// <summary>
-    /// Trạng thái đã đọc hay chưa.
-    /// </summary>
+    // Trạng thái đã đọc hay chưa
     public bool IsRead { get; set; }
 
-    /// <summary>
-    /// Thời gian tạo thông báo.
-    /// </summary>
+    // Thời gian tạo thông báo
     public DateTime CreationTime { get; set; }
 }
-

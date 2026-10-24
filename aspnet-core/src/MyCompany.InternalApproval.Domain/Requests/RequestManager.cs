@@ -6,6 +6,7 @@ using Volo.Abp.EventBus.Local;
 
 namespace MyCompany.InternalApproval.Requests;
 
+// Domain Service quản lý quy tắc nghiệp vụ cốt lõi khi chuyển trạng thái đề xuất
 public class RequestManager : DomainService
 {
     private readonly ILocalEventBus _localEventBus;
@@ -15,6 +16,7 @@ public class RequestManager : DomainService
         _localEventBus = localEventBus;
     }
 
+    // Xử lý gửi duyệt đề xuất và phát sự kiện thay đổi trạng thái
     public virtual async Task SubmitAsync(Request request, Guid currentUserId)
     {
         Check.NotNull(request, nameof(request));
@@ -41,6 +43,7 @@ public class RequestManager : DomainService
         ));
     }
 
+    // Xử lý phê duyệt đề xuất và phát sự kiện thay đổi trạng thái
     public virtual async Task ApproveAsync(Request request, Guid approverId, string? approvalNote = null)
     {
         Check.NotNull(request, nameof(request));
@@ -69,6 +72,7 @@ public class RequestManager : DomainService
         ));
     }
 
+    // Xử lý từ chối đề xuất và phát sự kiện thay đổi trạng thái
     public virtual async Task RejectAsync(Request request, Guid approverId, string reason)
     {
         Check.NotNull(request, nameof(request));
@@ -97,4 +101,3 @@ public class RequestManager : DomainService
         ));
     }
 }
-

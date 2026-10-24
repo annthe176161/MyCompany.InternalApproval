@@ -1,6 +1,7 @@
-﻿using System;
 using Microsoft.Extensions.DependencyInjection;
-using Volo.Abp.Uow;
+using MyCompany.InternalApproval.Departments;
+using MyCompany.InternalApproval.Notifications;
+using MyCompany.InternalApproval.Requests;
 using Volo.Abp.AuditLogging.EntityFrameworkCore;
 using Volo.Abp.BackgroundJobs.EntityFrameworkCore;
 using Volo.Abp.EntityFrameworkCore;
@@ -15,6 +16,7 @@ using Volo.Abp.TenantManagement.EntityFrameworkCore;
 
 namespace MyCompany.InternalApproval.EntityFrameworkCore;
 
+// Cấu hình Module EntityFrameworkCore và đăng ký các Repository của hệ thống
 [DependsOn(
     typeof(InternalApprovalDomainModule),
     typeof(AbpIdentityEntityFrameworkCoreModule),
@@ -26,7 +28,7 @@ namespace MyCompany.InternalApproval.EntityFrameworkCore;
     typeof(AbpAuditLoggingEntityFrameworkCoreModule),
     typeof(AbpTenantManagementEntityFrameworkCoreModule),
     typeof(AbpFeatureManagementEntityFrameworkCoreModule)
-    )]
+)]
 public class InternalApprovalEntityFrameworkCoreModule : AbpModule
 {
     public override void PreConfigureServices(ServiceConfigurationContext context)
@@ -38,17 +40,16 @@ public class InternalApprovalEntityFrameworkCoreModule : AbpModule
     {
         context.Services.AddAbpDbContext<InternalApprovalDbContext>(options =>
         {
-                /* Remove "includeAllEntities: true" to create
-                 * default repositories only for aggregate roots */
+            // Đăng ký Repository mặc định và các Custom Repository theo từng module
             options.AddDefaultRepositories(includeAllEntities: true);
+            options.AddRepository<Request, EfCoreRequestRepository>();
+            options.AddRepository<Department, EfCoreDepartmentRepository>();
+            options.AddRepository<ApprovalNotification, EfCoreApprovalNotificationRepository>();
         });
 
         Configure<AbpDbContextOptions>(options =>
         {
-                /* The main point to change your DBMS.
-                 * See also InternalApprovalMigrationsDbContextFactory for EF Core tooling. */
             options.UseSqlServer();
         });
-
     }
 }

@@ -1,32 +1,53 @@
 using System;
+using Volo.Abp;
 using Volo.Abp.Domain.Entities.Auditing;
 
 namespace MyCompany.InternalApproval.Departments;
 
-// Thành viên phòng ban
+// Thành viên thuộc phòng ban
 public class DepartmentMember : CreationAuditedEntity<Guid>
 {
     // Id phòng ban
-    public Guid DepartmentId { get; set; }
+    public Guid DepartmentId { get; private set; }
 
-    // Id nhân viên
-    public Guid UserId { get; set; }
+    // Id tài khoản người dùng
+    public Guid UserId { get; private set; }
 
-    // Vị trí / chức vụ
-    public string Position { get; set; } = string.Empty;
+    // Chức vụ / vị trí trong phòng ban
+    public string Position { get; private set; } = string.Empty;
 
-    // Ngày vào công ty
-    public DateTime? JoinDate { get; set; }
+    // Ngày bắt đầu làm việc tại công ty
+    public DateTime? JoinDate { get; private set; }
 
     protected DepartmentMember()
     {
+        Position = string.Empty;
     }
 
-    public DepartmentMember(Guid id, Guid departmentId, Guid userId, string position, DateTime? joinDate = null) : base(id)
+    public DepartmentMember(
+        Guid id,
+        Guid departmentId,
+        Guid userId,
+        string position,
+        DateTime? joinDate = null) : base(id)
     {
         DepartmentId = departmentId;
         UserId = userId;
-        Position = position;
-        JoinDate = joinDate;
+        SetPosition(position);
+        SetJoinDate(joinDate);
+    }
+
+    // Cập nhật chức vụ / vị trí
+    public DepartmentMember SetPosition(string position)
+    {
+        Position = Check.NotNullOrWhiteSpace(position, nameof(position), maxLength: 128);
+        return this;
+    }
+
+    // Cập nhật ngày bắt đầu làm việc
+    public DepartmentMember SetJoinDate(DateTime? joinDate)
+    {
+        JoinDate = joinDate?.Date;
+        return this;
     }
 }

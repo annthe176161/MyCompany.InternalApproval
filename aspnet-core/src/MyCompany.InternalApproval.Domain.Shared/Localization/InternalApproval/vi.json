@@ -77,6 +77,8 @@
     "Permission:Employees.Edit": "Cập nhật ngày vào làm & thông tin",
     "Permission:Employees.Analytics": "Xem báo cáo phân tích nhân sự",
     "InternalApproval:00013": "Khoảng thời gian không hợp lệ. Ngày kết thúc không thể trước ngày bắt đầu.",
-    "InternalApproval:00014": "Ngày vào làm việc không thể là ngày trong tương lai."
+    "InternalApproval:00014": "Ngày vào làm việc không thể là ngày trong tương lai.",
+    "InternalApproval:00015": "Mã phòng ban '{Code}' đã tồn tại trong hệ thống.",
+    "InternalApproval:00016": "Nhân viên không tồn tại trong phòng ban này."
   }
 }

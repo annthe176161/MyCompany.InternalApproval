@@ -2,24 +2,16 @@ using System;
 
 namespace MyCompany.InternalApproval.Employees;
 
-/// <summary>
-/// Tiện ích tính toán và định dạng thâm niên làm việc (Tenure / Seniority)
-/// theo chuẩn tiếng Việt thân thiện ("2 năm 5 tháng", "8 tháng", "< 1 tháng", "1 năm").
-/// </summary>
+// Tiện ích tính toán và định dạng thâm niên làm việc theo chuẩn tiếng Việt
 public static class TenureCalculator
 {
-    /// <summary>
-    /// Xác định ngày vào làm hiệu lực (Effective Join Date).
-    /// Ưu tiên JoinDate do người dùng cấu hình, nếu null tự động fallback về CreationTime của tài khoản.
-    /// </summary>
+    // Xác định ngày vào làm hiệu lực (ưu tiên JoinDate, nếu chưa có thì lấy CreationTime)
     public static DateTime GetEffectiveJoinDate(DateTime? configuredJoinDate, DateTime userCreationTime)
     {
         return configuredJoinDate ?? userCreationTime;
     }
 
-    /// <summary>
-    /// Tính toán số năm và số tháng làm việc từ ngày bắt đầu đến thời điểm target (mặc định UtcNow).
-    /// </summary>
+    // Tính toán số năm, số tháng lẻ và tổng số tháng làm việc tính đến thời điểm hiện tại
     public static (int Years, int Months, int TotalMonths) Calculate(DateTime joinDate, DateTime? now = null)
     {
         var target = now ?? DateTime.UtcNow;
@@ -52,13 +44,7 @@ public static class TenureCalculator
         return (years, months, totalMonths);
     }
 
-    /// <summary>
-    /// Định dạng thâm niên theo chuẩn tiếng Việt thân thiện:
-    /// - "2 năm 5 tháng"
-    /// - "8 tháng"
-    /// - "< 1 tháng"
-    /// - "1 năm"
-    /// </summary>
+    // Định dạng chuỗi thâm niên tiếng Việt ("2 năm 5 tháng", "8 tháng", "< 1 tháng", "1 năm")
     public static string FormatVietnamese(int years, int months)
     {
         if (years <= 0 && months <= 0)
@@ -79,18 +65,14 @@ public static class TenureCalculator
         return $"{years} năm {months} tháng";
     }
 
-    /// <summary>
-    /// Tính toán và định dạng trực tiếp từ JoinDate.
-    /// </summary>
+    // Tính toán và định dạng trực tiếp từ ngày vào làm
     public static string CalculateAndFormat(DateTime joinDate, DateTime? now = null)
     {
         var (years, months, _) = Calculate(joinDate, now);
         return FormatVietnamese(years, months);
     }
 
-    /// <summary>
-    /// Định dạng số tháng trung bình thành chuỗi tiếng Việt.
-    /// </summary>
+    // Định dạng số tháng trung bình sang chuỗi tiếng Việt
     public static string FormatAverageMonths(double averageMonths)
     {
         if (averageMonths <= 0)

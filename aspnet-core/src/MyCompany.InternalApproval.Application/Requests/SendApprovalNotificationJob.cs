@@ -18,13 +18,13 @@ namespace MyCompany.InternalApproval.Requests;
 public class SendApprovalNotificationJob : AsyncBackgroundJob<SendApprovalNotificationArgs>, ITransientDependency
 {
     private readonly IRepository<IdentityUser, Guid> _userRepository;
-    private readonly IRepository<ApprovalNotification, Guid> _notificationRepository;
+    private readonly IApprovalNotificationRepository _notificationRepository;
     private readonly IGuidGenerator _guidGenerator;
     private readonly IdentityUserManager _identityUserManager;
 
     public SendApprovalNotificationJob(
         IRepository<IdentityUser, Guid> userRepository,
-        IRepository<ApprovalNotification, Guid> notificationRepository,
+        IApprovalNotificationRepository notificationRepository,
         IGuidGenerator guidGenerator,
         IdentityUserManager identityUserManager)
     {

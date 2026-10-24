@@ -18,11 +18,7 @@ using Volo.Abp.Uow;
 
 namespace MyCompany.InternalApproval.Data;
 
-/// <summary>
-/// Khởi tạo dữ liệu phân quyền chuẩn (3 vai trò: Admin, Manager, Employee),
-/// làm sạch tài khoản cũ, cấp bộ tài khoản mới theo từng phòng ban với 1 mật khẩu chung Company@2026,
-/// và tạo dữ liệu đề xuất mẫu thực tế phục vụ kiểm thử.
-/// </summary>
+// Khởi tạo dữ liệu phân quyền chuẩn (Admin, Manager, Employee), phòng ban, nhân sự và đề xuất mẫu
 public class InternalApprovalDataSeedContributor : IDataSeedContributor, ITransientDependency
 {
     private readonly IdentityUserManager _userManager;
@@ -406,8 +402,8 @@ public class InternalApprovalDataSeedContributor : IDataSeedContributor, ITransi
                     }
                     else
                     {
-                        existingMem.Position = mem.Position;
-                        existingMem.JoinDate = mem.JoinDate;
+                        existingMem.SetPosition(mem.Position);
+                        existingMem.SetJoinDate(mem.JoinDate);
                         await _memberRepository.UpdateAsync(existingMem, autoSave: true);
                     }
                 }

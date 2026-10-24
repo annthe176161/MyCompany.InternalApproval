@@ -15,16 +15,16 @@ using Volo.Abp.Validation;
 
 namespace MyCompany.InternalApproval.Notifications;
 
-// Dịch vụ quản lý thông báo của người dùng đăng nhập
+// Dịch vụ quản lý thông báo phê duyệt của người dùng đăng nhập
 [Authorize]
 [RemoteService(IsEnabled = false)]
 public class NotificationAppService : InternalApprovalAppService, INotificationAppService
 {
-    private readonly IRepository<ApprovalNotification, Guid> _notificationRepository;
+    private readonly IApprovalNotificationRepository _notificationRepository;
     private readonly IRepository<IdentityUser, Guid> _userRepository;
 
     public NotificationAppService(
-        IRepository<ApprovalNotification, Guid> notificationRepository,
+        IApprovalNotificationRepository notificationRepository,
         IRepository<IdentityUser, Guid> userRepository)
     {
         _notificationRepository = notificationRepository;
@@ -38,15 +38,11 @@ public class NotificationAppService : InternalApprovalAppService, INotificationA
         {
             var currentUserId = CurrentUser.GetId();
 
-            var queryable = await _notificationRepository.GetQueryableAsync();
-            var userQuery = queryable.Where(x => x.ReceiverId == currentUserId);
-
-            var totalCount = await AsyncExecuter.CountAsync(userQuery);
-
-            var items = await AsyncExecuter.ToListAsync(
-                userQuery
-                    .OrderByDescending(x => x.CreationTime)
-                    .PageBy(input.SkipCount, input.MaxResultCount)
+            var totalCount = await _notificationRepository.GetCountByReceiverAsync(currentUserId);
+            var items = await _notificationRepository.GetListByReceiverAsync(
+                currentUserId,
+                input.MaxResultCount,
+                input.SkipCount
             );
 
             var approverIds = items
@@ -89,8 +85,7 @@ public class NotificationAppService : InternalApprovalAppService, INotificationA
         try
         {
             var currentUserId = CurrentUser.GetId();
-            var queryable = await _notificationRepository.GetQueryableAsync();
-            return await AsyncExecuter.CountAsync(queryable.Where(x => x.ReceiverId == currentUserId && !x.IsRead));
+            return await _notificationRepository.GetUnreadCountAsync(currentUserId);
         }
         catch (Exception ex) when (ex is not IBusinessException && ex is not EntityNotFoundException && ex is not AbpAuthorizationException && ex is not AbpValidationException)
         {
@@ -128,7 +123,7 @@ public class NotificationAppService : InternalApprovalAppService, INotificationA
         try
         {
             var currentUserId = CurrentUser.GetId();
-            var unreadNotifications = await _notificationRepository.GetListAsync(x => x.ReceiverId == currentUserId && !x.IsRead);
+            var unreadNotifications = await _notificationRepository.GetUnreadListAsync(currentUserId);
 
             if (!unreadNotifications.Any())
             {

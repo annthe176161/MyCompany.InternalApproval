@@ -26,16 +26,16 @@ namespace MyCompany.InternalApproval.Employees;
 public class EmployeeAppService : InternalApprovalAppService, IEmployeeAppService
 {
     private readonly IRepository<IdentityUser, Guid> _userRepository;
-    private readonly IRepository<Department, Guid> _departmentRepository;
+    private readonly IDepartmentRepository _departmentRepository;
     private readonly IRepository<DepartmentMember, Guid> _memberRepository;
-    private readonly IRepository<Request, Guid> _requestRepository;
+    private readonly IRequestRepository _requestRepository;
     private readonly IPermissionManager _permissionManager;
 
     public EmployeeAppService(
         IRepository<IdentityUser, Guid> userRepository,
-        IRepository<Department, Guid> departmentRepository,
+        IDepartmentRepository departmentRepository,
         IRepository<DepartmentMember, Guid> memberRepository,
-        IRepository<Request, Guid> requestRepository,
+        IRequestRepository requestRepository,
         IPermissionManager permissionManager)
     {
         _userRepository = userRepository;
@@ -43,22 +43,6 @@ public class EmployeeAppService : InternalApprovalAppService, IEmployeeAppServic
         _memberRepository = memberRepository;
         _requestRepository = requestRepository;
         _permissionManager = permissionManager;
-    }
-
-    protected class EmployeeAccessScope
-    {
-        public bool IsGlobal { get; }
-        public bool IsManager { get; }
-        public Guid? CurrentUserId { get; }
-        public HashSet<Guid> ManagedDeptIds { get; }
-
-        public EmployeeAccessScope(bool isGlobal, bool isManager, Guid? currentUserId, HashSet<Guid> managedDeptIds)
-        {
-            IsGlobal = isGlobal;
-            IsManager = isManager;
-            CurrentUserId = currentUserId;
-            ManagedDeptIds = managedDeptIds ?? new HashSet<Guid>();
-        }
     }
 
     // Đánh giá phạm vi quyền hạn dữ liệu của người dùng hiện tại (Admin / Trưởng phòng / Nhân viên)
@@ -94,24 +78,21 @@ public class EmployeeAppService : InternalApprovalAppService, IEmployeeAppServic
 
         if (isGlobal)
         {
-            return new EmployeeAccessScope(true, false, currentUserId, new HashSet<Guid>());
+            return new EmployeeAccessScope(EmployeeAccessLevel.Global, currentUserId);
         }
 
         if (currentUserId.HasValue)
         {
-            var allDepts = await _departmentRepository.GetListAsync();
-            var managedDeptIds = allDepts
-                .Where(d => d.ManagerId == currentUserId.Value)
-                .Select(d => d.Id)
-                .ToHashSet();
+            var managedDepts = await _departmentRepository.GetListAsync(d => d.ManagerId == currentUserId.Value);
+            var managedDeptIds = managedDepts.Select(d => d.Id).ToHashSet();
 
             if (managedDeptIds.Count > 0)
             {
-                return new EmployeeAccessScope(false, true, currentUserId, managedDeptIds);
+                return new EmployeeAccessScope(EmployeeAccessLevel.DepartmentManager, currentUserId, managedDeptIds);
             }
         }
 
-        return new EmployeeAccessScope(false, false, currentUserId, new HashSet<Guid>());
+        return new EmployeeAccessScope(EmployeeAccessLevel.SelfOnly, currentUserId);
     }
 
     // Kiểm tra quyền truy cập thông tin của một nhân sự mục tiêu theo cấu trúc phân quyền phân cấp
@@ -369,7 +350,7 @@ public class EmployeeAppService : InternalApprovalAppService, IEmployeeAppServic
             var member = await _memberRepository.FirstOrDefaultAsync(x => x.UserId == id);
             if (member != null)
             {
-                member.JoinDate = input.JoinDate.Date;
+                member.SetJoinDate(input.JoinDate.Date);
                 await _memberRepository.UpdateAsync(member, autoSave: true);
             }
             else
@@ -613,7 +594,7 @@ public class EmployeeAppService : InternalApprovalAppService, IEmployeeAppServic
                 .ToDictionary(g => g.Key, g => g.First());
             var deptDict = departments.ToDictionary(x => x.Id, x => x);
 
-            // 1. Company Summary
+            // 1. Thống kê tổng quan công ty
             var assignedDeptIds = departments.Select(d => d.Id).ToHashSet();
             var assignedMembers = members.Where(m => assignedDeptIds.Contains(m.DepartmentId)).ToList();
             var assignedUserIds = assignedMembers.Select(x => x.UserId).ToHashSet();
@@ -634,7 +615,7 @@ public class EmployeeAppService : InternalApprovalAppService, IEmployeeAppServic
                 .Where(x => x.Status == RequestStatus.Approved && x.Amount.HasValue)
                 .Sum(x => x.Amount!.Value);
 
-            // 2. Headcount & Tenure & Request Frequency by Department
+            // 2. Phân bổ quân số, thâm niên và tần suất đề xuất theo phòng ban
             var userDeptLookup = memberDict.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.DepartmentId);
             var requestsByDept = allRequests
                 .Where(x => x.CreatorId.HasValue && userDeptLookup.ContainsKey(x.CreatorId!.Value))
@@ -697,7 +678,7 @@ public class EmployeeAppService : InternalApprovalAppService, IEmployeeAppServic
                 );
             }).ToList();
 
-            // 3. Top Requesters
+            // 3. Danh sách nhân sự gửi nhiều đề xuất nhất
             var userDict = users.ToDictionary(x => x.Id, x => x);
             var topRequesters = allRequests
                 .Where(x => x.CreatorId.HasValue)
@@ -750,6 +731,7 @@ public class EmployeeAppService : InternalApprovalAppService, IEmployeeAppServic
         }
     }
 
+    // Tính toán thống kê đề xuất theo năm của một nhân viên
     private async Task<EmployeeYearlyStatsDto> CalculateYearlyStatsAsync(Guid userId, int targetYear)
     {
         var requestQuery = await _requestRepository.GetQueryableAsync();
@@ -809,6 +791,7 @@ public class EmployeeAppService : InternalApprovalAppService, IEmployeeAppServic
         };
     }
 
+    // Chuyển đổi enum RequestStatus sang tên hiển thị tiếng Việt
     private static string GetStatusName(RequestStatus status)
     {
         return status switch

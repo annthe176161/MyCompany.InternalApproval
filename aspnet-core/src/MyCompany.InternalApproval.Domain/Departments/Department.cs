@@ -6,7 +6,7 @@ using Volo.Abp.Domain.Entities.Auditing;
 
 namespace MyCompany.InternalApproval.Departments;
 
-// Phòng ban
+// Phòng ban trong công ty
 public class Department : FullAuditedAggregateRoot<Guid>
 {
     // Mã phòng ban
@@ -15,13 +15,13 @@ public class Department : FullAuditedAggregateRoot<Guid>
     // Tên phòng ban
     public string Name { get; private set; } = null!;
 
-    // Mô tả
+    // Mô tả phòng ban
     public string? Description { get; private set; }
 
     // Id trưởng phòng
     public Guid? ManagerId { get; private set; }
 
-    // Danh sách thành viên
+    // Danh sách thành viên thuộc phòng ban
     public ICollection<DepartmentMember> Members { get; private set; }
 
     protected Department()
@@ -40,8 +40,8 @@ public class Department : FullAuditedAggregateRoot<Guid>
     {
         SetCode(code);
         SetName(name);
-        Description = description;
-        ManagerId = managerId;
+        SetDescription(description);
+        SetManager(managerId);
         Members = new Collection<DepartmentMember>();
     }
 
@@ -59,17 +59,25 @@ public class Department : FullAuditedAggregateRoot<Guid>
         return this;
     }
 
-    // Cập nhật mô tả
+    // Cập nhật mô tả phòng ban
     public Department SetDescription(string? description)
     {
         Description = description;
         return this;
     }
 
-    // Gán trưởng phòng
+    // Bổ nhiệm hoặc hủy bổ nhiệm trưởng phòng
     public Department SetManager(Guid? managerId)
     {
         ManagerId = managerId;
         return this;
+    }
+
+    // Thêm thành viên mới vào phòng ban
+    public DepartmentMember AddMember(Guid memberId, Guid userId, string position, DateTime? joinDate = null)
+    {
+        var member = new DepartmentMember(memberId, Id, userId, position, joinDate);
+        Members.Add(member);
+        return member;
     }
 }
