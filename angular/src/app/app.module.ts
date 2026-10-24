@@ -16,6 +16,7 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { APP_ROUTE_PROVIDER } from './route.provider';
 import { NOTIFICATION_NAV_ITEM_PROVIDER } from './nav-item.provider';
+import { ABP_CLIENT_LOCALIZATIONS } from './shared/constants';
 import { ThemeLeptonXModule } from '@abp/ng.theme.lepton-x';
 import { SideMenuLayoutModule } from '@abp/ng.theme.lepton-x/layouts';
 import { AccountLayoutModule } from '@abp/ng.theme.lepton-x/account';
@@ -64,6 +65,7 @@ const ngZorroConfig: NzConfig = {
       withOptions({
         environment,
         registerLocaleFn: registerLocale(),
+        localizations: ABP_CLIENT_LOCALIZATIONS,
       }),
     ),
     provideAbpOAuth(),

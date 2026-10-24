@@ -34,22 +34,22 @@ function configureRoutes(routesService: RoutesService) {
       },
       {
         path: '/employees',
-        name: 'Hồ sơ nhân viên',
+        name: '::Menu:Employees',
         iconClass: 'fas fa-id-card',
         order: 3,
         layout: eLayoutType.application,
       },
     ]);
 
-    // Tinh gọn & Chuẩn hóa tên gọi menu hệ thống
+    // Tinh gọn & Chuẩn hóa tên gọi menu hệ thống theo khóa đa ngôn ngữ
     routesService.patch('AbpIdentity::Menu:IdentityManagement', {
-      name: 'Tài khoản & Phân quyền',
+      name: '::Menu:IdentityManagement',
     });
     routesService.patch('AbpIdentity::Roles', {
-      name: 'Vai trò & Quyền hạn',
+      name: '::Menu:Roles',
     });
     routesService.patch('AbpIdentity::Users', {
-      name: 'Quản lý tài khoản',
+      name: '::Menu:Users',
     });
 
     // Loại bỏ hoàn toàn mục Người thuê, Cài đặt và Tài khoản của tôi khỏi menu
