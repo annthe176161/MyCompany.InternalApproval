@@ -8,7 +8,6 @@ import {
 import { provideFeatureManagementConfig } from '@abp/ng.feature-management';
 import { provideAbpOAuth } from '@abp/ng.oauth';
 import { provideIdentityConfig } from '@abp/ng.identity/config';
-import { provideSettingManagementConfig } from '@abp/ng.setting-management/config';
 import { provideTenantManagementConfig } from '@abp/ng.tenant-management/config';
 import { provideAccountConfig } from '@abp/ng.account/config';
 import { NgModule } from '@angular/core';
@@ -71,7 +70,6 @@ const ngZorroConfig: NzConfig = {
     ),
     provideAbpOAuth(),
     provideAbpThemeShared(),
-    provideSettingManagementConfig(),
     provideAccountConfig(),
     provideIdentityConfig(),
     provideTenantManagementConfig(),

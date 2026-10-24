@@ -52,7 +52,10 @@ function configureRoutes(routesService: RoutesService) {
       name: 'Quản lý tài khoản',
     });
 
-    // Loại bỏ hoàn toàn mục Người thuê khỏi menu
-    routesService.remove(['AbpTenantManagement::Menu:TenantManagement']);
+    // Loại bỏ hoàn toàn mục Người thuê và Cài đặt khỏi menu
+    routesService.remove([
+      'AbpTenantManagement::Menu:TenantManagement',
+      'AbpSettingManagement::Settings',
+    ]);
   };
 }
