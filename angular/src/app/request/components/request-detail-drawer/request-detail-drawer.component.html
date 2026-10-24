@@ -42,6 +42,18 @@
             {{ detailRequest.amount | number: '1.0-0' }} VNĐ
           </span>
         </div>
+        <div class="detail-row" *ngIf="detailRequest.type === RequestType.Leave && (detailRequest.startDate || detailRequest.endDate)">
+          <span class="label">Thời gian nghỉ:</span>
+          <span class="value" style="font-weight: 600;">
+            {{ detailRequest.startDate | date: 'dd/MM/yyyy' }}
+            <ng-container *ngIf="detailRequest.endDate && detailRequest.endDate !== detailRequest.startDate">
+              - {{ detailRequest.endDate | date: 'dd/MM/yyyy' }}
+            </ng-container>
+            <span class="text-primary ms-2" *ngIf="getLeaveDays(detailRequest)">
+              ({{ getLeaveDays(detailRequest) }} ngày nghỉ)
+            </span>
+          </span>
+        </div>
         <div class="detail-row">
           <span class="label">Người tạo:</span>
           <span class="value">

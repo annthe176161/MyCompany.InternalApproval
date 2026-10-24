@@ -3,7 +3,7 @@
   [nzTitle]="isEditing ? 'Chỉnh sửa Đề xuất' : 'Tạo Đề xuất mới'"
   (nzOnCancel)="close()"
   [nzFooter]="modalFooter"
-  [nzWidth]="580"
+  [nzWidth]="600"
 >
   <ng-container *nzModalContent>
     <form nz-form [formGroup]="form" nzLayout="vertical">
@@ -18,6 +18,60 @@
           </nz-select>
         </nz-form-control>
       </nz-form-item>
+
+      <!-- PHẦN CHỌN NGÀY NGHỈ & SỐ NGÀY (CHỈ HIỂN THỊ KHI LOẠI LÀ NGHỈ PHÉP) -->
+      <div *ngIf="form.get('type')?.value === RequestType.Leave" class="leave-dates-card">
+        <div class="row g-2">
+          <div class="col-6">
+            <nz-form-item class="mb-2">
+              <nz-form-label nzRequired>Nghỉ từ ngày</nz-form-label>
+              <nz-form-control nzErrorTip="Vui lòng chọn ngày bắt đầu nghỉ">
+                <nz-date-picker
+                  formControlName="startDate"
+                  nzFormat="dd/MM/yyyy"
+                  nzPlaceHolder="Chọn ngày bắt đầu"
+                  (ngModelChange)="onStartDateChange($event)"
+                  style="width: 100%;"
+                ></nz-date-picker>
+              </nz-form-control>
+            </nz-form-item>
+          </div>
+          <div class="col-6">
+            <nz-form-item class="mb-2">
+              <nz-form-label nzRequired>Đến hết ngày</nz-form-label>
+              <nz-form-control nzErrorTip="Vui lòng chọn ngày kết thúc nghỉ">
+                <nz-date-picker
+                  formControlName="endDate"
+                  nzFormat="dd/MM/yyyy"
+                  nzPlaceHolder="Chọn ngày kết thúc"
+                  [nzDisabledDate]="disabledEndDate"
+                  (ngModelChange)="onEndDateChange($event)"
+                  style="width: 100%;"
+                ></nz-date-picker>
+              </nz-form-control>
+            </nz-form-item>
+          </div>
+        </div>
+
+        <!-- Hiển thị thời gian & số ngày nghỉ -->
+        <div class="leave-days-display">
+          <div>
+            <span class="text-muted small">Thời gian xin nghỉ:</span>
+            <div class="small fw-semibold text-dark mt-1" *ngIf="form.get('startDate')?.value && form.get('endDate')?.value">
+              {{ form.get('startDate')?.value | date:'dd/MM/yyyy' }}
+              <ng-container *ngIf="form.get('endDate')?.value !== form.get('startDate')?.value">
+                → {{ form.get('endDate')?.value | date:'dd/MM/yyyy' }}
+              </ng-container>
+            </div>
+          </div>
+          <div class="text-end">
+            <div class="days-badge">
+              <span nz-icon nzType="calendar" nzTheme="outline"></span>
+              <span>{{ calculatedLeaveDays }} ngày nghỉ</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- Tiêu đề -->
       <nz-form-item>
@@ -43,15 +97,15 @@
         </nz-form-control>
       </nz-form-item>
 
-      <!-- Nội dung chi tiết -->
+      <!-- Nội dung chi tiết / Lý do -->
       <nz-form-item>
-        <nz-form-label>Nội dung chi tiết</nz-form-label>
+        <nz-form-label>{{ form.get('type')?.value === RequestType.Leave ? 'Lý do xin nghỉ phép' : 'Nội dung chi tiết' }}</nz-form-label>
         <nz-form-control>
           <textarea
             nz-input
             formControlName="description"
-            rows="4"
-            placeholder="Mô tả lý do, chi tiết đề xuất..."
+            rows="3"
+            [placeholder]="form.get('type')?.value === RequestType.Leave ? 'Mô tả lý do xin nghỉ phép (ốm đau, việc gia đình, việc cá nhân...)' : 'Mô tả lý do, chi tiết đề xuất...'"
           ></textarea>
         </nz-form-control>
       </nz-form-item>
@@ -68,4 +122,3 @@
     </button>
   </ng-template>
 </nz-modal>
-

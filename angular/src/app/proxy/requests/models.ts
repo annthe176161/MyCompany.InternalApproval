@@ -15,6 +15,8 @@ export interface CreateRequestDto {
   description?: string;
   type: RequestType;
   amount?: number;
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface GetRequestListInput extends PagedAndSortedResultRequestDto {
@@ -41,6 +43,8 @@ export interface RequestDto extends FullAuditedEntityDto<string> {
   type: RequestType;
   status: RequestStatus;
   amount?: number;
+  startDate?: string;
+  endDate?: string;
   approverId?: string;
   approverName?: string;
   approvalTime?: string;
@@ -56,4 +60,6 @@ export interface UpdateRequestDto {
   description?: string;
   type: RequestType;
   amount?: number;
+  startDate?: string;
+  endDate?: string;
 }

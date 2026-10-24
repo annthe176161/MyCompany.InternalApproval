@@ -1,11 +1,18 @@
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { NzMessageService } from 'ng-zorro-antd/message';
-import { RequestService, RequestDto, RequestType } from '../../../proxy/requests';
+import {
+  RequestService,
+  RequestDto,
+  RequestType,
+  CreateRequestDto,
+  UpdateRequestDto,
+} from '../../../proxy/requests';
 
 @Component({
   selector: 'app-request-form-modal',
   templateUrl: './request-form-modal.component.html',
+  styleUrls: ['./request-form-modal.component.scss'],
 })
 export class RequestFormModalComponent implements OnInit {
   @Output() saveSuccess = new EventEmitter<void>();
@@ -33,54 +40,158 @@ export class RequestFormModalComponent implements OnInit {
       title: ['', [Validators.required, Validators.maxLength(200)]],
       description: ['', [Validators.maxLength(4000)]],
       amount: [{ value: null, disabled: true }],
+      startDate: [null],
+      endDate: [null],
     });
 
     this.form.get('type')?.valueChanges.subscribe((type: RequestType) => {
-      const amountCtrl = this.form.get('amount');
-      if (type === RequestType.Equipment || type === RequestType.AdvanceMoney) {
-        amountCtrl?.enable();
-        amountCtrl?.setValidators([Validators.required, Validators.min(1000)]);
-      } else {
-        amountCtrl?.disable();
-        amountCtrl?.clearValidators();
-        amountCtrl?.setValue(null);
-      }
-      amountCtrl?.updateValueAndValidity();
+      this.handleTypeChange(type);
     });
+  }
+
+  get calculatedLeaveDays(): number {
+    const start = this.form?.get('startDate')?.value;
+    const end = this.form?.get('endDate')?.value;
+    if (!start) return 1;
+    const s = new Date(start);
+    const e = end ? new Date(end) : s;
+    s.setHours(0, 0, 0, 0);
+    e.setHours(0, 0, 0, 0);
+    const diffTime = e.getTime() - s.getTime();
+    const diffDays = Math.round(diffTime / (1000 * 3600 * 24)) + 1;
+    return diffDays > 0 ? diffDays : 1;
+  }
+
+  disabledEndDate = (endValue: Date): boolean => {
+    const start = this.form?.get('startDate')?.value;
+    if (!endValue || !start) return false;
+    const s = new Date(start);
+    s.setHours(0, 0, 0, 0);
+    const e = new Date(endValue);
+    e.setHours(0, 0, 0, 0);
+    return e.getTime() < s.getTime();
+  };
+
+  onStartDateChange(date: Date | null): void {
+    if (!date) return;
+    const endDate = this.form.get('endDate')?.value;
+    if (!endDate || new Date(endDate).getTime() < new Date(date).getTime()) {
+      this.form.get('endDate')?.setValue(date);
+    }
+    this.updateLeaveTitleSuggestion();
+  }
+
+  onEndDateChange(_date: Date | null): void {
+    this.updateLeaveTitleSuggestion();
+  }
+
+  private updateLeaveTitleSuggestion(): void {
+    const type = this.form.get('type')?.value;
+    if (type !== RequestType.Leave) return;
+
+    const start = this.form.get('startDate')?.value;
+    const end = this.form.get('endDate')?.value;
+    if (!start) return;
+
+    const currentTitle = (this.form.get('title')?.value || '').trim();
+    if (!currentTitle || currentTitle.startsWith('Đơn xin nghỉ phép')) {
+      const days = this.calculatedLeaveDays;
+      const startStr = this.formatDate(new Date(start));
+      const endStr = end ? this.formatDate(new Date(end)) : startStr;
+      const periodStr = startStr === endStr ? startStr : `từ ${startStr} đến ${endStr}`;
+      this.form.get('title')?.setValue(`Đơn xin nghỉ phép (${days} ngày: ${periodStr})`);
+    }
+  }
+
+  private formatDate(d: Date): string {
+    const pad = (n: number) => (n < 10 ? '0' + n : `${n}`);
+    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+  }
+
+  private formatToLocalIso(date: Date | string): string {
+    const d = new Date(date);
+    const pad = (n: number) => (n < 10 ? '0' + n : `${n}`);
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T00:00:00`;
+  }
+
+  private handleTypeChange(type: RequestType): void {
+    const amountCtrl = this.form.get('amount');
+    const startDateCtrl = this.form.get('startDate');
+    const endDateCtrl = this.form.get('endDate');
+
+    if (type === RequestType.Equipment || type === RequestType.AdvanceMoney) {
+      amountCtrl?.enable();
+      amountCtrl?.setValidators([Validators.required, Validators.min(1000)]);
+
+      startDateCtrl?.clearValidators();
+      startDateCtrl?.setValue(null);
+
+      endDateCtrl?.clearValidators();
+      endDateCtrl?.setValue(null);
+
+      const currentTitle = this.form.get('title')?.value || '';
+      if (currentTitle.startsWith('Đơn xin nghỉ phép')) {
+        this.form.get('title')?.setValue('');
+      }
+    } else {
+      // Leave
+      amountCtrl?.disable();
+      amountCtrl?.clearValidators();
+      amountCtrl?.setValue(null);
+
+      startDateCtrl?.setValidators([Validators.required]);
+      endDateCtrl?.setValidators([Validators.required]);
+
+      if (!startDateCtrl?.value) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        startDateCtrl?.setValue(today);
+        endDateCtrl?.setValue(today);
+      }
+      this.updateLeaveTitleSuggestion();
+    }
+
+    amountCtrl?.updateValueAndValidity();
+    startDateCtrl?.updateValueAndValidity();
+    endDateCtrl?.updateValueAndValidity();
   }
 
   openCreate(): void {
     this.isEditing = false;
     this.currentRequestId = null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     this.form.reset({
       type: RequestType.Leave,
       title: '',
       description: '',
       amount: null,
+      startDate: today,
+      endDate: today,
     });
+
+    this.handleTypeChange(RequestType.Leave);
+    this.updateLeaveTitleSuggestion();
     this.isVisible = true;
   }
 
   openEdit(req: RequestDto): void {
     this.isEditing = true;
     this.currentRequestId = req.id;
+    const start = req.startDate ? new Date(req.startDate) : null;
+    const end = req.endDate ? new Date(req.endDate) : (start ? new Date(start) : null);
+
     this.form.patchValue({
       type: req.type,
       title: req.title,
       description: req.description,
       amount: req.amount,
+      startDate: start,
+      endDate: end,
     });
 
-    const amountCtrl = this.form.get('amount');
-    if (req.type === RequestType.Equipment || req.type === RequestType.AdvanceMoney) {
-      amountCtrl?.enable();
-      amountCtrl?.setValidators([Validators.required, Validators.min(1000)]);
-    } else {
-      amountCtrl?.disable();
-      amountCtrl?.clearValidators();
-    }
-    amountCtrl?.updateValueAndValidity();
-
+    this.handleTypeChange(req.type);
     this.isVisible = true;
   }
 
@@ -102,14 +213,30 @@ export class RequestFormModalComponent implements OnInit {
     this.isSaving = true;
     const formVal = this.form.getRawValue();
 
+    let startIso: string | undefined = undefined;
+    let endIso: string | undefined = undefined;
+
+    if (formVal.type === RequestType.Leave) {
+      if (formVal.startDate) {
+        startIso = this.formatToLocalIso(formVal.startDate);
+      }
+      if (formVal.endDate) {
+        endIso = this.formatToLocalIso(formVal.endDate);
+      }
+    }
+
+    const payload: CreateRequestDto = {
+      title: formVal.title,
+      type: formVal.type,
+      description: formVal.description,
+      amount: formVal.type !== RequestType.Leave ? formVal.amount : undefined,
+      startDate: startIso,
+      endDate: endIso,
+    };
+
     if (this.isEditing && this.currentRequestId) {
       this.requestService
-        .update(this.currentRequestId, {
-          title: formVal.title,
-          type: formVal.type,
-          description: formVal.description,
-          amount: formVal.amount,
-        })
+        .update(this.currentRequestId, payload as UpdateRequestDto)
         .subscribe({
           next: () => {
             this.message.success('Cập nhật đề xuất thành công!');
@@ -125,12 +252,7 @@ export class RequestFormModalComponent implements OnInit {
         });
     } else {
       this.requestService
-        .create({
-          title: formVal.title,
-          type: formVal.type,
-          description: formVal.description,
-          amount: formVal.amount,
-        })
+        .create(payload)
         .subscribe({
           next: created => {
             if (andSubmit) {

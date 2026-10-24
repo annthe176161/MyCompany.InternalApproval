@@ -120,4 +120,15 @@ export class RequestDetailDrawerComponent {
         return { label: 'Không xác định', badgeStatus: 'default' };
     }
   }
+
+  getLeaveDays(req: RequestDto | null): number | null {
+    if (!req || !req.startDate) return null;
+    const start = new Date(req.startDate);
+    const end = req.endDate ? new Date(req.endDate) : start;
+    start.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
+    const diffTime = end.getTime() - start.getTime();
+    const days = Math.round(diffTime / (1000 * 3600 * 24)) + 1;
+    return days > 0 ? days : 1;
+  }
 }

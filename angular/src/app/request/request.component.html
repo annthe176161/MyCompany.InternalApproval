@@ -162,7 +162,12 @@
             <div class="table-req-title" (click)="detailDrawer.open(data)" nz-tooltip="Bấm để xem chi tiết">
               {{ data.title }}
             </div>
-            <span class="subtle-type-tag">{{ getTypeTag(data.type).label }}</span>
+            <div class="d-flex align-items-center gap-2 mt-1">
+              <span class="subtle-type-tag">{{ getTypeTag(data.type).label }}</span>
+              <span *ngIf="data.type === RequestType.Leave && data.startDate" class="cell-subtext">
+                {{ data.startDate | date: 'dd/MM/yyyy' }}<ng-container *ngIf="data.endDate && data.endDate !== data.startDate"> - {{ data.endDate | date: 'dd/MM/yyyy' }}</ng-container> ({{ getLeaveDays(data) }} ngày)
+              </span>
+            </div>
           </td>
 
           <!-- Col 3: Số tiền -->

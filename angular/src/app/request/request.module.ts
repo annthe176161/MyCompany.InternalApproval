@@ -27,6 +27,7 @@ import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { NzPopoverModule } from 'ng-zorro-antd/popover';
 import { NzRadioModule } from 'ng-zorro-antd/radio';
+import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
 
 import { RequestRoutingModule } from './request-routing.module';
 import { RequestComponent } from './request.component';
@@ -72,6 +73,7 @@ import { RequestDetailDrawerComponent } from './components/request-detail-drawer
     NzCheckboxModule,
     NzPopoverModule,
     NzRadioModule,
+    NzDatePickerModule,
   ],
 })
 export class RequestModule {}
