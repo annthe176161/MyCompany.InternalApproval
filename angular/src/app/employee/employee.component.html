@@ -183,7 +183,7 @@
                 <td>
                   <ng-container *ngIf="emp.departmentName; else noDept">
                     <div class="cell-maintext" data-verbatim>{{ emp.departmentName }}</div>
-                    <div class="cell-subtext" *ngIf="emp.departmentCode"><span>Mã:</span> <span data-verbatim>{{ emp.departmentCode }}</span></div>
+                    <div class="cell-subtext" *ngIf="emp.departmentCode"><span>Mã: </span><span data-verbatim>{{ emp.departmentCode }}</span></div>
                   </ng-container>
                   <ng-template #noDept>
                     <span class="text-muted">Chưa phân bổ</span>
@@ -360,7 +360,7 @@
             [nzShowSizeChanger]="true"
             [nzPageSizeOptions]="[10, 20, 50]"
             [nzFrontPagination]="false"
-            [nzScroll]="{ y: 'calc(100vh - 460px)' }"
+            [nzScroll]="{ y: 'calc(100vh - 510px)' }"
             nzSize="middle"
             (nzQueryParams)="onLeaveQueryParamsChange($event)"
           >
@@ -400,7 +400,7 @@
                 <td>
                   <ng-container *ngIf="item.departmentName; else noDeptLeave">
                     <div class="cell-maintext" data-verbatim>{{ item.departmentName }}</div>
-                    <div class="cell-subtext" *ngIf="item.departmentCode"><span>Mã:</span> <span data-verbatim>{{ item.departmentCode }}</span></div>
+                    <div class="cell-subtext" *ngIf="item.departmentCode"><span>Mã: </span><span data-verbatim>{{ item.departmentCode }}</span></div>
                   </ng-container>
                   <ng-template #noDeptLeave>
                     <span class="text-muted">Chưa phân bổ</span>
