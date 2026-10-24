@@ -38,6 +38,7 @@ function configureRoutes(routesService: RoutesService) {
         iconClass: 'fas fa-id-card',
         order: 3,
         layout: eLayoutType.application,
+        requiredPolicy: 'Employees.Default',
       },
     ]);
 

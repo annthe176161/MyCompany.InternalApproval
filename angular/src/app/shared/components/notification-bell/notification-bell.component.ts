@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { AuthService } from '@abp/ng.core';
 import { Subscription, interval } from 'rxjs';
 import { NzBadgeModule } from 'ng-zorro-antd/badge';
 import { NzPopoverModule } from 'ng-zorro-antd/popover';
@@ -42,18 +43,25 @@ export class NotificationBellComponent implements OnInit, OnDestroy {
 
   constructor(
     private notificationService: NotificationService,
+    private authService: AuthService,
     private router: Router,
     private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
+    if (!this.authService.isAuthenticated) {
+      return;
+    }
+
     this.fetchUnreadCount();
 
     // Tự động kiểm tra số lượng thông báo mới mỗi 10 giây
     this.pollSubscription = interval(10000).subscribe(() => {
-      this.fetchUnreadCount();
-      if (this.isPopoverVisible) {
-        this.fetchNotifications(false);
+      if (this.authService.isAuthenticated) {
+        this.fetchUnreadCount();
+        if (this.isPopoverVisible) {
+          this.fetchNotifications(false);
+        }
       }
     });
   }
