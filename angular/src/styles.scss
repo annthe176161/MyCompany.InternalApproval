@@ -621,6 +621,8 @@
 
 /* ==========================================================================
    TRIỆT TIÊU HOÀN TOÀN MÀU HỒNG (#f72585 / MAGENTA) TRÊN TOÀN BỘ HỆ THỐNG
+   - Menu Dropdown, Nút Đăng xuất, User Profile (:active / :focus / :hover)
+   - Breadcrumb, Nav Tabs, Nav Pills, Badges, Pagination, Accordion, Buttons
    ========================================================================== */
 .lpx-breadcrumb-item:hover .lpx-breadcrumb-item-icon,
 .lpx-breadcrumb-item:hover .lpx-caret,
@@ -649,6 +651,172 @@
 .form-check-input:checked {
   background-color: #2563eb !important;
   border-color: #2563eb !important;
+}
+
+/* Triệt tiêu màu hồng trên toàn bộ Dropdown Menu khi active, focus, hover */
+.dropdown-menu,
+.dropdown-menu-dark,
+.lpx-theme-dark .dropdown-menu {
+  --bs-dropdown-link-active-bg: #2563eb !important;
+  --bs-dropdown-link-active-color: #ffffff !important;
+  --bs-dropdown-header-color: #2563eb !important;
+  --bs-dropdown-link-hover-bg: #f1f5f9 !important;
+  --bs-dropdown-link-hover-color: #0f172a !important;
+}
+
+.dropdown-item,
+[ngbDropdownItem],
+a[ngbDropdownItem] {
+  &:active,
+  &.active {
+    background-color: #2563eb !important;
+    color: #ffffff !important;
+  }
+
+  &:hover,
+  &:focus {
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+  }
+}
+
+/* Khắc phục triệt để lỗi nút Đăng xuất và Menu người dùng bị hiện màu hồng khi ấn (click / active) */
+abp-user-profile,
+lpx-user-profile,
+lpx-mn-user-profile,
+.lpx-user-profile,
+.user-menu-groups {
+  .dropdown-menu {
+    --bs-dropdown-link-active-bg: #2563eb !important;
+    --bs-dropdown-link-active-color: #ffffff !important;
+    border-radius: 8px !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12), 0 8px 10px -6px rgba(15, 23, 42, 0.08) !important;
+    padding: 6px 0 !important;
+  }
+
+  .dropdown-item,
+  [ngbDropdownItem],
+  a[ngbDropdownItem],
+  .action {
+    padding: 8px 18px !important;
+    font-size: 13.5px !important;
+    font-weight: 500 !important;
+    color: #334155 !important;
+    cursor: pointer !important;
+    transition: background-color 0.15s ease, color 0.15s ease !important;
+
+    &:hover,
+    &:focus {
+      background-color: #f1f5f9 !important;
+      color: #0f172a !important;
+    }
+
+    &:active,
+    &.active {
+      background-color: #2563eb !important;
+      color: #ffffff !important;
+    }
+  }
+
+  .dropdown-divider {
+    margin: 4px 0 !important;
+    border-color: #f1f5f9 !important;
+  }
+}
+
+/* Triệt tiêu màu hồng trên toàn bộ các components còn lại của LeptonX */
+.btn-brand {
+  --bs-btn-bg: #2563eb !important;
+  --bs-btn-border-color: #2563eb !important;
+  --bs-btn-hover-bg: #1d4ed8 !important;
+  --bs-btn-hover-border-color: #1d4ed8 !important;
+  --bs-btn-active-bg: #1e40af !important;
+  --bs-btn-active-border-color: #1e40af !important;
+
+  &.soft {
+    --bs-btn-color: #2563eb !important;
+    --bs-btn-bg: rgba(37, 99, 235, 0.1) !important;
+    --bs-btn-hover-color: #1d4ed8 !important;
+    --bs-btn-hover-bg: rgba(37, 99, 235, 0.2) !important;
+  }
+
+  &.grey {
+    --bs-btn-color: #2563eb !important;
+    --bs-btn-hover-color: #1d4ed8 !important;
+  }
+}
+
+.table-brand {
+  background-color: rgba(37, 99, 235, 0.08) !important;
+  --bs-table-bg: rgba(37, 99, 235, 0.08) !important;
+}
+
+.badge.bg-brand {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+
+  &.soft {
+    color: #2563eb !important;
+    background-color: rgba(37, 99, 235, 0.1) !important;
+  }
+}
+
+.alert-brand {
+  background: rgba(37, 99, 235, 0.1) !important;
+  border-color: rgba(37, 99, 235, 0.2) !important;
+  color: #1d4ed8 !important;
+}
+
+.nav-tabs {
+  --bs-nav-tabs-link-active-color: #2563eb !important;
+  --bs-nav-tabs-link-active-border-color: #2563eb !important;
+
+  .nav-item .nav-link.active {
+    border-bottom: 3px solid #2563eb !important;
+    color: #2563eb !important;
+  }
+}
+
+.nav-pills {
+  --bs-nav-pills-link-active-color: #2563eb !important;
+  --bs-nav-pills-link-active-bg: rgba(37, 99, 235, 0.12) !important;
+}
+
+.accordion {
+  --bs-accordion-active-color: #2563eb !important;
+  --bs-accordion-active-bg: rgba(37, 99, 235, 0.08) !important;
+}
+
+.pagination {
+  --bs-pagination-active-bg: #2563eb !important;
+  --bs-pagination-active-border-color: #2563eb !important;
+
+  .page-item .page-link:hover,
+  .page-item .page-link:focus,
+  .page-item .page-link:active {
+    color: #2563eb !important;
+  }
+
+  .page-item.active .page-link {
+    background-color: #2563eb !important;
+    border-color: #2563eb !important;
+    color: #ffffff !important;
+  }
+}
+
+.list-group {
+  --bs-list-group-action-hover-bg: rgba(37, 99, 235, 0.08) !important;
+  --bs-list-group-active-color: #2563eb !important;
+  --bs-list-group-active-bg: rgba(37, 99, 235, 0.12) !important;
+  --bs-list-group-active-border-color: rgba(37, 99, 235, 0.12) !important;
+}
+
+select.form-select option:checked,
+select.form-select option:focus,
+select.form-select option:active {
+  background: #2563eb !important;
+  color: #ffffff !important;
 }
 
 .lpx-breadcrumb-separator {
