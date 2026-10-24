@@ -170,7 +170,6 @@
             <span *ngIf="data.type !== RequestType.Leave && data.amount && data.amount > 0" class="amount-value">
               {{ data.amount | number: '1.0-0' }} ₫
             </span>
-            <span *ngIf="data.type === RequestType.Leave || !data.amount || data.amount === 0" class="text-muted">-</span>
           </td>
 
           <!-- Col 4: Người đề xuất -->

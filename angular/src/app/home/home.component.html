@@ -246,7 +246,6 @@
                   <span class="amount-text" *ngIf="req.amount && req.amount > 0">
                     {{ formatMoney(req.amount) }}
                   </span>
-                  <span class="text-muted" *ngIf="!req.amount || req.amount === 0">-</span>
                 </td>
                 <td>
                   <nz-badge [nzStatus]="getStatusTag(req.status).badgeStatus" [nzText]="getStatusTag(req.status).label"></nz-badge>
@@ -379,7 +378,6 @@
                   <span class="amount-text" *ngIf="req.amount && req.amount > 0">
                     {{ formatMoney(req.amount) }}
                   </span>
-                  <span class="text-muted" *ngIf="!req.amount || req.amount === 0">-</span>
                 </td>
                 <td>
                   <span class="text-muted">{{ req.creationTime | date: 'dd/MM/yyyy HH:mm' }}</span>
@@ -510,7 +508,6 @@
                   <span class="amount-text" *ngIf="req.amount && req.amount > 0">
                     {{ formatMoney(req.amount) }}
                   </span>
-                  <span class="text-muted" *ngIf="!req.amount || req.amount === 0">-</span>
                 </td>
                 <td>
                   <nz-badge [nzStatus]="getStatusTag(req.status).badgeStatus" [nzText]="getStatusTag(req.status).label"></nz-badge>
