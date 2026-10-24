@@ -24,24 +24,21 @@
         <div class="user-meta">
           <span class="user-name">Xin chào, {{ currentUserFullName }}!</span>
           <div class="role-tags-inline">
-            <nz-tag *ngIf="isAdmin" nzColor="black" class="role-badge-mini">Quản trị viên</nz-tag>
-            <nz-tag *ngIf="isApprover && !isAdmin" nzColor="geekblue" class="role-badge-mini">Quản lý duyệt</nz-tag>
+            <nz-tag *ngIf="isAdmin" nzColor="default" class="role-badge-mini">Quản trị viên (Chỉ xem)</nz-tag>
+            <nz-tag *ngIf="isApprover && !isAdmin" nzColor="default" class="role-badge-mini">Quản lý duyệt</nz-tag>
             <nz-tag *ngIf="!isAdmin && !isApprover" nzColor="default" class="role-badge-mini">Nhân viên</nz-tag>
           </div>
         </div>
       </div>
 
-      <!-- Cụm giữa: Chuyển đổi góc nhìn vai trò -->
-      <div class="topbar-role-switcher" *ngIf="isAdmin || isApprover">
+      <!-- Cụm giữa: Chuyển đổi góc nhìn vai trò (Chỉ hiển thị cho người duyệt để chuyển sang Đề xuất của tôi) -->
+      <div class="topbar-role-switcher" *ngIf="!isAdmin && isApprover">
         <nz-radio-group [(ngModel)]="activeRoleView" nzButtonStyle="solid" nzSize="small" class="role-radio-compact">
-          <label nz-radio-button nzValue="admin" *ngIf="isAdmin">
-            <span>Quản trị hệ thống</span>
-          </label>
-          <label nz-radio-button nzValue="approver" *ngIf="isApprover">
+          <label nz-radio-button nzValue="approver">
             <span>Người phê duyệt</span>
             <span *ngIf="approverPendingCount > 0" class="role-badge-count">{{ approverPendingCount }}</span>
           </label>
-          <label nz-radio-button nzValue="employee" *ngIf="!isAdmin">
+          <label nz-radio-button nzValue="employee">
             <span>Đề xuất của tôi</span>
           </label>
         </nz-radio-group>
@@ -53,7 +50,7 @@
           <span>+ Tạo đề xuất</span>
         </button>
         <button nz-button nzSize="small" (click)="navigateToRequests(undefined, activeRoleView === 'admin' ? 'all' : 'my')" class="action-btn btn-outline">
-          <span>Quản lý</span>
+          <span>{{ isAdmin ? 'Danh sách đề xuất' : 'Xem tất cả' }}</span>
         </button>
         <button nz-button nzSize="small" (click)="exportDashboardReport()" [nzLoading]="isExporting" class="action-btn btn-outline" nz-tooltip nzTooltipTitle="Xuất báo cáo Excel">
           <span>Xuất Excel</span>
@@ -85,25 +82,25 @@
           <div class="stat-card" (click)="navigateToRequests(RequestStatus.Draft, 'all')">
             <div class="stat-content">
               <div class="stat-label">Lưu nháp</div>
-              <div class="stat-value text-muted">{{ getStatusCount(allRequests, RequestStatus.Draft) }}</div>
+              <div class="stat-value">{{ getStatusCount(allRequests, RequestStatus.Draft) }}</div>
               <div class="stat-hint">Chưa gửi duyệt</div>
             </div>
           </div>
 
           <!-- Card 3: Chờ duyệt -->
-          <div class="stat-card stat-card-warning" (click)="navigateToRequests(RequestStatus.Submitted, 'all')">
+          <div class="stat-card" (click)="navigateToRequests(RequestStatus.Submitted, 'all')">
             <div class="stat-content">
               <div class="stat-label">Chờ phê duyệt</div>
-              <div class="stat-value text-warning">{{ getStatusCount(allRequests, RequestStatus.Submitted) }}</div>
-              <div class="stat-hint">Cần xử lý ngay</div>
+              <div class="stat-value">{{ getStatusCount(allRequests, RequestStatus.Submitted) }}</div>
+              <div class="stat-hint">Đang chờ xử lý</div>
             </div>
           </div>
 
           <!-- Card 4: Đã duyệt -->
-          <div class="stat-card stat-card-success" (click)="navigateToRequests(RequestStatus.Approved, 'all')">
+          <div class="stat-card" (click)="navigateToRequests(RequestStatus.Approved, 'all')">
             <div class="stat-content">
               <div class="stat-label">Đã phê duyệt</div>
-              <div class="stat-value text-success">{{ getStatusCount(allRequests, RequestStatus.Approved) }}</div>
+              <div class="stat-value">{{ getStatusCount(allRequests, RequestStatus.Approved) }}</div>
               <div class="stat-hint">Tỷ lệ: {{ adminApprovalRate }}%</div>
             </div>
           </div>
@@ -112,7 +109,7 @@
           <div class="stat-card" (click)="navigateToRequests(RequestStatus.Rejected, 'all')">
             <div class="stat-content">
               <div class="stat-label">Đã từ chối</div>
-              <div class="stat-value text-danger">{{ getStatusCount(allRequests, RequestStatus.Rejected) }}</div>
+              <div class="stat-value">{{ getStatusCount(allRequests, RequestStatus.Rejected) }}</div>
               <div class="stat-hint">Hồ sơ không duyệt</div>
             </div>
           </div>
@@ -121,7 +118,7 @@
           <div class="stat-card">
             <div class="stat-content">
               <div class="stat-label">Tổng kinh phí</div>
-              <div class="stat-value stat-money">{{ formatMoney(adminTotalAmount) }}</div>
+              <div class="stat-value">{{ formatMoney(adminTotalAmount) }}</div>
               <div class="stat-hint">Đã duyệt: {{ formatMoney(adminApprovedAmount) }}</div>
             </div>
           </div>
@@ -138,16 +135,16 @@
               <div *ngFor="let item of adminTypeStats" class="compact-type-item">
                 <div class="type-item-header">
                   <div class="type-title">
-                    <span class="type-dot" [style.backgroundColor]="item.color"></span>
+                    <span class="type-dot"></span>
                     <span class="type-name">{{ item.label }}</span>
                   </div>
                   <div class="type-stats">
-                    <span class="type-count"><strong>{{ item.count }}</strong> phiếu</span>
+                    <span class="type-count"><strong>{{ item.count }}</strong> đề xuất</span>
                     <span class="type-percent">({{ item.percent }}%)</span>
                     <span class="type-sum" *ngIf="item.amount > 0"> · {{ formatMoney(item.amount) }}</span>
                   </div>
                 </div>
-                <nz-progress [nzPercent]="item.percent" [nzStrokeColor]="item.color" [nzShowInfo]="false" [nzStrokeWidth]="4"></nz-progress>
+                <nz-progress [nzPercent]="item.percent" nzStrokeColor="#4b5563" [nzShowInfo]="false" [nzStrokeWidth]="4"></nz-progress>
               </div>
             </div>
           </nz-card>
@@ -179,12 +176,12 @@
                 [nzTooltipTitle]="'Bấm để lọc danh sách đề xuất của ' + dept.name"
               >
                 <div class="dept-box-top">
-                  <nz-tag [nzColor]="dept.color" class="dept-badge">{{ dept.code }}</nz-tag>
-                  <span class="dept-count-badge">{{ dept.count }} phiếu</span>
+                  <nz-tag class="dept-badge">{{ dept.code }}</nz-tag>
+                  <span class="dept-count-badge">{{ dept.count }} đề xuất</span>
                 </div>
                 <div class="dept-name-text">{{ dept.name }}</div>
                 <div class="dept-amount-text">{{ formatMoney(dept.totalAmount) }}</div>
-                <nz-progress [nzPercent]="dept.percent" [nzStrokeColor]="dept.color" [nzShowInfo]="false" [nzStrokeWidth]="3"></nz-progress>
+                <nz-progress [nzPercent]="dept.percent" nzStrokeColor="#6b7280" [nzShowInfo]="false" [nzStrokeWidth]="3"></nz-progress>
               </div>
             </div>
           </nz-card>
@@ -204,7 +201,7 @@
           </ng-template>
           <ng-template #viewAllLink>
             <a (click)="navigateToRequests(undefined, 'all')" class="view-all-link">
-              Xem tất cả trên trang Quản lý
+              Xem tất cả
             </a>
           </ng-template>
 
@@ -263,7 +260,7 @@
                     nzType="text"
                     nzSize="small"
                     (click)="viewRequest(req.id)"
-                    class="action-icon-btn"
+                    class="action-icon-btn view"
                     nz-tooltip
                     nzTooltipTitle="Xem chi tiết"
                   >
@@ -531,7 +528,7 @@
                     nzType="text"
                     nzSize="small"
                     (click)="viewRequest(req.id)"
-                    class="action-icon-btn"
+                    class="action-icon-btn view"
                     nz-tooltip
                     nzTooltipTitle="Xem chi tiết"
                   >

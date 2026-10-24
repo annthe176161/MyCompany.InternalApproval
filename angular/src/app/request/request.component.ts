@@ -108,9 +108,10 @@ export class RequestComponent implements OnInit {
       user?.userName?.toLowerCase() === 'admin' ||
       this.permissionService.getGrantedPolicy('AbpIdentity.Roles');
     this.isApprover =
-      this.isAdmin ||
-      this.permissionService.getGrantedPolicy('Requests.Approve') ||
-      roles.some(r => r.includes('manager') || r.includes('leader'));
+      !this.isAdmin && (
+        this.permissionService.getGrantedPolicy('Requests.Approve') ||
+        roles.some(r => r.includes('manager') || r.includes('leader'))
+      );
 
     // Tải cấu hình cột đã lưu từ localStorage
     this.loadColumnsFromStorage();
@@ -352,6 +353,11 @@ export class RequestComponent implements OnInit {
   }
 
   hasOtherActions(data: RequestDto): boolean {
+    // Admin chỉ là người xem, không thực hiện các thao tác sửa/xóa/duyệt/từ chối
+    if (this.isAdmin) {
+      return false;
+    }
+
     if (data.status === RequestStatus.Draft) {
       const isCreator = !data.creatorId || data.creatorId === this.currentUserId;
       const canEdit = this.permissionService.getGrantedPolicy('Requests.Edit');

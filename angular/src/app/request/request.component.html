@@ -217,14 +217,14 @@
                 <span nz-icon nzType="eye"></span>
               </button>
 
-              <!-- 2. Chỉnh sửa (Trạng thái Nháp & có quyền Edit) -->
+              <!-- 2. Chỉnh sửa (Trạng thái Nháp & có quyền Edit & không phải Admin vì Admin chỉ xem) -->
               <ng-container *abpPermission="'Requests.Edit'">
                 <button
                   nz-button
                   nzType="text"
                   nzShape="circle"
                   class="action-icon-btn edit"
-                  *ngIf="data.status === RequestStatus.Draft"
+                  *ngIf="!isAdmin && data.status === RequestStatus.Draft"
                   nz-tooltip
                   nzTooltipTitle="Chỉnh sửa đề xuất"
                   (click)="formModal.openEdit(data)"
@@ -233,13 +233,13 @@
                 </button>
               </ng-container>
 
-              <!-- 3. Gửi phê duyệt (Trạng thái Nháp & là đơn của mình) -->
+              <!-- 3. Gửi phê duyệt (Trạng thái Nháp & là đơn của mình & không phải Admin) -->
               <button
                 nz-button
                 nzType="text"
                 nzShape="circle"
                 class="action-icon-btn submit"
-                *ngIf="data.status === RequestStatus.Draft && (!data.creatorId || data.creatorId === currentUserId)"
+                *ngIf="!isAdmin && data.status === RequestStatus.Draft && (!data.creatorId || data.creatorId === currentUserId)"
                 nz-tooltip
                 nzTooltipTitle="Gửi phê duyệt"
                 (click)="submit(data)"
@@ -247,14 +247,14 @@
                 <span nz-icon nzType="send"></span>
               </button>
 
-              <!-- 4. Phê duyệt (Chờ duyệt & có quyền Approve & không phải tự duyệt đơn mình) -->
+              <!-- 4. Phê duyệt (Chờ duyệt & có quyền Approve & không phải tự duyệt đơn mình & không phải Admin) -->
               <ng-container *abpPermission="'Requests.Approve'">
                 <button
                   nz-button
                   nzType="text"
                   nzShape="circle"
                   class="action-icon-btn approve"
-                  *ngIf="data.status === RequestStatus.Submitted && (!currentUserId || data.creatorId !== currentUserId)"
+                  *ngIf="!isAdmin && data.status === RequestStatus.Submitted && (!currentUserId || data.creatorId !== currentUserId)"
                   nz-tooltip
                   nzTooltipTitle="Phê duyệt đề xuất"
                   (click)="actionModal.openApprove(data)"
@@ -263,14 +263,14 @@
                 </button>
               </ng-container>
 
-              <!-- 5. Từ chối (Chờ duyệt & có quyền Reject) -->
+              <!-- 5. Từ chối (Chờ duyệt & có quyền Reject & không phải Admin) -->
               <ng-container *abpPermission="'Requests.Reject'">
                 <button
                   nz-button
                   nzType="text"
                   nzShape="circle"
                   class="action-icon-btn reject"
-                  *ngIf="data.status === RequestStatus.Submitted"
+                  *ngIf="!isAdmin && data.status === RequestStatus.Submitted"
                   nz-tooltip
                   nzTooltipTitle="Từ chối đề xuất"
                   (click)="actionModal.openReject(data)"
@@ -279,14 +279,14 @@
                 </button>
               </ng-container>
 
-              <!-- 6. Xóa đề xuất (Trạng thái Nháp & có quyền Delete) -->
+              <!-- 6. Xóa đề xuất (Trạng thái Nháp & có quyền Delete & không phải Admin) -->
               <ng-container *abpPermission="'Requests.Delete'">
                 <button
                   nz-button
                   nzType="text"
                   nzShape="circle"
                   class="action-icon-btn delete"
-                  *ngIf="data.status === RequestStatus.Draft"
+                  *ngIf="!isAdmin && data.status === RequestStatus.Draft"
                   nz-tooltip
                   nzTooltipTitle="Xóa đề xuất"
                   nz-popconfirm

@@ -138,7 +138,7 @@ export class HomeComponent implements OnInit {
       this.currentUserEmail = user.email || '';
       this.userRoles = user.roles || [];
 
-      // Phân quyền vai trò
+      // Phân quyền vai trò: Admin là người giám sát/xem toàn bộ, KHÔNG tham gia duyệt đơn
       const roleLower = this.userRoles.map(r => r.toLowerCase());
       this.isAdmin =
         roleLower.includes('admin') ||
@@ -147,9 +147,9 @@ export class HomeComponent implements OnInit {
 
       const canApprovePolicy = this.permissionService.getGrantedPolicy('Requests.Approve');
       this.isApprover =
-        this.isAdmin ||
-        canApprovePolicy ||
-        roleLower.some(r => r.includes('manager') || r.includes('leader') || r.includes('approver'));
+        !this.isAdmin &&
+        (canApprovePolicy ||
+          roleLower.some(r => r.includes('manager') || r.includes('leader') || r.includes('approver')));
 
       // Đặt góc nhìn mặc định phù hợp với quyền cao nhất
       if (this.isAdmin) {
@@ -271,20 +271,13 @@ export class HomeComponent implements OnInit {
         count: matchingReqs.length,
         amount: matchingReqs.reduce((s, r) => s + (r.amount || 0), 0),
         percent: Math.round((matchingReqs.length / total) * 100),
-        color: tp.chartColor,
+        color: '#4b5563',
       };
     });
   }
 
   private calculateDepartmentStats(requests: RequestDto[]): void {
     const total = requests.length || 1;
-    const deptColors: Record<string, string> = {
-      IT: '#3b82f6',
-      HR: '#10b981',
-      FINANCE: '#f59e0b',
-      SALES: '#8b5cf6',
-    };
-
     const deptMap = new Map<string, { code: string; name: string; count: number; totalAmount: number }>();
     requests.forEach(r => {
       const code = r.departmentCode || 'OTHER';
@@ -303,7 +296,7 @@ export class HomeComponent implements OnInit {
       count: d.count,
       totalAmount: d.totalAmount,
       percent: Math.round((d.count / total) * 100),
-      color: deptColors[d.code] || '#64748b',
+      color: '#4b5563',
     })).sort((a, b) => b.count - a.count);
   }
 
