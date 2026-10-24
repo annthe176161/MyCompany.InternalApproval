@@ -70,7 +70,7 @@
                     (click)="selectedDepartmentId = (selectedDepartmentId === d.departmentId ? null : d.departmentId); onDepartmentChange();"
                     [nz-tooltip]="d.departmentName + ': ' + d.headcount + ' nhân sự (' + d.percentage + '%)'"
                   >
-                    <span class="chip-code">{{ d.departmentCode }}</span>
+                    <span class="chip-code" data-verbatim>{{ d.departmentCode }}</span>
                     <span class="chip-count">({{ d.headcount }})</span>
                   </div>
                 </div>
@@ -169,10 +169,10 @@
 
                 <!-- Họ tên & Email -->
                 <td>
-                  <a class="employee-name-link" (click)="openEmployeeDrawer(emp.id)">
+                  <a class="employee-name-link" (click)="openEmployeeDrawer(emp.id)" data-verbatim>
                     {{ emp.fullName }}
                   </a>
-                  <div class="cell-subtext">
+                  <div class="cell-subtext" data-verbatim>
                     <span>&#64;{{ emp.userName }}</span>
                     <span *ngIf="emp.email"> • {{ emp.email }}</span>
                   </div>
@@ -181,8 +181,8 @@
                 <!-- Phòng ban (2 dòng đồng nhất) -->
                 <td>
                   <ng-container *ngIf="emp.departmentName; else noDept">
-                    <div class="cell-maintext">{{ emp.departmentName }}</div>
-                    <div class="cell-subtext" *ngIf="emp.departmentCode">Mã: {{ emp.departmentCode }}</div>
+                    <div class="cell-maintext" data-verbatim>{{ emp.departmentName }}</div>
+                    <div class="cell-subtext" *ngIf="emp.departmentCode"><span>Mã:</span> <span data-verbatim>{{ emp.departmentCode }}</span></div>
                   </ng-container>
                   <ng-template #noDept>
                     <span class="text-muted">Chưa phân bổ</span>
@@ -191,7 +191,8 @@
 
                 <!-- Chức vụ (Đồng nhất cấu trúc 2 dòng, không bị cái thò cái thụt) -->
                 <td>
-                  <div class="cell-maintext">{{ emp.position || 'Nhân viên' }}</div>
+                  <div class="cell-maintext" *ngIf="emp.position" data-verbatim>{{ emp.position }}</div>
+                  <div class="cell-maintext" *ngIf="!emp.position">Nhân viên</div>
                   <div class="cell-subtext">
                     {{ emp.isManager ? 'Quản lý / Trưởng bộ phận' : 'Thành viên' }}
                   </div>
@@ -385,10 +386,10 @@
 
                 <!-- Gộp Họ tên + Tài khoản + Email trên 2 dòng gọn gàng như Tab 1 -->
                 <td>
-                  <a class="employee-name-link" (click)="openEmployeeDrawer(item.id, 0)">
+                  <a class="employee-name-link" (click)="openEmployeeDrawer(item.id, 0)" data-verbatim>
                     {{ item.fullName }}
                   </a>
-                  <div class="cell-subtext">
+                  <div class="cell-subtext" data-verbatim>
                     <span>&#64;{{ item.userName }}</span>
                     <span *ngIf="item.email"> • {{ item.email }}</span>
                   </div>
@@ -396,8 +397,8 @@
 
                 <td>
                   <ng-container *ngIf="item.departmentName; else noDeptLeave">
-                    <div class="cell-maintext">{{ item.departmentName }}</div>
-                    <div class="cell-subtext" *ngIf="item.departmentCode">Mã: {{ item.departmentCode }}</div>
+                    <div class="cell-maintext" data-verbatim>{{ item.departmentName }}</div>
+                    <div class="cell-subtext" *ngIf="item.departmentCode"><span>Mã:</span> <span data-verbatim>{{ item.departmentCode }}</span></div>
                   </ng-container>
                   <ng-template #noDeptLeave>
                     <span class="text-muted">Chưa phân bổ</span>

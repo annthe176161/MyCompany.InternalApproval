@@ -231,16 +231,20 @@
                   <span class="code-badge">#{{ req.id.substring(0, 8) }}</span>
                 </td>
                 <td>
-                  <div class="table-req-title" (click)="viewRequest(req.id)">{{ req.title }}</div>
+                  <div class="table-req-title" data-verbatim (click)="viewRequest(req.id)">{{ req.title }}</div>
                   <span class="subtle-type-tag">{{ getTypeTag(req.type).label }}</span>
                 </td>
                 <td>
                   <span class="dept-name-cell" nz-tooltip [nzTooltipTitle]="req.departmentName">
-                    {{ req.departmentName || 'Chưa gán' }}
+                    <span *ngIf="req.departmentName" data-verbatim>{{ req.departmentName }}</span>
+                    <span *ngIf="!req.departmentName">Chưa gán</span>
                   </span>
                 </td>
                 <td>
-                  <span class="creator-name-cell">{{ req.creatorName || 'N/A' }}</span>
+                  <span class="creator-name-cell">
+                    <span *ngIf="req.creatorName" data-verbatim>{{ req.creatorName }}</span>
+                    <span *ngIf="!req.creatorName">N/A</span>
+                  </span>
                 </td>
                 <td nzAlign="right">
                   <span class="amount-text" *ngIf="req.amount && req.amount > 0">
@@ -361,18 +365,22 @@
                   <span class="code-badge">#{{ req.id.substring(0, 8) }}</span>
                 </td>
                 <td>
-                  <div class="table-req-title" (click)="viewRequest(req.id)">{{ req.title }}</div>
+                  <div class="table-req-title" data-verbatim (click)="viewRequest(req.id)">{{ req.title }}</div>
                 </td>
                 <td>
                   <span class="dept-name-cell" nz-tooltip [nzTooltipTitle]="req.departmentName">
-                    {{ req.departmentName || 'Chưa gán' }}
+                    <span *ngIf="req.departmentName" data-verbatim>{{ req.departmentName }}</span>
+                    <span *ngIf="!req.departmentName">Chưa gán</span>
                   </span>
                 </td>
                 <td>
                   <span class="subtle-type-tag">{{ getTypeTag(req.type).label }}</span>
                 </td>
                 <td>
-                  <span class="creator-name-cell">{{ req.creatorName || 'N/A' }}</span>
+                  <span class="creator-name-cell">
+                    <span *ngIf="req.creatorName" data-verbatim>{{ req.creatorName }}</span>
+                    <span *ngIf="!req.creatorName">N/A</span>
+                  </span>
                 </td>
                 <td nzAlign="right">
                   <span class="amount-text" *ngIf="req.amount && req.amount > 0">
@@ -496,12 +504,13 @@
                   <span class="code-badge">#{{ req.id.substring(0, 8) }}</span>
                 </td>
                 <td>
-                  <div class="table-req-title" (click)="viewRequest(req.id)">{{ req.title }}</div>
+                  <div class="table-req-title" data-verbatim (click)="viewRequest(req.id)">{{ req.title }}</div>
                   <span class="subtle-type-tag">{{ getTypeTag(req.type).label }}</span>
                 </td>
                 <td>
                   <span class="dept-name-cell" nz-tooltip [nzTooltipTitle]="req.departmentName">
-                    {{ req.departmentName || 'Chưa gán' }}
+                    <span *ngIf="req.departmentName" data-verbatim>{{ req.departmentName }}</span>
+                    <span *ngIf="!req.departmentName">Chưa gán</span>
                   </span>
                 </td>
                 <td nzAlign="right">

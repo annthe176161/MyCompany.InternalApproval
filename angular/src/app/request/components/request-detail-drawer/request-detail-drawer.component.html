@@ -13,11 +13,11 @@
         <div class="section-title">Thông tin đề xuất</div>
         <div class="detail-row">
           <span class="label">Mã đề xuất:</span>
-          <span class="value font-monospace">#{{ detailRequest.id }}</span>
+          <span class="value font-monospace" data-verbatim>#{{ detailRequest.id }}</span>
         </div>
         <div class="detail-row">
           <span class="label">Tiêu đề:</span>
-          <span class="value" style="font-weight: 600;">{{ detailRequest.title }}</span>
+          <span class="value" style="font-weight: 600;" data-verbatim>{{ detailRequest.title }}</span>
         </div>
         <div class="detail-row">
           <span class="label">Loại đề xuất:</span>
@@ -62,11 +62,15 @@
               class="creator-clickable"
               (click)="onCreatorClick(detailRequest.creatorId)"
               nz-tooltip="Nhấp để xem nhanh hồ sơ nhân viên"
+              data-verbatim
             >
               {{ detailRequest.creatorName }}
               <span nz-icon nzType="idcard" class="quick-view-icon"></span>
             </span>
-            <span *ngIf="!detailRequest.creatorId">{{ detailRequest.creatorName || 'Hệ thống' }}</span>
+            <span *ngIf="!detailRequest.creatorId">
+              <span *ngIf="detailRequest.creatorName" data-verbatim>{{ detailRequest.creatorName }}</span>
+              <span *ngIf="!detailRequest.creatorName">Hệ thống</span>
+            </span>
           </span>
         </div>
         <div class="detail-row">
@@ -75,7 +79,7 @@
         </div>
         <div class="detail-row" *ngIf="detailRequest.description">
           <span class="label">Mô tả chi tiết:</span>
-          <span class="value" style="white-space: pre-wrap;">{{ detailRequest.description }}</span>
+          <span class="value" style="white-space: pre-wrap;" data-verbatim>{{ detailRequest.description }}</span>
         </div>
       </div>
 
@@ -87,7 +91,7 @@
           <nz-timeline-item nzColor="blue">
             <div style="font-weight: 600;">Khởi tạo đề xuất</div>
             <div style="font-size: 12px; color: #6b7280;">
-              Tạo bởi {{ detailRequest.creatorName || 'Người dùng' }} vào ngày {{ detailRequest.creationTime | date: 'dd/MM/yyyy HH:mm' }}
+              <span>Tạo bởi</span> <span *ngIf="detailRequest.creatorName" data-verbatim>{{ detailRequest.creatorName }}</span><span *ngIf="!detailRequest.creatorName">Người dùng</span> <span>vào ngày</span> {{ detailRequest.creationTime | date: 'dd/MM/yyyy HH:mm' }}
             </div>
           </nz-timeline-item>
 
@@ -109,7 +113,7 @@
           >
             <div style="font-weight: 600; color: #059669;">Đã được phê duyệt</div>
             <div style="font-size: 12px; color: #6b7280;">
-              Phê duyệt bởi: <strong>{{ detailRequest.approverName || 'Quản lý' }}</strong>
+              <span>Phê duyệt bởi:</span> <strong *ngIf="detailRequest.approverName" data-verbatim>{{ detailRequest.approverName }}</strong><strong *ngIf="!detailRequest.approverName">Quản lý</strong>
               <span *ngIf="detailRequest.approvalTime"> lúc {{ detailRequest.approvalTime | date: 'dd/MM/yyyy HH:mm' }}</span>
             </div>
           </nz-timeline-item>
@@ -121,11 +125,11 @@
           >
             <div style="font-weight: 600; color: #dc2626;">Đã bị từ chối</div>
             <div style="font-size: 12px; color: #6b7280;">
-              Từ chối bởi: <strong>{{ detailRequest.approverName || 'Quản lý' }}</strong>
+              <span>Từ chối bởi:</span> <strong *ngIf="detailRequest.approverName" data-verbatim>{{ detailRequest.approverName }}</strong><strong *ngIf="!detailRequest.approverName">Quản lý</strong>
               <span *ngIf="detailRequest.approvalTime"> lúc {{ detailRequest.approvalTime | date: 'dd/MM/yyyy HH:mm' }}</span>
             </div>
             <div *ngIf="detailRequest.rejectionReason" style="margin-top: 6px; padding: 6px 10px; background: #fef2f2; border-left: 3px solid #dc2626; color: #991b1b; font-size: 13px;">
-              <strong>Lý do:</strong> {{ detailRequest.rejectionReason }}
+              <strong>Lý do:</strong> <span data-verbatim>{{ detailRequest.rejectionReason }}</span>
             </div>
           </nz-timeline-item>
         </nz-timeline>
@@ -145,10 +149,13 @@
 
           <div *ngFor="let comment of detailRequest.comments; trackBy: trackCommentById" class="comment-item">
             <div class="comment-header">
-              <span class="author">{{ comment.creatorName || 'Thành viên' }}</span>
+              <span class="author">
+                <span *ngIf="comment.creatorName" data-verbatim>{{ comment.creatorName }}</span>
+                <span *ngIf="!comment.creatorName">Thành viên</span>
+              </span>
               <span class="time">{{ comment.creationTime | date: 'dd/MM/yyyy HH:mm' }}</span>
             </div>
-            <div class="comment-content">{{ comment.content }}</div>
+            <div class="comment-content" data-verbatim>{{ comment.content }}</div>
           </div>
         </div>
 

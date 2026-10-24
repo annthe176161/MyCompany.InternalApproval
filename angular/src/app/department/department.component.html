@@ -65,10 +65,10 @@
         <tr *ngFor="let dept of deptTable.data; let i = index">
           <td nzAlign="center" class="text-muted">{{ i + 1 }}</td>
           <td>
-            <span class="code-badge">{{ dept.code }}</span>
+            <span class="code-badge" data-verbatim>{{ dept.code }}</span>
           </td>
           <td>
-            <div class="dept-name">{{ dept.name }}</div>
+            <div class="dept-name" data-verbatim>{{ dept.name }}</div>
           </td>
           <td>
             <div *ngIf="dept.managerName" class="manager-info">
@@ -77,6 +77,7 @@
                   class="manager-name clickable-employee"
                   (click)="openEmployeeDrawer(dept.managerId)"
                   nz-tooltip="Nhấp để xem nhanh hồ sơ Trưởng phòng"
+                  data-verbatim
                 >
                   {{ dept.managerName }}
                 </span>
@@ -94,7 +95,7 @@
               {{ dept.memberCount }} nhân sự
             </span>
           </td>
-          <td class="text-secondary text-truncate" [nz-tooltip]="dept.description">
+          <td class="text-secondary text-truncate" [nz-tooltip]="dept.description" data-verbatim>
             {{ dept.description || '—' }}
           </td>
           <td nzAlign="center">
@@ -232,7 +233,7 @@
 >
   <ng-template #drawerTitle>
     <div class="drawer-header-title" *ngIf="activeDepartment">
-      <span>Phòng ban: <strong>{{ activeDepartment.name }}</strong> ({{ activeDepartment.code }})</span>
+      <span>Phòng ban:</span> <strong data-verbatim>{{ activeDepartment.name }}</strong> <span data-verbatim>({{ activeDepartment.code }})</span>
     </div>
   </ng-template>
 
@@ -328,16 +329,17 @@
                 class="member-fullname clickable-employee"
                 (click)="openEmployeeDrawer(m.userId)"
                 nz-tooltip="Nhấp để xem hồ sơ nhân viên"
+                data-verbatim
               >
                 {{ m.fullName }}
               </span>
-              <span class="member-username">(&#64;{{ m.userName }})</span>
+              <span class="member-username" data-verbatim>(&#64;{{ m.userName }})</span>
               <span *ngIf="m.isManager" class="cell-subbadge">
                 Trưởng phòng
               </span>
             </div>
 
-            <div class="member-email text-muted">
+            <div class="member-email text-muted" data-verbatim>
               {{ m.email }}
             </div>
 

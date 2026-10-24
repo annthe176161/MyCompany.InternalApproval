@@ -569,10 +569,343 @@ export const UI_EXACT_TRANSLATIONS: Record<string, string> = {
   'Đã cập nhật tài khoản thành công!': 'Account updated successfully!',
   'Đã thêm tài khoản mới thành công!': 'New account created successfully!',
   'Không có thay đổi nào về quyền hạn.': 'No permission changes detected.',
+
+  // Bổ sung chuẩn hóa theo yêu cầu M8 & Báo cáo Explorer 2, 3
+  // 1. Form Fields & Modals (Nghỉ phép, Mua thiết bị, Tạm ứng)
+  'Nghỉ từ ngày': 'Leave From',
+  'Đến hết ngày': 'Leave Until',
+  'Thời gian xin nghỉ:': 'Leave Duration:',
+  'Thời gian xin nghỉ': 'Leave Duration',
+  'Lý do xin nghỉ phép': 'Reason for Leave',
+  'Nhập tiêu đề đề xuất...': 'Enter request title...',
+  'Vui lòng chọn loại đề xuất': 'Please select a request type',
+  'Mua sắm thiết bị': 'Equipment Procurement',
+  'Vui lòng chọn ngày bắt đầu nghỉ': 'Please select a leave start date',
+  'Vui lòng chọn ngày kết thúc nghỉ': 'Please select a leave end date',
+  'Tiêu đề là bắt buộc (tối đa 200 ký tự)': 'Title is required (maximum 200 characters)',
+  'Số tiền là bắt buộc và phải từ 1,000 VNĐ trở lên': 'Amount is required and must be at least 1,000 VND',
+  'Nhập số tiền...': 'Enter amount...',
+  'Mô tả lý do xin nghỉ phép (ốm đau, việc gia đình, việc cá nhân...)':
+    'Describe leave reason (illness, family matters, personal reasons...)',
+  'Mô tả lý do, chi tiết đề xuất...': 'Describe reason and details of the request...',
+  'Lưu cập nhật': 'Save Changes',
+  'Lưu & Gửi phê duyệt ngay': 'Save & Submit Now',
+  'Đồng ý Phê duyệt': 'Confirm Approval',
+  'Bạn có chắc chắn muốn phê duyệt đề xuất': 'Are you sure you want to approve request',
+  'Nhập ghi chú hoặc căn dặn thêm (không bắt buộc)...':
+    'Enter approval note or instructions (optional)...',
+  'Vui lòng nhập lý do từ chối đề xuất': 'Please enter the reason for rejecting request',
+  'Lý do từ chối là bắt buộc!': 'Rejection reason is required!',
+  'Nhập lý do cụ thể vì sao từ chối đề xuất này...':
+    'Enter specific reason for rejecting this request...',
+
+  // 2. Màn hình Cơ cấu Phòng ban (Department Management)
+  'Quản lý Cơ cấu Phòng ban': 'Department Structure Management',
+  'Quản lý danh mục phòng ban, bổ nhiệm trưởng phòng và phân chia vị trí nhân sự trong công ty':
+    'Manage department directory, appoint managers, and allocate staff positions',
+  'Tìm phòng ban, mã, trưởng phòng...': 'Search departments, codes, managers...',
+  'Nhấp để xem nhanh hồ sơ Trưởng phòng': 'Click to view Manager profile',
+  'Bấm để quản lý nhân sự': 'Click to manage staff',
+  'Chỉnh sửa phòng ban': 'Edit department',
+  'Bạn có chắc chắn muốn xóa phòng ban này? Tất cả dữ liệu liên quan sẽ bị xóa!':
+    'Are you sure you want to delete this department? All associated data will be removed!',
+  'Thêm mới Phòng ban': 'Add New Department',
+  'Mã phòng ban không được để trống!': 'Department code is required!',
+  'Tên phòng ban là bắt buộc!': 'Department name is required!',
+  'VD: Công nghệ Thông tin': 'e.g., Information Technology',
+  'Mô tả nhiệm vụ / chức năng': 'Function / Mission Description',
+  'Mô tả chức năng, nhiệm vụ chính của phòng ban...':
+    'Briefly describe department functions and responsibilities...',
+  'Tạo phòng ban': 'Create Department',
+  'Phân chia Nhân sự mới vào Phòng ban': 'Assign New Staff to Department',
+  'Chọn nhân viên': 'Select Employee',
+  'Vui lòng chọn nhân sự!': 'Please select an employee!',
+  'Tìm theo tên hoặc username...': 'Search by name or username...',
+  'Vị trí / Chức danh': 'Position / Job Title',
+  'Vui lòng nhập chức vụ!': 'Please enter a position!',
+  'VD: Kỹ sư Phần mềm, Kế toán...': 'e.g., Software Engineer, Accountant...',
+  'Thêm vào phòng ban': 'Add to Department',
+  'Danh sách nhân sự hiện tại': 'Current Staff List',
+  'Phòng ban này chưa có nhân sự nào. Hãy thêm nhân viên ở trên!':
+    'This department currently has no staff. Add an employee above!',
+  'Nhấp để xem hồ sơ nhân viên': 'Click to view employee profile',
+  'Đổi': 'Change',
+  'Nhập chức danh mới...': 'Enter new job title...',
+  'Xem chi tiết hồ sơ nhân sự': 'View detailed profile',
+  'Hồ sơ': 'Profile',
+  'Bổ nhiệm hoặc hủy quyền Trưởng phòng ban': 'Appoint or revoke Manager role',
+  'Hủy Trưởng phòng': 'Revoke Manager',
+  'Bổ nhiệm TP': 'Appoint Manager',
+  'Gỡ nhân viên': 'Remove Member',
+  'Gỡ nhân viên khỏi phòng': 'Remove employee from department',
+  'Gỡ': 'Remove',
+  'Mô tả': 'Description',
+
+  // 3. Màn hình Hồ sơ & Báo cáo nghỉ phép (Employee & Leave Reports)
+  'Mã & Ngày': 'Code & Date',
+  'Ngày nghỉ đã duyệt': 'Approved Leave Days',
+  'Đã duyệt / Đã gửi': 'Approved / Submitted',
+  'Đợt nghỉ gần nhất': 'Latest Leave Period',
+  'Tổng đơn gửi': 'Total Requests Sent',
+  'Chưa có đơn nghỉ phép nào.': 'No leave requests found.',
+  'Chưa có': 'None',
+  'Lấy theo ngày tạo tài khoản': 'Inherited from Account Creation Date',
+  'Chọn ngày vào làm mới:': 'Select new join date:',
+  'Chọn ngày vào làm mới': 'Select new join date',
+  'Tạo lúc:': 'Created at:',
+  'Tạo lúc': 'Created at',
+  'Duyệt bởi:': 'Approved by:',
+  'Duyệt bởi': 'Approved by',
+  'Từ chối bởi:': 'Rejected by:',
+  'Từ chối bởi': 'Rejected by',
+  'Tổng số nhân sự:': 'Total Employees:',
+  'Tổng số nhân sự': 'Total Employees',
+  'Số đợt nghỉ đã duyệt:': 'Approved Requests:',
+  'Số đợt nghỉ đã duyệt': 'Approved Requests',
+  'Tổng số đợt đã gửi:': 'Total Requests Sent:',
+  'Tổng số đợt đã gửi': 'Total Requests Sent',
+  'Tìm theo họ tên, tài khoản, email...': 'Search by name, username, email...',
+  'Xem chi tiết nghỉ phép': 'View leave details',
+  'Các phòng ban quản lý': 'Managed Departments',
+  '< 1 tháng': '< 1 month',
+
+  // 4. Drawer Chi tiết Đề xuất & Hành động phê duyệt
+  'Thông tin đề xuất': 'Request Information',
+  'Nhấp để xem nhanh hồ sơ nhân viên': 'Click to view employee profile',
+  'Lịch sử phê duyệt': 'Approval History',
+  'Khởi tạo đề xuất': 'Request Created',
+  'Đã chuyển trạng thái chờ quản lý xét duyệt': 'Status changed to awaiting manager review',
+  'Đã được phê duyệt': 'Approved',
+  'Phê duyệt bởi:': 'Approved by:',
+  'Phê duyệt bởi': 'Approved by',
+  'Đã bị từ chối': 'Rejected',
+  'Bình luận trao đổi': 'Discussion & Comments',
+  'Chưa có bình luận nào cho đề xuất này.': 'No comments for this request yet.',
+  'Viết bình luận hoặc phản hồi...': 'Write a comment or response...',
+  'Xuất danh sách theo bộ lọc ra file Excel (.xlsx)':
+    'Export filtered list to Excel (.xlsx)',
+  'Bấm để xem chi tiết': 'Click to view details',
+  'Bạn có chắc chắn muốn xóa đề xuất này?': 'Are you sure you want to delete this request?',
+
+  // 5. Chuông thông báo, Identity & Dashboard
+  'Hệ thống Phê duyệt Nội bộ': 'Internal Approval System',
+  'HỆ THỐNG PHÊ DUYỆT NỘI BỘ': 'INTERNAL APPROVAL SYSTEM',
+  'Quản lý, theo dõi và phê duyệt quy trình đề xuất nhanh chóng, minh bạch và an toàn.':
+    'Fast, transparent digital platform for leave, equipment, and cash advances.',
+  'Thông báo hệ thống': 'System Notifications',
+  'Thông báo': 'Notifications',
+  'Đang tải thông báo...': 'Loading notifications...',
+  'Bạn chưa có thông báo nào': 'You have no notifications',
+  'Quản lý Tài khoản': 'User Accounts',
+  'Danh sách tài khoản người dùng và phân quyền trên hệ thống':
+    'User accounts and permission settings across the system',
+  'Danh sách các vai trò và thiết lập quyền truy cập trên hệ thống':
+    'List of roles and functional access permissions across the system',
+  'Tìm theo tên, tài khoản, email...': 'Search by name, username, email...',
+  'Hoạt động': 'Active',
+  'Xóa tài khoản': 'Delete account',
+  'Sửa tài khoản:': 'Edit Account:',
+  'Sửa tài khoản': 'Edit Account',
+  'Nhập tên đăng nhập...': 'Enter username...',
+  'Mật khẩu mới (để trống nếu giữ nguyên)': 'New Password (leave blank to keep current)',
+  'Vui lòng nhập mật khẩu (ít nhất 6 ký tự)!': 'Password must be at least 6 characters!',
+  'Nhập nếu muốn đổi mật khẩu...': 'Enter new password to change',
+  'Họ và tên đệm': 'Last & Middle Name',
+  'VD: An': 'e.g., Doe',
+  'Nhập email...': 'Enter email...',
+  '(Cho phép đăng nhập vào hệ thống)': '(Allow signing in to the system)',
+  '(Mặc định)': '(Default)',
+  'Tìm theo tên vai trò...': 'Search by role name...',
+  'Thiết lập': 'Settings',
+  'Hệ thống (Cố định)': 'System (Static)',
+  'Thông thường': 'Standard',
+  'Xóa vai trò': 'Delete role',
+  'Sửa vai trò': 'Edit Role',
+  'Nhập tên vai trò (VD: Trưởng phòng, Nhân viên...)':
+    'Enter role name (e.g., Manager, Employee...)',
+  '* Đây là vai trò quản trị mặc định của hệ thống nên không thể đổi tên.':
+    '* System (Static) roles cannot be renamed.',
+  '(Tự động gán vai trò này khi tạo tài khoản mới)':
+    '(Automatically assigned to newly created accounts)',
+  '(Hiển thị chức danh vai trò này cho mọi người thấy)':
+    '(Visible publicly across the system)',
+  'Cấp tất cả các quyền': 'Grant all system permissions',
+  'Tìm tên quyền...': 'Quick search permissions...',
+  'Chọn tất cả mục này': 'Select all in this group',
+  'Từ vai trò:': 'Inherited from role:',
+  'Từ vai trò': 'Inherited from role',
+  'Không có quyền nào khớp với tìm kiếm.': 'No permissions match your search keyword.',
+  'Đăng nhập vào hệ thống': 'Sign In',
+  'Quản trị viên (Chỉ xem)': 'Administrator (View only)',
+  'Quản lý duyệt': 'Approver Manager',
+  'Người phê duyệt': 'Approver',
+  '+ Tạo đề xuất': '+ New Request',
+  'Danh sách đề xuất': 'Request List',
+  'Làm mới số liệu': 'Refresh data',
+  'Chưa gửi duyệt': 'Not submitted',
+  'Chờ phê duyệt': 'Pending Approval',
+  'Đang chờ xử lý': 'Awaiting review',
+  'Hồ sơ không duyệt': 'Rejected requests',
+  'Tổng kinh phí': 'Total Budget',
+  'Phân bổ theo loại đề xuất': 'Breakdown by Request Type',
+  'Phân bổ dữ liệu theo phòng ban': 'Requests by Department',
+  'Bấm để lọc danh sách đề xuất của': 'Click to filter requests from',
+  'Đề xuất gần đây': 'Recent Requests',
+  'Đang lọc:': 'Filtering:',
+  'Đang lọc': 'Filtering',
+  '(Hiển thị 5 hồ sơ mới nhất)': '(Showing 5 latest requests)',
+  'Chưa gán': 'Unassigned',
+  'Cần xử lý phê duyệt': 'Action Required',
+  'Hồ sơ chờ bạn duyệt': 'Requests awaiting your review',
+  'Phê duyệt thành công': 'Approved requests',
+  'Ngân sách đã thông qua': 'Total Approved Budget',
+  'Danh sách hồ sơ đang chờ bạn xem xét & phê duyệt': 'Pending Your Approval',
+  'Tiêu đề đề xuất': 'Request Title',
+  'Loại hình': 'Type',
+  'Thời gian gửi': 'Submitted Date',
+  'Thời gian tạo': 'Created Date',
+  'Xem chi tiết & Phê duyệt': 'View details & approve',
+  'Hiện không có hồ sơ nào đang chờ duyệt.': 'Great job! No pending requests.',
+  'Tất cả đề xuất đã được xử lý xong.': 'All requests have been processed.',
+  'Hồ sơ của bạn': 'My Requests',
+  'Bản nháp': 'Drafts',
+  'Đang lưu tạm': 'Saved drafts',
+  'Đang được xem xét': 'Under review',
+  'Đã thông qua': 'Approved',
+  'Kinh phí đề xuất': 'Requested Budget',
+  'Tổng ngân sách yêu cầu': 'Total requested budget',
+  'Đề xuất gần đây của bạn': 'Your Recent Requests',
+  '(5 hồ sơ mới nhất)': '(5 latest requests)',
+  'Đang phân công': 'Assigning',
+  'Bạn chưa tạo đề xuất nào.': 'You have not created any requests yet.',
+  'Bắt đầu tạo hồ sơ xin nghỉ phép, tạm ứng hoặc mua sắm thiết bị ngay hôm nay.':
+    'Click "New Request" to get started!',
+  '+ Tạo đề xuất đầu tiên': '+ Create your first request',
+
+  // 6. Split Words & Single Tokens cho Template Tags
+  'Tổng:': 'Total:',
+  'Tổng': 'Total',
+  'đề xuất': 'requests',
+  'đơn': 'requests',
+  'ngày': 'days',
+  'bản ghi': 'records',
+  'bộ phận': 'units',
+  'danh mục': 'categories',
+  'phiếu': 'requests',
+  'phiếu cần xử lý': 'requests pending action',
+  'mới': 'new',
+
+  // 7. Thông báo Toast & Lỗi bổ sung
+  'Không thể tải thông tin hồ sơ nhân viên!': 'Failed to load employee profile information!',
+  'Không thể cập nhật ngày vào làm việc!': 'Failed to update work start date!',
+  'Không thể tải danh sách nhân viên!': 'Failed to load employee list!',
+  'Không thể tải báo cáo ngày nghỉ phép!': 'Failed to load leave days report!',
+  'Xuất file Excel báo cáo ngày nghỉ phép thành công!':
+    'Leave report exported to Excel successfully!',
+  'Không thể xuất file Excel báo cáo!': 'Failed to export Excel report!',
+  'Không thể tải danh sách phòng ban.': 'Failed to load department list.',
+  'Có lỗi xảy ra khi cập nhật phòng ban.': 'An error occurred while updating the department.',
+  'Có lỗi xảy ra khi tạo phòng ban.': 'An error occurred while creating the department.',
+  'Không thể xóa phòng ban.': 'Failed to delete department.',
+  'Không thể tải danh sách nhân sự phòng ban.': 'Failed to load department personnel list.',
+  'Không thể thêm nhân sự.': 'Failed to add staff member.',
+  'Không thể cập nhật chức vụ.': 'Failed to update position.',
+  'Thao tác không thành công.': 'Action failed.',
+  'Không thể xóa nhân sự khỏi phòng ban.': 'Failed to remove staff member from department.',
+  'Không thể cập nhật đề xuất!': 'Failed to update request!',
+  'Đã tạo đề xuất nhưng không thể gửi phê duyệt!':
+    'Request created but could not be submitted for approval!',
+  'Không thể tạo đề xuất!': 'Failed to create request!',
+  'Không tìm thấy thông tin đề xuất hoặc bạn không có quyền xem!':
+    'Request not found or you do not have permission to view!',
+  'Không thể tải danh sách đề xuất!': 'Failed to load request list!',
+  'Không có dữ liệu đề xuất nào để xuất Excel!': 'No request data available to export to Excel!',
+  'Có lỗi xảy ra khi tải dữ liệu xuất Excel!':
+    'Error occurred while loading data for Excel export!',
+  'Không thể gửi phê duyệt đề xuất!': 'Failed to submit request for approval!',
+  'Không thể xóa đề xuất!': 'Failed to delete request!',
+  'Không thể phê duyệt đề xuất!': 'Failed to approve request!',
+  'Không thể từ chối đề xuất!': 'Failed to reject request!',
+  'Không thể tải chi tiết đề xuất!': 'Failed to load request details!',
+  'Không thể gửi bình luận!': 'Failed to post comment!',
+  'Không thể tải danh sách tài khoản!': 'Failed to load user account list!',
+  'Không thể cập nhật tài khoản!': 'Failed to update account!',
+  'Không thể tạo tài khoản!': 'Failed to create account!',
+  'Không thể xóa tài khoản này!': 'Cannot delete this account!',
+  'Không thể tải danh sách vai trò!': 'Failed to load role list!',
+  'Không thể cập nhật vai trò!': 'Failed to update role!',
+  'Không thể thêm vai trò mới!': 'Failed to create new role!',
+  'Không thể xóa vai trò này!': 'Cannot delete this role!',
+  'Không thể tải danh sách quyền hạn. Vui lòng thử lại!':
+    'Failed to load permissions list. Please try again!',
+  'Không thể lưu phân quyền. Vui lòng thử lại!':
+    'Failed to save permissions. Please try again!',
+
+  // Form modal titles & casing fixes
+  'Chỉnh sửa Đề xuất': 'Edit Request',
+  'Tạo Đề xuất mới': 'Create New Request',
+  'Xuất báo cáo Excel': 'Export Excel Report',
+
+  // Standalone common labels & colons
+  'Lý do': 'Reason',
+  'Lý do:': 'Reason:',
+  'Quản lý': 'Manager',
+  'Năm': 'Year',
+  'Năm:': 'Year:',
+  'Mã đề xuất': 'Request Code',
+  'Mã đề xuất:': 'Request Code:',
+  'Thời gian nghỉ': 'Leave Period',
+  'Thời gian nghỉ:': 'Leave Period:',
+  'Mô tả chi tiết': 'Detailed Description',
+  'Mô tả chi tiết:': 'Detailed Description:',
+
+  // Drawer timeline separated tags
+  'Tạo bởi': 'Created by',
+  'vào ngày': 'on',
+  'Đã gửi phê duyệt': 'Submitted for Approval',
+
+  // Tab 4 KPI & Finance cards
+  'Tổng đề xuất': 'Total Requests',
+  'Tổng số tiền đề xuất': 'Total Requested Amount',
+  'Tổng số tiền đã duyệt': 'Total Approved Amount',
+
+  // Department tooltips
+  'Phân chia nhân sự & chức vụ': 'Assign Staff & Positions',
+  'Phân chia Nhân sự & Chức vụ': 'Assign Staff & Positions',
+
+  // Search input placeholders & validation error tips
+  'Tìm theo tiêu đề, người tạo...': 'Search by title, requester...',
+  'Nhấp để xem hồ sơ nhân sự': 'Click to view employee profile',
+  'Vui lòng nhập địa chỉ email hợp lệ!': 'Please enter a valid email address!',
+  'Nhập số điện thoại...': 'Enter phone number...',
+  'Mặc định (Tự gán cho tài khoản mới)': 'Default (Auto-assigned to new accounts)',
+
+  // Home dashboard
+  'Không có đề xuất nào phù hợp với bộ lọc': 'No requests matching filters',
+  'Mở trang phê duyệt': 'Open Approval Page',
+  'Người duyệt': 'Approver',
+
+  // Popconfirm prompts & partial string fragments
+  'Bạn có chắc muốn gỡ': 'Are you sure you want to remove',
+  'khỏi phòng ban này?': 'from this department?',
+  'Bạn có chắc chắn muốn xóa tài khoản': 'Are you sure you want to delete account',
+  'không?': '?',
+  'Vai trò (': 'Roles (',
+  'Bạn có chắc chắn muốn xóa vai trò': 'Are you sure you want to delete role',
+  'Phân quyền —': 'Permissions —',
+  'nhân sự (': 'employees (',
 };
 
 export const UI_PATTERN_TRANSLATIONS: UiPatternTranslation[] = [
-  // Thâm niên: "2 năm 8 tháng", "3 năm", "5 tháng", "Chưa cập nhật"
+  // Thâm niên: "< 1 tháng", "2 năm 8 tháng", "3 năm", "5 tháng", "Chưa cập nhật"
+  {
+    pattern: /^<\s*1\s+tháng$/i,
+    replace: () => '< 1 month',
+  },
+  {
+    pattern: /^<\s*(\d+)\s+tháng$/i,
+    replace: (_full, m) => `< ${m} ${Number(m) === 1 ? 'month' : 'months'}`,
+  },
   {
     pattern: /^(\d+)\s+năm\s+(\d+)\s+tháng$/i,
     replace: (_full, y, m) => `${y} ${Number(y) === 1 ? 'yr' : 'yrs'} ${m} ${Number(m) === 1 ? 'mo' : 'mos'}`,
@@ -587,7 +920,7 @@ export const UI_PATTERN_TRANSLATIONS: UiPatternTranslation[] = [
   },
   {
     pattern: /^(\d+)\s+tháng công tác$/i,
-    replace: (_full, m) => `${m} months of service`,
+    replace: (_full, m) => `${m} ${Number(m) === 1 ? 'month' : 'months'} of service`,
   },
   {
     pattern: /^Mốc:\s*Nhân sự kỳ cựu\s*\(>\s*3\s*năm\)$/i,
@@ -726,5 +1059,103 @@ export const UI_PATTERN_TRANSLATIONS: UiPatternTranslation[] = [
   {
     pattern: /^Cơ cấu loại đề xuất trong năm\s+(\d{4})$/i,
     replace: (_full, y) => `Request Type Breakdown (${y})`,
+  },
+
+  // Bổ sung các mẫu động (M8)
+  // Composite leave period: "25/10/2026 - 26/10/2026 (2 ngày)"
+  {
+    pattern: /^(.+?)\s*\(([\d.,]+)\s+ngày\)$/i,
+    replace: (_full, range, days) => `${range} (${days} ${Number(days) === 1 ? 'day' : 'days'})`,
+  },
+  // Metric counter: "2 đợt", "1 đợt"
+  {
+    pattern: /^(\d+)\s+đợt$/i,
+    replace: (_full, n) => `${n} ${Number(n) === 1 ? 'request' : 'requests'}`,
+  },
+  // Filter count: "Tổng: 5 đề xuất"
+  {
+    pattern: /^Tổng:\s*(\d+)\s*đề xuất$/i,
+    replace: (_full, n) => `Total: ${n} ${Number(n) === 1 ? 'request' : 'requests'}`,
+  },
+  // Auto-title template: "Đơn xin nghỉ phép - Nguyễn Văn A"
+  {
+    pattern: /^Đơn xin nghỉ phép\s*-\s*(.+)$/i,
+    replace: (_full, name) => `Leave Request - ${name}`,
+  },
+  // Dynamic Year in Approved Leave Days: "Tổng ngày nghỉ đã duyệt (2026):"
+  {
+    pattern: /^Tổng ngày nghỉ đã duyệt\s*\((\d{4})\):$/i,
+    replace: (_full, y) => `Total Approved Leave Days (${y}):`,
+  },
+  // Permissions Header: "Phân quyền — Trưởng phòng"
+  {
+    pattern: /^Phân quyền\s*—\s*(.+)$/i,
+    replace: (_full, target) => `Permissions — ${target}`,
+  },
+  // Categories & Records counts
+  {
+    pattern: /^(\d+)\s+danh mục$/i,
+    replace: (_full, n) => `${n} ${Number(n) === 1 ? 'category' : 'categories'}`,
+  },
+  {
+    pattern: /^(\d+)\s+phiếu cần xử lý$/i,
+    replace: (_full, n) => `${n} ${Number(n) === 1 ? 'request' : 'requests'} pending action`,
+  },
+  {
+    pattern: /^(\d+)\s+bản ghi$/i,
+    replace: (_full, n) => `${n} ${Number(n) === 1 ? 'record' : 'records'}`,
+  },
+  // Toast dynamic patterns
+  {
+    pattern: /^Đã xóa phòng ban\s+(.+)$/i,
+    replace: (_full, name) => `Department ${name} deleted successfully`,
+  },
+  {
+    pattern: /^Đã xóa tài khoản\s+(.+?)!$/i,
+    replace: (_full, user) => `Account "${user}" deleted successfully!`,
+  },
+  {
+    pattern: /^Đã xóa vai trò\s+(.+?)!$/i,
+    replace: (_full, role) => `Role "${role}" deleted successfully!`,
+  },
+  {
+    pattern: /^Đã lưu phân quyền cho\s+(.+?)\s+thành công!$/i,
+    replace: (_full, name) => `Permissions saved successfully for "${name}"!`,
+  },
+  {
+    pattern: /^Xuất file Excel thành công!\s*\((.+?)\)$/i,
+    replace: (_full, detail) => `Excel file exported successfully! (${detail})`,
+  },
+  {
+    pattern: /^Đã xóa\s+(.+?)\s+khỏi phòng ban\.$/i,
+    replace: (_full, name) => `Removed ${name} from department.`,
+  },
+  {
+    pattern: /^Tạo bởi\s+(.+?)\s+vào ngày\s+(.+)$/i,
+    replace: (_full, creator, date) => `Created by ${creator} on ${date}`,
+  },
+  {
+    pattern: /^(.+?)\s+lúc\s+(\d{1,2}:\d{2})$/i,
+    replace: (_full, date, time) => `${date} at ${time}`,
+  },
+  // Popconfirm: Delete / remove member from department
+  {
+    pattern: /^Bạn có chắc muốn gỡ\s+(.+?)\s+khỏi phòng ban này\?$/i,
+    replace: (_full, name) => `Are you sure you want to remove ${name} from this department?`,
+  },
+  // Popconfirm: Delete user account
+  {
+    pattern: /^Bạn có chắc chắn muốn xóa tài khoản\s+(.+?)\s+không\?$/i,
+    replace: (_full, user) => `Are you sure you want to delete account "${user}"?`,
+  },
+  // Popconfirm: Delete role
+  {
+    pattern: /^Bạn có chắc chắn muốn xóa vai trò\s+(.+?)\s+không\?$/i,
+    replace: (_full, role) => `Are you sure you want to delete role "${role}"?`,
+  },
+  // Department chips tooltip headcount percentage
+  {
+    pattern: /^(.+?):\s*(\d+)\s+nhân sự\s*\(([\d.,]+)%\)$/i,
+    replace: (_full, dept, count, pct) => `${dept}: ${count} ${Number(count) === 1 ? 'employee' : 'employees'} (${pct}%)`,
   },
 ];

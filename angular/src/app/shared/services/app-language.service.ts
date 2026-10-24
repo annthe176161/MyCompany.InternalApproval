@@ -21,7 +21,9 @@ export class AppLanguageService implements OnDestroy {
   private originalTextMap = new WeakMap<Text, string>();
   private lastTranslatedTextMap = new WeakMap<Text, string>();
   private originalPlaceholderMap = new WeakMap<Element, string>();
+  private lastTranslatedPlaceholderMap = new WeakMap<Element, string>();
   private originalTitleMap = new WeakMap<Element, string>();
+  private lastTranslatedTitleMap = new WeakMap<Element, string>();
 
   constructor(
     private sessionState: SessionStateService,
@@ -89,12 +91,19 @@ export class AppLanguageService implements OnDestroy {
                 this.translateSubtree(node);
               });
             } else if (mutation.type === 'characterData' && mutation.target.nodeType === Node.TEXT_NODE) {
-              this.processTextNode(mutation.target as Text);
+              const textNode = mutation.target as Text;
+              const parent = textNode.parentElement;
+              if (!parent || !this.shouldSkipElement(parent, true)) {
+                this.processTextNode(textNode);
+              }
             } else if (
               mutation.type === 'attributes' &&
               mutation.target.nodeType === Node.ELEMENT_NODE
             ) {
-              this.processElementAttributes(mutation.target as Element);
+              const el = mutation.target as Element;
+              if (!this.shouldSkipElement(el)) {
+                this.processElementAttributes(el);
+              }
             }
           }
         } finally {
@@ -118,7 +127,11 @@ export class AppLanguageService implements OnDestroy {
     this.isApplying = true;
     try {
       if (root.nodeType === Node.TEXT_NODE) {
-        this.processTextNode(root as Text);
+        const text = root as Text;
+        const parent = text.parentElement;
+        if (!parent || !this.shouldSkipElement(parent, true)) {
+          this.processTextNode(text);
+        }
         return;
       }
 
@@ -141,7 +154,7 @@ export class AppLanguageService implements OnDestroy {
       let currentNode = walker.nextNode();
       while (currentNode) {
         const parent = currentNode.parentElement;
-        if (!parent || !this.shouldSkipElement(parent)) {
+        if (!parent || !this.shouldSkipElement(parent, true)) {
           this.processTextNode(currentNode as Text);
         }
         currentNode = walker.nextNode();
@@ -151,13 +164,35 @@ export class AppLanguageService implements OnDestroy {
     }
   }
 
-  private shouldSkipElement(el: Element): boolean {
+  private shouldSkipElement(el: Element, isTextNode = false): boolean {
+    if (
+      el.hasAttribute('data-verbatim') ||
+      el.hasAttribute('data-no-translate') ||
+      (el.classList && el.classList.contains('notranslate')) ||
+      (typeof el.closest === 'function' && el.closest('[data-verbatim], [data-no-translate], .notranslate'))
+    ) {
+      return true;
+    }
+
     const tag = el.tagName;
-    return tag === 'SCRIPT' || tag === 'STYLE' || tag === 'NOSCRIPT' || tag === 'TEXTAREA';
+    if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'NOSCRIPT') {
+      return true;
+    }
+
+    if (isTextNode && tag === 'TEXTAREA') {
+      return true;
+    }
+
+    return false;
   }
 
   // Dịch hoặc khôi phục nội dung cho một Text Node
   private processTextNode(textNode: Text): void {
+    const parent = textNode.parentElement;
+    if (parent && this.shouldSkipElement(parent, true)) {
+      return;
+    }
+
     const currentVal = textNode.nodeValue;
     if (!currentVal || !currentVal.trim()) {
       return;
@@ -191,37 +226,57 @@ export class AppLanguageService implements OnDestroy {
 
   // Dịch hoặc khôi phục thuộc tính placeholder và title của Element
   private processElementAttributes(el: Element): void {
+    if (this.shouldSkipElement(el)) {
+      return;
+    }
+
     // 1. Thuộc tính placeholder
     const placeholder = el.getAttribute('placeholder');
     if (placeholder && placeholder.trim()) {
-      const savedOrig = this.originalPlaceholderMap.get(el);
-      if (!savedOrig || (this.currentLang === 'vi' && placeholder !== savedOrig)) {
+      const lastTranslated = this.lastTranslatedPlaceholderMap.get(el);
+      if (lastTranslated !== undefined && placeholder !== lastTranslated) {
+        this.originalPlaceholderMap.set(el, placeholder);
+      } else if (!this.originalPlaceholderMap.has(el)) {
         this.originalPlaceholderMap.set(el, placeholder);
       }
       const origPlaceholder = this.originalPlaceholderMap.get(el) || placeholder;
-      const targetPlaceholder =
-        this.currentLang === 'en'
-          ? this.translatePreservingWhitespace(origPlaceholder)
-          : origPlaceholder;
 
-      if (el.getAttribute('placeholder') !== targetPlaceholder) {
-        el.setAttribute('placeholder', targetPlaceholder);
+      if (this.currentLang === 'vi') {
+        if (el.getAttribute('placeholder') !== origPlaceholder) {
+          el.setAttribute('placeholder', origPlaceholder);
+        }
+        this.lastTranslatedPlaceholderMap.set(el, origPlaceholder);
+      } else {
+        const targetPlaceholder = this.translatePreservingWhitespace(origPlaceholder);
+        if (el.getAttribute('placeholder') !== targetPlaceholder) {
+          el.setAttribute('placeholder', targetPlaceholder);
+        }
+        this.lastTranslatedPlaceholderMap.set(el, targetPlaceholder);
       }
     }
 
     // 2. Thuộc tính title
     const title = el.getAttribute('title');
     if (title && title.trim()) {
-      const savedOrigTitle = this.originalTitleMap.get(el);
-      if (!savedOrigTitle || (this.currentLang === 'vi' && title !== savedOrigTitle)) {
+      const lastTranslatedTitle = this.lastTranslatedTitleMap.get(el);
+      if (lastTranslatedTitle !== undefined && title !== lastTranslatedTitle) {
+        this.originalTitleMap.set(el, title);
+      } else if (!this.originalTitleMap.has(el)) {
         this.originalTitleMap.set(el, title);
       }
       const origTitle = this.originalTitleMap.get(el) || title;
-      const targetTitle =
-        this.currentLang === 'en' ? this.translatePreservingWhitespace(origTitle) : origTitle;
 
-      if (el.getAttribute('title') !== targetTitle) {
-        el.setAttribute('title', targetTitle);
+      if (this.currentLang === 'vi') {
+        if (el.getAttribute('title') !== origTitle) {
+          el.setAttribute('title', origTitle);
+        }
+        this.lastTranslatedTitleMap.set(el, origTitle);
+      } else {
+        const targetTitle = this.translatePreservingWhitespace(origTitle);
+        if (el.getAttribute('title') !== targetTitle) {
+          el.setAttribute('title', targetTitle);
+        }
+        this.lastTranslatedTitleMap.set(el, targetTitle);
       }
     }
   }
@@ -264,23 +319,23 @@ export class AppLanguageService implements OnDestroy {
       }
     }
 
-    // 3. Xử lý chuỗi nối bằng dấu chấm tròn " • " (ví dụ: "36 tháng công tác • Mốc: Nhân sự kỳ cựu (> 3 năm)")
-    if (normalized.includes('•')) {
-      const parts = normalized.split(/\s*•\s*/);
-      if (parts.length > 1) {
-        const translatedParts = parts.map(p => this.translateSingleSegment(p));
-        if (translatedParts.some((tp, idx) => tp !== parts[idx])) {
-          return translatedParts.join(' • ');
-        }
-      }
-    }
-
-    // 4. Xử lý chuỗi bắt đầu hoặc kết thúc bằng dấu "•" đơn lẻ (ví dụ: "• Đã giải ngân: 0 ₫")
+    // 3. Xử lý chuỗi bắt đầu hoặc kết thúc bằng dấu "•" đơn lẻ (ví dụ: "• Đã giải ngân: 0 ₫")
     if (normalized.startsWith('•')) {
       const rest = normalized.slice(1).trim();
       const translatedRest = this.translateSingleSegment(rest);
       if (translatedRest !== rest) {
         return `• ${translatedRest}`;
+      }
+    }
+
+    // 4. Xử lý chuỗi nối bằng dấu chấm tròn " • " (ví dụ: "36 tháng công tác • Mốc: Nhân sự kỳ cựu (> 3 năm)")
+    if (normalized.includes('•')) {
+      const parts = normalized.split(/\s*•\s*/).filter(p => p.length > 0);
+      if (parts.length > 1) {
+        const translatedParts = parts.map(p => this.translateSingleSegment(p));
+        if (translatedParts.some((tp, idx) => tp !== parts[idx])) {
+          return translatedParts.join(' • ');
+        }
       }
     }
 

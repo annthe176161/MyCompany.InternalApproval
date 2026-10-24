@@ -9,7 +9,7 @@
   nzCancelText="Hủy"
 >
   <ng-container *nzModalContent>
-    <p>Bạn có chắc chắn muốn phê duyệt đề xuất <strong>{{ selectedRequestForApprove?.title }}</strong>?</p>
+    <p><span>Bạn có chắc chắn muốn phê duyệt đề xuất</span> <strong data-verbatim>{{ selectedRequestForApprove?.title }}</strong>?</p>
     <nz-form-item>
       <nz-form-label>Ghi chú phê duyệt (tùy chọn)</nz-form-label>
       <nz-form-control>
@@ -37,7 +37,7 @@
   nzCancelText="Hủy"
 >
   <ng-container *nzModalContent>
-    <p>Vui lòng nhập lý do từ chối đề xuất <strong>{{ selectedRequestForReject?.title }}</strong>:</p>
+    <p><span>Vui lòng nhập lý do từ chối đề xuất</span> <strong data-verbatim>{{ selectedRequestForReject?.title }}</strong>:</p>
     <nz-form-item>
       <nz-form-label nzRequired>Lý do từ chối</nz-form-label>
       <nz-form-control nzErrorTip="Lý do từ chối là bắt buộc!">

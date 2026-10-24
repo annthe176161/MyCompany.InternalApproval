@@ -11,12 +11,13 @@
     <div class="drawer-header-title">
       <div class="header-main-info">
         <div class="header-name-row">
-          <span class="header-fullname">{{ profile?.fullName || 'Hồ sơ nhân viên' }}</span>
-          <span *ngIf="profile?.userName" class="header-username">(&#64;{{ profile?.userName }})</span>
+          <span *ngIf="profile?.fullName" class="header-fullname" data-verbatim>{{ profile.fullName }}</span>
+          <span *ngIf="!profile?.fullName" class="header-fullname">Hồ sơ nhân viên</span>
+          <span *ngIf="profile?.userName" class="header-username" data-verbatim>(&#64;{{ profile?.userName }})</span>
           <nz-tag *ngIf="profile?.isManager" nzColor="default">Trưởng phòng</nz-tag>
         </div>
         <div class="header-sub-row">
-          <span *ngIf="profile?.departmentName">
+          <span *ngIf="profile?.departmentName" data-verbatim>
             {{ profile?.departmentName }} ({{ profile?.departmentCode }})
           </span>
           <span *ngIf="profile?.departmentName && profile?.position">•</span>
@@ -55,25 +56,31 @@
                 <div class="detail-grid">
                   <div class="detail-item">
                     <span class="detail-label">Họ và tên</span>
-                    <span class="detail-value fw-600">{{ profile.fullName }}</span>
+                    <span class="detail-value fw-600" data-verbatim>{{ profile.fullName }}</span>
                   </div>
                   <div class="detail-item">
                     <span class="detail-label">Tài khoản</span>
-                    <span class="detail-value">&#64;{{ profile.userName }}</span>
+                    <span class="detail-value" data-verbatim>&#64;{{ profile.userName }}</span>
                   </div>
                   <div class="detail-item">
                     <span class="detail-label">Email</span>
-                    <span class="detail-value">{{ profile.email }}</span>
+                    <span class="detail-value" data-verbatim>{{ profile.email }}</span>
                   </div>
                   <div class="detail-item">
                     <span class="detail-label">Số điện thoại</span>
-                    <span class="detail-value">{{ profile.phoneNumber || 'Chưa cập nhật' }}</span>
+                    <span class="detail-value">
+                      <span *ngIf="profile.phoneNumber" data-verbatim>{{ profile.phoneNumber }}</span>
+                      <span *ngIf="!profile.phoneNumber">Chưa cập nhật</span>
+                    </span>
                   </div>
                   <div class="detail-item">
                     <span class="detail-label">Phòng ban</span>
                     <span class="detail-value">
-                      {{ profile.departmentName || 'Chưa phân bổ' }}
-                      <span *ngIf="profile.departmentCode" class="text-muted">({{ profile.departmentCode }})</span>
+                      <ng-container *ngIf="profile.departmentName; else noDeptDrawer">
+                        <span data-verbatim>{{ profile.departmentName }}</span>
+                        <span *ngIf="profile.departmentCode" class="text-muted" data-verbatim> ({{ profile.departmentCode }})</span>
+                      </ng-container>
+                      <ng-template #noDeptDrawer>Chưa phân bổ</ng-template>
                     </span>
                   </div>
                   <div class="detail-item">
@@ -200,20 +207,20 @@
                         </div>
 
                         <div class="node-body">
-                          <div class="node-title">{{ item.title }}</div>
+                          <div class="node-title" data-verbatim>{{ item.title }}</div>
                           <div *ngIf="item.reason" class="node-reason">
-                            Lý do: {{ item.reason }}
+                            <span>Lý do:</span> <span data-verbatim>{{ item.reason }}</span>
                           </div>
                         </div>
 
                         <div class="node-footer text-muted">
-                          <div>Tạo lúc: {{ item.creationTime | date: 'dd/MM/yyyy HH:mm' }}</div>
+                          <div><span>Tạo lúc:</span> {{ item.creationTime | date: 'dd/MM/yyyy HH:mm' }}</div>
                           <div *ngIf="item.status === RequestStatus.Approved && item.approverName">
-                            Duyệt bởi: <strong>{{ item.approverName }}</strong>
+                            <span>Duyệt bởi:</span> <strong data-verbatim>{{ item.approverName }}</strong>
                           </div>
                           <div *ngIf="item.status === RequestStatus.Rejected" class="text-danger">
-                            Từ chối bởi: <strong>{{ item.approverName || 'Quản lý' }}</strong>
-                            <span *ngIf="item.rejectionReason"> ({{ item.rejectionReason }})</span>
+                            <span>Từ chối bởi:</span> <strong *ngIf="item.approverName" data-verbatim>{{ item.approverName }}</strong><strong *ngIf="!item.approverName">Quản lý</strong>
+                            <span *ngIf="item.rejectionReason"> (<span data-verbatim>{{ item.rejectionReason }}</span>)</span>
                           </div>
                         </div>
                       </div>
@@ -296,7 +303,7 @@
                       <div class="text-muted text-11">{{ req.creationTime | date: 'dd/MM/yyyy' }}</div>
                     </td>
                     <td>
-                      <div class="req-title-cell fw-500">{{ req.title }}</div>
+                      <div class="req-title-cell fw-500" data-verbatim>{{ req.title }}</div>
                       <span class="text-muted text-11">{{ getTypeTag(req.type).label }}</span>
                     </td>
                     <td>
