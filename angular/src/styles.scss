@@ -205,8 +205,10 @@
       transition: all 0.2s ease !important;
       text-decoration: none !important;
 
-      /* Icon menu */
-      .lpx-menu-item-icon {
+      /* Icon menu và mũi tên dropdown */
+      .lpx-menu-item-icon,
+      .lpx-menu-item-icon .lpx-icon,
+      .dd-icon {
         font-size: 17px !important;
         color: #71717a !important;
         min-width: 20px !important;
@@ -214,6 +216,12 @@
         align-items: center !important;
         justify-content: center !important;
         transition: all 0.2s ease !important;
+      }
+
+      .dd-icon {
+        font-size: 13px !important;
+        margin-left: auto !important;
+        opacity: 0.8 !important;
       }
 
       .lpx-menu-item-text {
@@ -226,8 +234,11 @@
         background-color: #18181b !important;
         color: #ffffff !important;
 
-        .lpx-menu-item-icon {
+        .lpx-menu-item-icon,
+        .lpx-menu-item-icon .lpx-icon,
+        .dd-icon {
           color: #ffffff !important;
+          opacity: 1 !important;
         }
       }
 
@@ -238,8 +249,24 @@
         font-weight: 600 !important;
         border-left: 3px solid #ffffff !important;
 
-        .lpx-menu-item-icon {
+        .lpx-menu-item-icon,
+        .lpx-menu-item-icon .lpx-icon,
+        .dd-icon {
           color: #ffffff !important;
+          opacity: 1 !important;
+        }
+      }
+
+      /* Expanded (Menu cha đang mở rộng / đã click - Đơn sắc trắng, tuyệt đối không bị chuyển sang màu xanh) */
+      &.expanded {
+        background-color: #18181b !important;
+        color: #ffffff !important;
+
+        .lpx-menu-item-icon,
+        .lpx-menu-item-icon .lpx-icon,
+        .dd-icon {
+          color: #ffffff !important;
+          opacity: 1 !important;
         }
       }
     }
@@ -628,14 +655,48 @@
 .lpx-breadcrumb-item:hover .lpx-caret,
 .lpx-breadcrumb-dropdown-item:hover:before,
 .lpx-breadcrumb-dropdown-item.active:before,
-.lpx-nav-menu .lpx-menu-item-link:hover .lpx-menu-item-icon,
-.lpx-nav-menu .lpx-menu-item-link.selected .lpx-menu-item-icon,
-.lpx-nav-menu .lpx-menu-item-link.expanded .lpx-menu-item-icon,
-.lpx-menu-item:hover .lpx-menu-item-icon,
-.lpx-menu-item.selected .lpx-menu-item-icon,
 .lpx-language-selection .dropdown-toggle .lpx-icon,
 .lpx-footbar-container .lpx-footbar a:hover {
   color: #2563eb !important;
+}
+
+/* Đảm bảo toàn bộ Sidebar giữ chuẩn ĐƠN SẮC (Đen / Xám / Trắng), không bị dính màu xanh khi click / expanded */
+.lpx-sidebar,
+.lpx-sidebar-container,
+.lpx-nav-menu {
+  .lpx-menu-item-link.expanded,
+  .lpx-menu-item-link.selected,
+  .lpx-menu-item-link:hover,
+  .lpx-menu-item-link:focus,
+  .lpx-menu-item-link:active {
+    color: #ffffff !important;
+
+    .lpx-menu-item-icon,
+    .lpx-menu-item-icon .lpx-icon,
+    .dd-icon,
+    lpx-icon {
+      color: #ffffff !important;
+      opacity: 1 !important;
+    }
+  }
+
+  .lpx-inner-menu .lpx-menu-item-link {
+    &.selected,
+    &.expanded,
+    &:hover,
+    &:focus,
+    &:active {
+      color: #ffffff !important;
+
+      .lpx-menu-item-icon,
+      .lpx-menu-item-icon .lpx-icon,
+      .dd-icon,
+      lpx-icon {
+        color: #ffffff !important;
+        opacity: 1 !important;
+      }
+    }
+  }
 }
 
 .text-brand,
