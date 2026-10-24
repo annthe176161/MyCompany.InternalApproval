@@ -16,6 +16,13 @@
   --lpx-brand-hover: #1d4ed8 !important;
   --lpx-brand-gradient: #2563eb !important;
   --lpx-primary: #2563eb !important;
+  --bs-nav-tabs-link-active-color: #2563eb !important;
+  --bs-nav-tabs-link-active-border-color: #2563eb !important;
+  --bs-nav-pills-link-active-color: #2563eb !important;
+  --bs-dropdown-link-active-bg: #2563eb !important;
+  --bs-dropdown-header-color: #2563eb !important;
+  --bs-pagination-active-bg: #2563eb !important;
+  --bs-list-group-active-color: #2563eb !important;
 }
 .donut {
   display: inline-block;
@@ -629,9 +636,19 @@
   color: #2563eb !important;
 }
 
+.text-brand,
+.bg-brand.soft {
+  color: #2563eb !important;
+}
+
 .bg-brand,
 .bg-brand-gradient {
   background: #2563eb !important;
+}
+
+.form-check-input:checked {
+  background-color: #2563eb !important;
+  border-color: #2563eb !important;
 }
 
 .lpx-breadcrumb-separator {
