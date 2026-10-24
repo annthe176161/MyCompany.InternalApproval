@@ -18,7 +18,7 @@ using Volo.Abp.Validation;
 namespace MyCompany.InternalApproval.Departments;
 
 // Dịch vụ quản lý phòng ban và thành viên
-[Authorize(InternalApprovalPermissions.Departments.Default)]
+[Authorize]
 public class DepartmentAppService : InternalApprovalAppService, IDepartmentAppService
 {
     private readonly IRepository<Department, Guid> _departmentRepository;
@@ -114,6 +114,7 @@ public class DepartmentAppService : InternalApprovalAppService, IDepartmentAppSe
     }
 
     // Lấy chi tiết một phòng ban theo Id
+    [Authorize(InternalApprovalPermissions.Departments.Default)]
     public virtual async Task<DepartmentDto> GetAsync(Guid id)
     {
         try

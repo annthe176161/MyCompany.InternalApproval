@@ -16,7 +16,7 @@ namespace MyCompany.InternalApproval.Controllers;
 /// </summary>
 [RemoteService(Name = "Default")]
 [Route("api/app/employee")]
-[Authorize(InternalApprovalPermissions.Employees.Default)]
+[Authorize]
 public class EmployeeController : InternalApprovalController, IEmployeeAppService
 {
     private readonly IEmployeeAppService _employeeAppService;
@@ -92,7 +92,7 @@ public class EmployeeController : InternalApprovalController, IEmployeeAppServic
     /// GET /api/app/employee/analytics?year={year}
     /// </summary>
     [HttpGet("analytics")]
-    [Authorize(InternalApprovalPermissions.Employees.Analytics)]
+    [Authorize]
     public virtual Task<HrAnalyticsDto> GetAnalyticsAsync([FromQuery] int? year = null)
     {
         return _employeeAppService.GetAnalyticsAsync(year);

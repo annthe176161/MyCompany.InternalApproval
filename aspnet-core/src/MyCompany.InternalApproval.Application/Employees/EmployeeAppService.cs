@@ -21,7 +21,7 @@ using Volo.Abp.Validation;
 namespace MyCompany.InternalApproval.Employees;
 
 // Dịch vụ quản lý Hồ sơ Nhân viên, Thâm niên làm việc, Timeline nghỉ phép và Thống kê nhân sự
-[Authorize(InternalApprovalPermissions.Employees.Default)]
+[Authorize]
 [RemoteService(IsEnabled = false)]
 public class EmployeeAppService : InternalApprovalAppService, IEmployeeAppService
 {
@@ -558,7 +558,7 @@ public class EmployeeAppService : InternalApprovalAppService, IEmployeeAppServic
     }
 
     // Lấy dữ liệu phân tích và thống kê tổng thể nhân sự
-    [Authorize(InternalApprovalPermissions.Employees.Analytics)]
+    [Authorize]
     public virtual async Task<HrAnalyticsDto> GetAnalyticsAsync(int? year = null)
     {
         try

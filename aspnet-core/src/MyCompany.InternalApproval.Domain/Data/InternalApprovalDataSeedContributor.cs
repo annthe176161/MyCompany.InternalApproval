@@ -142,8 +142,13 @@ public class InternalApprovalDataSeedContributor : IDataSeedContributor, ITransi
         var employeeRole = await _roleManager.FindByNameAsync(RoleEmployee);
         if (employeeRole == null)
         {
-            employeeRole = new IdentityRole(_guidGenerator.Create(), RoleEmployee, _currentTenant.Id) { IsPublic = true };
+            employeeRole = new IdentityRole(_guidGenerator.Create(), RoleEmployee, _currentTenant.Id) { IsPublic = true, IsDefault = true };
             await _roleManager.CreateAsync(employeeRole);
+        }
+        else if (!employeeRole.IsDefault)
+        {
+            employeeRole.IsDefault = true;
+            await _roleManager.UpdateAsync(employeeRole);
         }
         roleDict[RoleEmployee] = employeeRole;
 
@@ -193,14 +198,16 @@ public class InternalApprovalDataSeedContributor : IDataSeedContributor, ITransi
             _currentTenant.Id
         );
 
-        // Phân quyền cho Role Employee: Xem đề xuất của mình, Tạo mới, Chỉnh sửa, Xóa (khi là nháp), Xem danh bạ/hồ sơ
+        // Phân quyền cho Role Employee: Xem đề xuất của mình, Tạo mới, Chỉnh sửa, Xóa (khi là nháp), Xem danh bạ/hồ sơ, thống kê cá nhân
         var employeePermissions = new[]
         {
             RequestPermissions.Default,
             RequestPermissions.Create,
             RequestPermissions.Edit,
             RequestPermissions.Delete,
-            EmployeePermissions.Default
+            DepartmentPermissions.Default,
+            EmployeePermissions.Default,
+            EmployeePermissions.Analytics
         };
         await _permissionDataSeeder.SeedAsync(
             RolePermissionValueProvider.ProviderName,
