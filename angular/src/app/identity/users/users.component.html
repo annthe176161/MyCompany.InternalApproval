@@ -64,9 +64,9 @@
 
           <td>{{ getFullName(user) }}</td>
 
-          <td>{{ user.email || '—' }}</td>
+          <td>{{ user.email || '' }}</td>
 
-          <td>{{ user.phoneNumber || '—' }}</td>
+          <td>{{ user.phoneNumber || '' }}</td>
 
           <td nzAlign="center">
             <nz-tag [nzColor]="user.isActive ? 'green' : 'default'">
