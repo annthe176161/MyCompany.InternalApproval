@@ -1,42 +1,18 @@
 :host {
   display: block;
-  height: 100%;
 }
 
 .request-page-container {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  box-sizing: border-box;
-}
-
-/* Tùy chỉnh thanh cuộn bên trong của bảng nz-table */
-::ng-deep .ant-table-body {
-  overflow-y: auto !important;
-
-  &::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-  &::-webkit-scrollbar-thumb {
-    background-color: #d1d5db;
-    border-radius: 4px;
-  }
-  &::-webkit-scrollbar-thumb:hover {
-    background-color: #9ca3af;
-  }
-  &::-webkit-scrollbar-track {
-    background: #f9fafb;
-  }
+  gap: 16px;
+  padding-bottom: 24px;
 }
 
 .page-header {
-  flex: 0 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
   flex-wrap: wrap;
   gap: 12px;
 
@@ -47,19 +23,47 @@
     color: #1f2937;
   }
 
+  .header-subtitle {
+    font-size: 13px;
+    color: #6b7280;
+    margin: 2px 0 0;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .btn-primary-action {
+    background: #111827;
+    border-color: #111827;
+    color: #ffffff;
+    border-radius: 6px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    &:hover {
+      background: #1f2937;
+      border-color: #1f2937;
+    }
+  }
+
   ::ng-deep {
     .ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled) {
-      background: #0f172a !important;
-      border-color: #0f172a !important;
+      background: #111827 !important;
+      border-color: #111827 !important;
       color: #ffffff !important;
-      box-shadow: -1px 0 0 0 #0f172a !important;
     }
 
     .ant-radio-button-wrapper {
       border-radius: 6px;
       font-size: 13px;
       font-weight: 500;
-      border: 1px solid #e2e8f0;
+      border: 1px solid #e5e7eb;
 
       &:first-child {
         border-top-right-radius: 0;
@@ -77,75 +81,157 @@
 }
 
 .filter-card {
-  flex: 0 0 auto;
-  margin-bottom: 10px;
+  background: #ffffff;
   border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-
-  ::ng-deep .ant-card-body {
-    padding: 10px 16px;
-  }
+  border: 1px solid #e5e7eb;
+  padding: 12px 16px;
 }
 
 .filter-bar {
   display: flex;
-  gap: 12px;
+  align-items: center;
+  gap: 10px;
   flex-wrap: wrap;
 
   .search-input {
-    width: 280px;
+    width: 260px;
+  }
+
+  .search-icon-btn {
+    cursor: pointer;
+    color: #9ca3af;
+    &:hover { color: #111827; }
   }
 
   .select-filter {
-    width: 180px;
+    width: 170px;
+  }
+
+  .btn-filter-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+    color: #374151;
+    font-size: 13px;
+
+    &:hover {
+      border-color: #9ca3af;
+      color: #111827;
+    }
+  }
+
+  .filter-actions-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 }
 
 .table-card {
-  flex: 1 1 auto;
-  min-height: 0;
+  background: #ffffff;
   border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
 
-  ::ng-deep .ant-card-body {
-    padding: 10px 16px 6px;
+  ::ng-deep {
+    .ant-table-thead > tr > th {
+      background: #f9fafb;
+      padding: 12px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .ant-table-tbody > tr > td {
+      padding: 12px 16px;
+      font-size: 13px;
+      color: #1f2937;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .ant-table-tbody > tr:last-child > td {
+      border-bottom: none;
+    }
+
+    .ant-table-tbody > tr:hover > td {
+      background: #f9fafb;
+    }
+
+    .ant-table-pagination.ant-pagination {
+      margin: 16px !important;
+      padding-right: 4px;
+    }
   }
 }
 
-.action-buttons {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-/* Căn chỉnh icon và text trong button chuẩn chỉ, không bị lệch */
-.btn-icon-text {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 6px !important;
-  vertical-align: middle;
-
-  span[nz-icon] {
-    display: inline-flex;
-    align-items: center;
-    font-size: 14px;
-    line-height: 1;
-  }
-
-  span:not([nz-icon]) {
-    line-height: 1;
-  }
-}
-
-.action-btn-single {
-  margin: 0 auto;
+.code-badge {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-weight: 600;
+  font-size: 11.5px;
+  background: #f3f4f6;
+  color: #374151;
+  padding: 2px 6px;
   border-radius: 4px;
-  font-weight: 500;
-  padding: 0 10px;
+  border: 1px solid #e5e7eb;
+  display: inline-block;
 }
 
-/* Nhóm các icon thao tác nằm thẳng hàng ở cột hành động */
+.cell-subtext {
+  font-size: 11.5px;
+  color: #6b7280;
+  margin-top: 3px;
+}
+
+.table-req-title {
+  font-weight: 600;
+  color: #111827;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1.4;
+  &:hover {
+    color: #2563eb;
+  }
+}
+
+.subtle-type-tag {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #4b5563;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  padding: 1px 6px;
+  line-height: 1.4;
+}
+
+.amount-value {
+  font-weight: 600;
+  color: #111827;
+  font-size: 13px;
+}
+
+.creator-cell {
+  .creator-clickable {
+    cursor: pointer;
+    color: #2563eb;
+    font-weight: 500;
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.text-muted {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
 .action-btn-group {
   display: inline-flex;
   align-items: center;
@@ -153,7 +239,6 @@
   gap: 6px;
 }
 
-/* Nút icon thao tác đẹp mắt, có hover màu sắc riêng biệt */
 .action-icon-btn {
   width: 32px !important;
   height: 32px !important;
@@ -162,8 +247,8 @@
   justify-content: center !important;
   padding: 0 !important;
   border-radius: 6px !important;
-  font-size: 15px !important;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 14px !important;
+  transition: all 0.15s ease;
   border: 1px solid transparent !important;
 
   span[nz-icon] {
@@ -173,99 +258,69 @@
     line-height: 1;
   }
 
-  /* Xem chi tiết - Màu xanh dương */
   &.view {
-    color: #1890ff;
-    background-color: #f0f7ff;
+    color: #2563eb;
+    background-color: #eff6ff;
+    border-color: #dbeafe !important;
     &:hover {
-      background-color: #1890ff;
+      background-color: #2563eb;
       color: #ffffff;
-      box-shadow: 0 2px 6px rgba(24, 144, 255, 0.35);
+      border-color: #2563eb !important;
     }
   }
 
-  /* Chỉnh sửa - Màu cam */
   &.edit {
-    color: #fa8c16;
-    background-color: #fff7e6;
+    color: #d97706;
+    background-color: #fffbeb;
+    border-color: #fef3c7 !important;
     &:hover {
-      background-color: #fa8c16;
+      background-color: #d97706;
       color: #ffffff;
-      box-shadow: 0 2px 6px rgba(250, 140, 22, 0.35);
+      border-color: #d97706 !important;
     }
   }
 
-  /* Gửi duyệt - Màu tím */
   &.submit {
-    color: #722ed1;
-    background-color: #f9f0ff;
+    color: #4f46e5;
+    background-color: #eef2ff;
+    border-color: #e0e7ff !important;
     &:hover {
-      background-color: #722ed1;
+      background-color: #4f46e5;
       color: #ffffff;
-      box-shadow: 0 2px 6px rgba(114, 46, 209, 0.35);
+      border-color: #4f46e5 !important;
     }
   }
 
-  /* Phê duyệt - Màu xanh lá cây */
   &.approve {
-    color: #52c41a;
-    background-color: #f6ffed;
+    color: #16a34a;
+    background-color: #f0fdf4;
+    border-color: #dcfce7 !important;
     &:hover {
-      background-color: #52c41a;
+      background-color: #16a34a;
       color: #ffffff;
-      box-shadow: 0 2px 6px rgba(82, 196, 26, 0.35);
+      border-color: #16a34a !important;
     }
   }
 
-  /* Từ chối - Màu đỏ cam */
   &.reject {
-    color: #fa541c;
-    background-color: #fff2e8;
+    color: #ea580c;
+    background-color: #fff7ed;
+    border-color: #ffedd5 !important;
     &:hover {
-      background-color: #fa541c;
+      background-color: #ea580c;
       color: #ffffff;
-      box-shadow: 0 2px 6px rgba(250, 84, 28, 0.35);
+      border-color: #ea580c !important;
     }
   }
 
-  /* Xóa đề xuất - Màu đỏ */
   &.delete {
-    color: #ff4d4f;
-    background-color: #fff1f0;
+    color: #dc2626;
+    background-color: #fef2f2;
+    border-color: #fee2e2 !important;
     &:hover {
-      background-color: #ff4d4f;
+      background-color: #dc2626;
       color: #ffffff;
-      box-shadow: 0 2px 6px rgba(255, 77, 79, 0.35);
+      border-color: #dc2626 !important;
     }
   }
 }
-
-.creator-clickable {
-  cursor: pointer;
-  color: #1890ff;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  transition: all 0.2s ease;
-
-  &:hover {
-    color: #096dd9;
-    text-decoration: underline;
-
-    .quick-view-icon {
-      color: #096dd9;
-      opacity: 1;
-    }
-  }
-
-  .quick-view-icon {
-    font-size: 13px;
-    color: #94a3b8;
-    opacity: 0.7;
-    transition: all 0.2s ease;
-  }
-}
-
-
-

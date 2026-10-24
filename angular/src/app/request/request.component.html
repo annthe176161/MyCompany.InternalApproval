@@ -3,11 +3,11 @@
   <div class="page-header">
     <div>
       <h2>Quản lý Đề xuất Nội bộ</h2>
-      <p class="text-muted mb-0">
+      <p class="header-subtitle">
         {{ activeScope === 'my' ? 'Danh sách các đề xuất của tài khoản đăng nhập' : 'Danh sách toàn bộ đề xuất trên hệ thống' }}
       </p>
     </div>
-    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+    <div class="header-actions">
       <!-- Bộ chọn phạm vi: Chỉ hiển thị cho Approver (Admin luôn là Tất cả đề xuất, Nhân viên luôn là Đề xuất của tôi) -->
       <nz-radio-group
         *ngIf="isApprover && !isAdmin"
@@ -26,7 +26,7 @@
       <button
         nz-button
         nzType="primary"
-        class="btn-icon-text"
+        class="btn-primary-action"
         *ngIf="!isAdmin"
         (click)="formModal.openCreate()"
       >
@@ -37,20 +37,20 @@
   </div>
 
   <!-- FILTER BAR -->
-  <nz-card [nzBordered]="false" class="filter-card">
+  <div class="filter-card">
     <div class="filter-bar">
       <!-- Search Input -->
       <nz-input-group [nzSuffix]="suffixIconSearch" class="search-input">
         <input
           type="text"
           nz-input
-          placeholder="Tìm theo tiêu đề..."
+          placeholder="Tìm theo tiêu đề, người tạo..."
           [(ngModel)]="searchTerm"
           (keyup.enter)="onSearch()"
         />
       </nz-input-group>
       <ng-template #suffixIconSearch>
-        <span nz-icon nzType="search" (click)="onSearch()" style="cursor: pointer;"></span>
+        <span nz-icon nzType="search" (click)="onSearch()" class="search-icon-btn"></span>
       </ng-template>
 
       <!-- Filter Status (Động theo shared config) -->
@@ -85,44 +85,46 @@
         ></nz-option>
       </nz-select>
 
-      <button nz-button nzType="default" class="btn-icon-text" (click)="onSearch()">
+      <button nz-button nzType="default" class="btn-filter-action" (click)="onSearch()">
         <span nz-icon nzType="reload"></span>
         <span>Làm mới</span>
       </button>
 
-      <!-- Xuất báo cáo Excel -->
-      <button
-        nz-button
-        nzType="default"
-        class="btn-icon-text ms-auto"
-        [nzLoading]="isExporting"
-        (click)="exportExcel()"
-        nz-tooltip
-        nzTooltipTitle="Xuất danh sách theo bộ lọc ra file Excel (.xlsx)"
-      >
-        <span nz-icon nzType="file-excel" nzTheme="outline" style="color: #10b981; font-size: 15px;"></span>
-        <span>Xuất Excel</span>
-      </button>
+      <div class="filter-actions-right">
+        <!-- Xuất báo cáo Excel -->
+        <button
+          nz-button
+          nzType="default"
+          class="btn-filter-action"
+          [nzLoading]="isExporting"
+          (click)="exportExcel()"
+          nz-tooltip
+          nzTooltipTitle="Xuất danh sách theo bộ lọc ra file Excel (.xlsx)"
+        >
+          <span nz-icon nzType="file-excel" nzTheme="outline" style="color: #10b981;"></span>
+          <span>Xuất Excel</span>
+        </button>
 
-      <!-- Tùy chỉnh cột hiển thị -->
-      <button
-        nz-button
-        nzType="default"
-        class="btn-icon-text"
-        nz-popover
-        [nzPopoverTitle]="colSettingTitle"
-        [nzPopoverContent]="colSettingContent"
-        nzPopoverPlacement="bottomRight"
-        nzPopoverTrigger="click"
-      >
-        <span nz-icon nzType="setting" nzTheme="outline"></span>
-        <span>Tùy chỉnh cột</span>
-      </button>
+        <!-- Tùy chỉnh cột hiển thị -->
+        <button
+          nz-button
+          nzType="default"
+          class="btn-filter-action"
+          nz-popover
+          [nzPopoverTitle]="colSettingTitle"
+          [nzPopoverContent]="colSettingContent"
+          nzPopoverPlacement="bottomRight"
+          nzPopoverTrigger="click"
+        >
+          <span nz-icon nzType="setting" nzTheme="outline"></span>
+          <span>Tùy chỉnh cột</span>
+        </button>
+      </div>
     </div>
-  </nz-card>
+  </div>
 
   <!-- DATA TABLE -->
-  <nz-card [nzBordered]="false" class="table-card">
+  <div class="table-card">
     <nz-table
       #basicTable
       [nzData]="requests"
@@ -133,63 +135,57 @@
       [nzPageSize]="pageSize"
       [nzShowSizeChanger]="true"
       [nzPageSizeOptions]="[10, 20, 50]"
-      [nzScroll]="{ y: 'calc(100vh - 360px)', x: tableScrollX }"
+      [nzScroll]="{ x: tableScrollX }"
       (nzQueryParams)="onQueryParamsChange($event)"
+      nzSize="middle"
     >
       <thead>
         <tr>
-          <th *ngIf="isColumnVisible('code')" nzWidth="120px">Mã & Ngày tạo</th>
-          <th *ngIf="isColumnVisible('title')" nzWidth="280px">Tiêu đề & Loại</th>
-          <th *ngIf="isColumnVisible('amount')" nzWidth="150px">Số tiền</th>
-          <th *ngIf="isColumnVisible('creator')" nzWidth="160px">Người tạo</th>
-          <th *ngIf="isColumnVisible('status')" nzWidth="130px">Trạng thái</th>
-          <th *ngIf="isColumnVisible('action')" nzWidth="160px" nzAlign="center">Hành động</th>
+          <th *ngIf="isColumnVisible('code')" nzWidth="130px">Mã phiếu</th>
+          <th *ngIf="isColumnVisible('title')" nzWidth="300px">Tiêu đề & Loại đề xuất</th>
+          <th *ngIf="isColumnVisible('amount')" nzWidth="150px" nzAlign="right">Số tiền</th>
+          <th *ngIf="isColumnVisible('creator')" nzWidth="180px">Người đề xuất</th>
+          <th *ngIf="isColumnVisible('status')" nzWidth="140px">Trạng thái</th>
+          <th *ngIf="isColumnVisible('action')" nzWidth="140px" nzAlign="center">Thao tác</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let data of basicTable.data; trackBy: trackById">
-          <!-- Col 1: Mã & Ngày -->
+          <!-- Col 1: Mã phiếu & Ngày tạo -->
           <td *ngIf="isColumnVisible('code')">
-            <div style="font-weight: 500; font-size: 13px;">
-              #{{ data.id.substring(0, 8) }}
-            </div>
-            <div style="font-size: 11px; color: #6b7280;">
-              {{ data.creationTime | date: 'dd/MM/yyyy HH:mm' }}
-            </div>
+            <span class="code-badge">#{{ data.id.substring(0, 8) }}</span>
+            <div class="cell-subtext">{{ data.creationTime | date: 'dd/MM/yyyy HH:mm' }}</div>
           </td>
 
           <!-- Col 2: Tiêu đề & Loại -->
           <td *ngIf="isColumnVisible('title')">
-            <div style="font-weight: 600; color: #111827; cursor: pointer;" (click)="detailDrawer.open(data)">
+            <div class="table-req-title" (click)="detailDrawer.open(data)" nz-tooltip="Bấm để xem chi tiết">
               {{ data.title }}
             </div>
-            <div style="margin-top: 4px;">
-              <nz-tag [nzColor]="getTypeTag(data.type).color">
-                {{ getTypeTag(data.type).label }}
-              </nz-tag>
-            </div>
+            <span class="subtle-type-tag">{{ getTypeTag(data.type).label }}</span>
           </td>
 
           <!-- Col 3: Số tiền -->
-          <td *ngIf="isColumnVisible('amount')">
-            <span *ngIf="data.type !== RequestType.Leave && data.amount" style="font-weight: 600; color: #059669;">
-              {{ data.amount | number: '1.0-0' }} VNĐ
+          <td *ngIf="isColumnVisible('amount')" nzAlign="right">
+            <span *ngIf="data.type !== RequestType.Leave && data.amount && data.amount > 0" class="amount-value">
+              {{ data.amount | number: '1.0-0' }} ₫
             </span>
+            <span *ngIf="data.type === RequestType.Leave || !data.amount || data.amount === 0" class="text-muted">-</span>
           </td>
 
-          <!-- Col 4: Người tạo -->
+          <!-- Col 4: Người đề xuất -->
           <td *ngIf="isColumnVisible('creator')">
-            <div style="font-weight: 500;">
+            <div class="creator-cell">
               <span
                 *ngIf="data.creatorId"
                 class="creator-clickable"
                 (click)="openEmployeeDrawer(data.creatorId)"
-                nz-tooltip="Nhấp để xem nhanh hồ sơ nhân viên"
+                nz-tooltip="Nhấp để xem hồ sơ nhân sự"
               >
                 {{ data.creatorName }}
-                <span nz-icon nzType="idcard" class="quick-view-icon"></span>
               </span>
-              <span *ngIf="!data.creatorId">{{ data.creatorName || 'Hệ thống' }}</span>
+              <span *ngIf="!data.creatorId" class="text-muted">{{ data.creatorName || 'Hệ thống' }}</span>
+              <div *ngIf="data.departmentName" class="cell-subtext">{{ data.departmentName }}</div>
             </div>
           </td>
 
@@ -201,17 +197,16 @@
             ></nz-badge>
           </td>
 
-          <!-- Col 6: Hành động -->
+          <!-- Col 6: Thao tác -->
           <td *ngIf="isColumnVisible('action')" nzAlign="center">
             <div class="action-btn-group">
               <!-- 1. Xem chi tiết & Lịch sử (Luôn hiển thị) -->
               <button
                 nz-button
                 nzType="text"
-                nzShape="circle"
                 class="action-icon-btn view"
                 nz-tooltip
-                nzTooltipTitle="Xem chi tiết & Lịch sử"
+                nzTooltipTitle="Xem chi tiết"
                 (click)="detailDrawer.open(data)"
               >
                 <span nz-icon nzType="eye"></span>
@@ -222,7 +217,6 @@
                 <button
                   nz-button
                   nzType="text"
-                  nzShape="circle"
                   class="action-icon-btn edit"
                   *ngIf="!isAdmin && data.status === RequestStatus.Draft"
                   nz-tooltip
@@ -237,7 +231,6 @@
               <button
                 nz-button
                 nzType="text"
-                nzShape="circle"
                 class="action-icon-btn submit"
                 *ngIf="!isAdmin && data.status === RequestStatus.Draft && (!data.creatorId || data.creatorId === currentUserId)"
                 nz-tooltip
@@ -252,7 +245,6 @@
                 <button
                   nz-button
                   nzType="text"
-                  nzShape="circle"
                   class="action-icon-btn approve"
                   *ngIf="!isAdmin && data.status === RequestStatus.Submitted && (!currentUserId || data.creatorId !== currentUserId)"
                   nz-tooltip
@@ -268,7 +260,6 @@
                 <button
                   nz-button
                   nzType="text"
-                  nzShape="circle"
                   class="action-icon-btn reject"
                   *ngIf="!isAdmin && data.status === RequestStatus.Submitted"
                   nz-tooltip
@@ -284,7 +275,6 @@
                 <button
                   nz-button
                   nzType="text"
-                  nzShape="circle"
                   class="action-icon-btn delete"
                   *ngIf="!isAdmin && data.status === RequestStatus.Draft"
                   nz-tooltip
@@ -301,7 +291,7 @@
         </tr>
       </tbody>
     </nz-table>
-  </nz-card>
+  </div>
 
   <!-- COMPONENT: TẠO / SỬA MODAL (MÀN HÌNH 2) -->
   <app-request-form-modal #formModal (saveSuccess)="loadData()"></app-request-form-modal>
