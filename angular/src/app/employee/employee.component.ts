@@ -1,7 +1,6 @@
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { Subject, Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
-import { ConfigStateService, PermissionService } from '@abp/ng.core';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzTableQueryParams } from 'ng-zorro-antd/table';
 import { EmployeeService } from '../proxy/employees/employee.service';
@@ -15,8 +14,15 @@ import {
 import { DepartmentService } from '../proxy/departments/department.service';
 import { DepartmentDto } from '../proxy/departments/models';
 import { EmployeeDetailDrawerComponent } from '../shared/components/employee-detail-drawer/employee-detail-drawer.component';
-import { ExcelExportService } from '../shared/services/excel-export.service';
+import { CurrentUserContextService, ExcelExportService } from '../shared/services';
+import {
+  extractErrorMessage,
+  getAvatarColor,
+  getAvatarInitials,
+  getTenureBadgeStatus,
+} from '../shared/utils';
 
+// Màn hình quản lý danh sách hồ sơ nhân sự, thống kê HR và báo cáo ngày nghỉ phép
 @Component({
   selector: 'app-employee',
   templateUrl: './employee.component.html',
@@ -25,10 +31,10 @@ import { ExcelExportService } from '../shared/services/excel-export.service';
 export class EmployeeComponent implements OnInit, OnDestroy {
   @ViewChild('employeeDrawer') employeeDrawer?: EmployeeDetailDrawerComponent;
 
-  // State: Main Tab Navigation
+  // Điều hướng tab chính
   selectedMainTabIndex = 0;
 
-  // State: User context & Role permissions
+  // Thông tin người dùng hiện tại và phạm vi quyền hạn
   currentUserId?: string;
   currentUserName?: string;
   currentUserFullName?: string;
@@ -37,7 +43,7 @@ export class EmployeeComponent implements OnInit, OnDestroy {
   managedDepartments: DepartmentDto[] = [];
   availableDepartments: DepartmentDto[] = [];
 
-  // State: Tab 1 - Employee List Table
+  // Trạng thái Tab 1: Danh sách nhân viên
   employees: EmployeeListItemDto[] = [];
   totalCount = 0;
   loadingEmployees = false;
@@ -45,7 +51,7 @@ export class EmployeeComponent implements OnInit, OnDestroy {
   pageSize = 10;
   sorting = '';
 
-  // State: Tab 1 - Search & Filters
+  // Bộ lọc tìm kiếm Tab 1
   searchTerm = '';
   private searchSubject = new Subject<string>();
   private searchSubscription?: Subscription;
@@ -53,12 +59,12 @@ export class EmployeeComponent implements OnInit, OnDestroy {
   departments: DepartmentDto[] = [];
   loadingDepartments = false;
 
-  // State: Tab 1 - HR Analytics
+  // Chỉ số phân tích nhân sự (HR Analytics) Tab 1
   currentYear: number = new Date().getFullYear();
   analytics: HrAnalyticsDto | null = null;
   loadingAnalytics = false;
 
-  // State: Tab 2 - Leave Report Table
+  // Trạng thái Tab 2: Báo cáo ngày nghỉ phép
   leaveReportItems: EmployeeLeaveReportItemDto[] = [];
   leaveTotalCount = 0;
   loadingLeaveReport = false;
@@ -66,7 +72,7 @@ export class EmployeeComponent implements OnInit, OnDestroy {
   leavePageSize = 10;
   leaveSorting = '';
 
-  // State: Tab 2 - Leave Filters
+  // Bộ lọc báo cáo nghỉ phép Tab 2
   selectedLeaveYear: number = new Date().getFullYear();
   availableYears: number[] = [2026, 2025, 2024, 2023];
   selectedLeaveDepartmentId: string | null = null;
@@ -74,19 +80,18 @@ export class EmployeeComponent implements OnInit, OnDestroy {
   private leaveSearchSubject = new Subject<string>();
   private leaveSearchSubscription?: Subscription;
 
-  // State: Tab 2 - Summary Metrics
+  // Tổng hợp số liệu nghỉ phép Tab 2
   totalApprovedLeaveDays = 0;
   totalApprovedLeaveRequests = 0;
   totalSentLeaveRequests = 0;
 
-  // State: Tab 2 - Export Excel
+  // Trạng thái xuất Excel báo cáo nghỉ phép
   isExportingLeaveExcel = false;
 
   constructor(
     private employeeService: EmployeeService,
     private departmentService: DepartmentService,
-    private configState: ConfigStateService,
-    private permissionService: PermissionService,
+    private userContext: CurrentUserContextService,
     private excelExportService: ExcelExportService,
     private message: NzMessageService,
   ) {}
@@ -105,19 +110,10 @@ export class EmployeeComponent implements OnInit, OnDestroy {
   }
 
   private initCurrentUserAndRoles(): void {
-    const user = this.configState.getOne('currentUser');
-    this.currentUserId = user?.id;
-    this.currentUserName = user?.userName;
-    this.currentUserFullName = user?.name
-      ? `${user.name} ${user.surName || ''}`.trim()
-      : user?.userName;
-
-    const roles = (user?.roles || []).map((r: string) => r.toLowerCase());
-    this.isAdmin =
-      roles.includes('admin') ||
-      user?.userName?.toLowerCase() === 'admin' ||
-      this.permissionService.getGrantedPolicy('Employees.ViewAll') ||
-      this.permissionService.getGrantedPolicy('AbpIdentity.Roles');
+    this.currentUserId = this.userContext.userId || undefined;
+    this.currentUserName = this.userContext.userName;
+    this.currentUserFullName = this.userContext.fullName;
+    this.isAdmin = this.userContext.isAdmin(['Employees.ViewAll']);
   }
 
   private initSearchSubscription(): void {
@@ -167,13 +163,13 @@ export class EmployeeComponent implements OnInit, OnDestroy {
       this.availableDepartments = this.departments;
     } else if (this.isDepartmentManager) {
       this.availableDepartments = this.managedDepartments;
-      // Tự động chọn nếu chỉ quản lý đúng 1 phòng ban
+      // Tự động chọn nếu người dùng chỉ quản lý đúng 1 phòng ban
       if (this.managedDepartments.length === 1) {
         this.selectedDepartmentId = this.managedDepartments[0].id ?? null;
         this.selectedLeaveDepartmentId = this.managedDepartments[0].id ?? null;
       }
     } else {
-      // Nhân viên thông thường: chỉ xem cá nhân
+      // Nhân viên thông thường chỉ xem thông tin cá nhân
       this.availableDepartments = [];
     }
   }
@@ -191,7 +187,7 @@ export class EmployeeComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ================= TAB 1 METHODS =================
+  // Các phương thức xử lý dữ liệu Tab 1 (Danh sách nhân sự)
   loadEmployees(): void {
     this.loadingEmployees = true;
     const input: GetEmployeeListInput = {
@@ -210,8 +206,7 @@ export class EmployeeComponent implements OnInit, OnDestroy {
       },
       error: err => {
         this.loadingEmployees = false;
-        const msg = err.error?.error?.message || 'Không thể tải danh sách nhân viên!';
-        this.message.error(msg);
+        this.message.error(extractErrorMessage(err, 'Không thể tải danh sách nhân viên!'));
       },
     });
   }
@@ -244,7 +239,7 @@ export class EmployeeComponent implements OnInit, OnDestroy {
     this.loadEmployees();
   }
 
-  // ================= TAB 2 METHODS (LEAVE REPORT) =================
+  // Các phương thức xử lý dữ liệu Tab 2 (Báo cáo ngày nghỉ phép)
   loadLeaveReport(): void {
     this.loadingLeaveReport = true;
     const input: GetLeaveReportInput = {
@@ -265,8 +260,7 @@ export class EmployeeComponent implements OnInit, OnDestroy {
       },
       error: err => {
         this.loadingLeaveReport = false;
-        const msg = err.error?.error?.message || 'Không thể tải báo cáo ngày nghỉ phép!';
-        this.message.error(msg);
+        this.message.error(extractErrorMessage(err, 'Không thể tải báo cáo ngày nghỉ phép!'));
       },
     });
   }
@@ -360,13 +354,12 @@ export class EmployeeComponent implements OnInit, OnDestroy {
       },
       error: err => {
         this.isExportingLeaveExcel = false;
-        const msg = err.error?.error?.message || 'Không thể xuất file Excel báo cáo!';
-        this.message.error(msg);
+        this.message.error(extractErrorMessage(err, 'Không thể xuất file Excel báo cáo!'));
       },
     });
   }
 
-  // ================= NAVIGATION & COMMON =================
+  // Điều hướng tab và làm mới dữ liệu
   onMainTabChange(index: number): void {
     this.selectedMainTabIndex = index;
     if (index === 1 && this.leaveReportItems.length === 0 && !this.loadingLeaveReport) {
@@ -402,45 +395,17 @@ export class EmployeeComponent implements OnInit, OnDestroy {
     this.message.success('Đã làm mới dữ liệu thành công!');
   }
 
-  // Visual helper methods
+  // Các hàm hỗ trợ hiển thị Avatar và nhãn thâm niên
   getInitials(name?: string): string {
-    if (!name) return 'U';
-    const parts = name.trim().split(/\s+/);
-    if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
-    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+    return getAvatarInitials(name);
   }
 
   getAvatarColor(name?: string): string {
-    if (!name) return '#475569';
-    const colors = [
-      '#0284c7', // Sky
-      '#059669', // Emerald
-      '#7c3aed', // Violet
-      '#d97706', // Amber
-      '#dc2626', // Red
-      '#0891b2', // Cyan
-      '#4f46e5', // Indigo
-      '#be185d', // Pink
-    ];
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) {
-      hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const index = Math.abs(hash) % colors.length;
-    return colors[index];
+    return getAvatarColor(name);
   }
 
   getTenureBadgeStatus(months: number): { color: string; label: string } {
-    if (months < 2) {
-      return { color: 'default', label: 'Thử việc' };
-    }
-    if (months < 12) {
-      return { color: 'blue', label: 'Dưới 1 năm' };
-    }
-    if (months < 36) {
-      return { color: 'green', label: '1 - 3 năm' };
-    }
-    return { color: 'purple', label: 'Kỳ cựu (> 3 năm)' };
+    return getTenureBadgeStatus(months);
   }
 
   trackById(_: number, item: EmployeeListItemDto): string {

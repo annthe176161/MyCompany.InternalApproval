@@ -8,7 +8,15 @@ import {
   RequestType,
   RequestStatus,
 } from '../../../proxy/requests';
+import {
+  getRequestStatusMeta,
+  getRequestTypeMeta,
+  RequestStatusMeta,
+  RequestTypeMeta,
+} from '../../../shared/constants';
+import { calculateLeaveDays, extractErrorMessage } from '../../../shared/utils';
 
+// Ngăn kéo hiển thị thông tin chi tiết và lịch sử trao đổi của một đề xuất
 @Component({
   selector: 'app-request-detail-drawer',
   templateUrl: './request-detail-drawer.component.html',
@@ -25,18 +33,18 @@ export class RequestDetailDrawerComponent {
   newCommentText = '';
   isSendingComment = false;
 
+  constructor(
+    private requestService: RequestService,
+    private message: NzMessageService,
+    private router: Router,
+    private route: ActivatedRoute,
+  ) {}
+
   onCreatorClick(creatorId?: string): void {
     if (creatorId) {
       this.openEmployeeProfile.emit(creatorId);
     }
   }
-
-  constructor(
-    private requestService: RequestService,
-    private message: NzMessageService,
-    private router: Router,
-    private route: ActivatedRoute
-  ) {}
 
   open(req: RequestDto): void {
     this.refreshDetail(req.id);
@@ -60,8 +68,7 @@ export class RequestDetailDrawerComponent {
         this.detailRequest = res;
       },
       error: err => {
-        const msg = err.error?.error?.message || 'Không thể tải chi tiết đề xuất!';
-        this.message.error(msg);
+        this.message.error(extractErrorMessage(err, 'Không thể tải chi tiết đề xuất!'));
       },
     });
   }
@@ -82,53 +89,25 @@ export class RequestDetailDrawerComponent {
           this.refreshDetail(this.detailRequest!.id);
         },
         error: err => {
-          const msg = err.error?.error?.message || 'Không thể gửi bình luận!';
-          this.message.error(msg);
+          this.message.error(extractErrorMessage(err, 'Không thể gửi bình luận!'));
           this.isSendingComment = false;
         },
       });
   }
 
   trackCommentById(_: number, item: RequestCommentDto): string {
-    return item.id;
+    return item.id ?? '';
   }
 
-  getTypeTag(type: RequestType): { label: string; color: string } {
-    switch (type) {
-      case RequestType.Leave:
-        return { label: 'Nghỉ phép', color: 'purple' };
-      case RequestType.Equipment:
-        return { label: 'Mua thiết bị', color: 'orange' };
-      case RequestType.AdvanceMoney:
-        return { label: 'Tạm ứng tiền', color: 'gold' };
-      default:
-        return { label: 'Khác', color: 'default' };
-    }
+  getTypeTag(type: RequestType): RequestTypeMeta {
+    return getRequestTypeMeta(type);
   }
 
-  getStatusTag(status: RequestStatus): { label: string; badgeStatus: any } {
-    switch (status) {
-      case RequestStatus.Draft:
-        return { label: 'Nháp', badgeStatus: 'default' };
-      case RequestStatus.Submitted:
-        return { label: 'Đã gửi duyệt', badgeStatus: 'processing' };
-      case RequestStatus.Approved:
-        return { label: 'Đã duyệt', badgeStatus: 'success' };
-      case RequestStatus.Rejected:
-        return { label: 'Bị từ chối', badgeStatus: 'error' };
-      default:
-        return { label: 'Không xác định', badgeStatus: 'default' };
-    }
+  getStatusTag(status: RequestStatus): RequestStatusMeta {
+    return getRequestStatusMeta(status);
   }
 
   getLeaveDays(req: RequestDto | null): number | null {
-    if (!req || !req.startDate) return null;
-    const start = new Date(req.startDate);
-    const end = req.endDate ? new Date(req.endDate) : start;
-    start.setHours(0, 0, 0, 0);
-    end.setHours(0, 0, 0, 0);
-    const diffTime = end.getTime() - start.getTime();
-    const days = Math.round(diffTime / (1000 * 3600 * 24)) + 1;
-    return days > 0 ? days : 1;
+    return calculateLeaveDays(req?.startDate, req?.endDate);
   }
 }

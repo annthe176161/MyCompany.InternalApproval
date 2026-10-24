@@ -1,18 +1,9 @@
 import { RequestStatus } from '../../proxy/requests/request-status.enum';
+import { RequestStatusMeta } from '../models/request-status-meta.model';
 
-export interface RequestStatusMeta {
-  value: RequestStatus;
-  label: string;
-  badgeStatus: 'default' | 'processing' | 'success' | 'error' | 'warning';
-  color: string;
-  icon: string;
-  cardClass: string;
-  textClass: string;
-  subtext: string;
-  mySubtext: string;
-  approverSubtext: string;
-}
+export { RequestStatusMeta } from '../models/request-status-meta.model';
 
+// Cấu hình siêu dữ liệu hiển thị cho từng trạng thái đề xuất
 export const REQUEST_STATUS_CONFIG: Record<RequestStatus, RequestStatusMeta> = {
   [RequestStatus.Draft]: {
     value: RequestStatus.Draft,
@@ -64,6 +55,7 @@ export const REQUEST_STATUS_CONFIG: Record<RequestStatus, RequestStatusMeta> = {
   },
 };
 
+// Danh sách trạng thái đề xuất theo thứ tự hiển thị
 export const REQUEST_STATUS_LIST: RequestStatusMeta[] = [
   REQUEST_STATUS_CONFIG[RequestStatus.Draft],
   REQUEST_STATUS_CONFIG[RequestStatus.Submitted],
@@ -71,6 +63,7 @@ export const REQUEST_STATUS_LIST: RequestStatusMeta[] = [
   REQUEST_STATUS_CONFIG[RequestStatus.Rejected],
 ];
 
+// Lấy thông tin cấu hình hiển thị theo mã trạng thái
 export function getRequestStatusMeta(status: RequestStatus): RequestStatusMeta {
   return (
     REQUEST_STATUS_CONFIG[status] || {
@@ -87,4 +80,3 @@ export function getRequestStatusMeta(status: RequestStatus): RequestStatusMeta {
     }
   );
 }
-

@@ -1,7 +1,9 @@
 import { Component, EventEmitter, Output } from '@angular/core';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { RequestService, RequestDto } from '../../../proxy/requests';
+import { extractErrorMessage } from '../../../shared/utils';
 
+// Modal xác nhận phê duyệt hoặc từ chối đề xuất
 @Component({
   selector: 'app-request-action-modal',
   templateUrl: './request-action-modal.component.html',
@@ -9,13 +11,13 @@ import { RequestService, RequestDto } from '../../../proxy/requests';
 export class RequestActionModalComponent {
   @Output() actionSuccess = new EventEmitter<void>();
 
-  // Approve State
+  // Trạng thái modal phê duyệt
   isApproveModalVisible = false;
   isApproving = false;
   selectedRequestForApprove: RequestDto | null = null;
   approvalNote = '';
 
-  // Reject State
+  // Trạng thái modal từ chối
   isRejectModalVisible = false;
   isRejecting = false;
   selectedRequestForReject: RequestDto | null = null;
@@ -48,8 +50,7 @@ export class RequestActionModalComponent {
           this.actionSuccess.emit();
         },
         error: err => {
-          const msg = err.error?.error?.message || 'Không thể phê duyệt đề xuất!';
-          this.message.error(msg);
+          this.message.error(extractErrorMessage(err, 'Không thể phê duyệt đề xuất!'));
           this.isApproving = false;
         },
       });
@@ -77,8 +78,7 @@ export class RequestActionModalComponent {
           this.actionSuccess.emit();
         },
         error: err => {
-          const msg = err.error?.error?.message || 'Không thể từ chối đề xuất!';
-          this.message.error(msg);
+          this.message.error(extractErrorMessage(err, 'Không thể từ chối đề xuất!'));
           this.isRejecting = false;
         },
       });

@@ -8,7 +8,16 @@ import {
   CreateRequestDto,
   UpdateRequestDto,
 } from '../../../proxy/requests';
+import {
+  calculateLeaveDays,
+  extractErrorMessage,
+  formatCurrencyInput,
+  formatDateVn,
+  formatToLocalIso,
+  parseCurrencyInput,
+} from '../../../shared/utils';
 
+// Modal tạo mới hoặc chỉnh sửa thông tin đề xuất
 @Component({
   selector: 'app-request-form-modal',
   templateUrl: './request-form-modal.component.html',
@@ -23,6 +32,9 @@ export class RequestFormModalComponent implements OnInit {
   isEditing = false;
   currentRequestId: string | null = null;
   form!: FormGroup;
+
+  currencyFormatter = formatCurrencyInput;
+  currencyParser = parseCurrencyInput;
 
   constructor(
     private fb: FormBuilder,
@@ -52,14 +64,7 @@ export class RequestFormModalComponent implements OnInit {
   get calculatedLeaveDays(): number {
     const start = this.form?.get('startDate')?.value;
     const end = this.form?.get('endDate')?.value;
-    if (!start) return 1;
-    const s = new Date(start);
-    const e = end ? new Date(end) : s;
-    s.setHours(0, 0, 0, 0);
-    e.setHours(0, 0, 0, 0);
-    const diffTime = e.getTime() - s.getTime();
-    const diffDays = Math.round(diffTime / (1000 * 3600 * 24)) + 1;
-    return diffDays > 0 ? diffDays : 1;
+    return calculateLeaveDays(start, end) ?? 1;
   }
 
   disabledEndDate = (endValue: Date): boolean => {
@@ -85,6 +90,7 @@ export class RequestFormModalComponent implements OnInit {
     this.updateLeaveTitleSuggestion();
   }
 
+  // Tự động gợi ý tiêu đề đơn xin nghỉ phép theo khoảng ngày đã chọn
   private updateLeaveTitleSuggestion(): void {
     const type = this.form.get('type')?.value;
     if (type !== RequestType.Leave) return;
@@ -96,22 +102,11 @@ export class RequestFormModalComponent implements OnInit {
     const currentTitle = (this.form.get('title')?.value || '').trim();
     if (!currentTitle || currentTitle.startsWith('Đơn xin nghỉ phép')) {
       const days = this.calculatedLeaveDays;
-      const startStr = this.formatDate(new Date(start));
-      const endStr = end ? this.formatDate(new Date(end)) : startStr;
+      const startStr = formatDateVn(start);
+      const endStr = end ? formatDateVn(end) : startStr;
       const periodStr = startStr === endStr ? startStr : `từ ${startStr} đến ${endStr}`;
       this.form.get('title')?.setValue(`Đơn xin nghỉ phép (${days} ngày: ${periodStr})`);
     }
-  }
-
-  private formatDate(d: Date): string {
-    const pad = (n: number) => (n < 10 ? '0' + n : `${n}`);
-    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
-  }
-
-  private formatToLocalIso(date: Date | string): string {
-    const d = new Date(date);
-    const pad = (n: number) => (n < 10 ? '0' + n : `${n}`);
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T00:00:00`;
   }
 
   private handleTypeChange(type: RequestType): void {
@@ -134,7 +129,7 @@ export class RequestFormModalComponent implements OnInit {
         this.form.get('title')?.setValue('');
       }
     } else {
-      // Leave
+      // Trường hợp loại đề xuất là Nghỉ phép (Leave)
       amountCtrl?.disable();
       amountCtrl?.clearValidators();
       amountCtrl?.setValue(null);
@@ -180,7 +175,7 @@ export class RequestFormModalComponent implements OnInit {
     this.isEditing = true;
     this.currentRequestId = req.id;
     const start = req.startDate ? new Date(req.startDate) : null;
-    const end = req.endDate ? new Date(req.endDate) : (start ? new Date(start) : null);
+    const end = req.endDate ? new Date(req.endDate) : start ? new Date(start) : null;
 
     this.form.patchValue({
       type: req.type,
@@ -218,10 +213,10 @@ export class RequestFormModalComponent implements OnInit {
 
     if (formVal.type === RequestType.Leave) {
       if (formVal.startDate) {
-        startIso = this.formatToLocalIso(formVal.startDate);
+        startIso = formatToLocalIso(formVal.startDate);
       }
       if (formVal.endDate) {
-        endIso = this.formatToLocalIso(formVal.endDate);
+        endIso = formatToLocalIso(formVal.endDate);
       }
     }
 
@@ -245,64 +240,42 @@ export class RequestFormModalComponent implements OnInit {
             this.saveSuccess.emit();
           },
           error: err => {
-            const msg = this.extractErrorMessage(err, 'Không thể cập nhật đề xuất!');
-            this.message.error(msg);
+            this.message.error(extractErrorMessage(err, 'Không thể cập nhật đề xuất!'));
             this.isSaving = false;
           },
         });
     } else {
-      this.requestService
-        .create(payload)
-        .subscribe({
-          next: created => {
-            if (andSubmit) {
-              this.requestService.submit(created.id).subscribe({
-                next: () => {
-                  this.message.success('Tạo và gửi phê duyệt thành công!');
-                  this.isSaving = false;
-                  this.isVisible = false;
-                  this.saveSuccess.emit();
-                },
-                error: err => {
-                  const msg = this.extractErrorMessage(
-                    err,
-                    'Đã tạo đề xuất nhưng không thể gửi phê duyệt!'
-                  );
-                  this.message.warning(msg);
-                  this.isSaving = false;
-                  this.isVisible = false;
-                  this.saveSuccess.emit();
-                },
-              });
-            } else {
-              this.message.success('Lưu nháp đề xuất thành công!');
-              this.isSaving = false;
-              this.isVisible = false;
-              this.saveSuccess.emit();
-            }
-          },
-          error: err => {
-            const msg = this.extractErrorMessage(err, 'Không thể tạo đề xuất!');
-            this.message.error(msg);
+      this.requestService.create(payload).subscribe({
+        next: created => {
+          if (andSubmit) {
+            this.requestService.submit(created.id).subscribe({
+              next: () => {
+                this.message.success('Tạo và gửi phê duyệt thành công!');
+                this.isSaving = false;
+                this.isVisible = false;
+                this.saveSuccess.emit();
+              },
+              error: err => {
+                this.message.warning(
+                  extractErrorMessage(err, 'Đã tạo đề xuất nhưng không thể gửi phê duyệt!'),
+                );
+                this.isSaving = false;
+                this.isVisible = false;
+                this.saveSuccess.emit();
+              },
+            });
+          } else {
+            this.message.success('Lưu nháp đề xuất thành công!');
             this.isSaving = false;
-          },
-        });
+            this.isVisible = false;
+            this.saveSuccess.emit();
+          }
+        },
+        error: err => {
+          this.message.error(extractErrorMessage(err, 'Không thể tạo đề xuất!'));
+          this.isSaving = false;
+        },
+      });
     }
   }
-
-  private extractErrorMessage(err: any, fallback: string): string {
-    const validationErrors = err.error?.error?.validationErrors;
-    if (Array.isArray(validationErrors) && validationErrors.length > 0) {
-      return validationErrors.map((v: any) => v.message).filter(Boolean).join('; ');
-    }
-    return err.error?.error?.message || fallback;
-  }
-
-  currencyFormatter = (value: number): string => {
-    return value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '';
-  };
-
-  currencyParser = (value: string): string => {
-    return value.replace(/\$\s?|(,*)/g, '');
-  };
 }

@@ -1,6 +1,6 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { Router } from '@angular/router';
-import { AuthService, ConfigStateService, PermissionService } from '@abp/ng.core';
+import { AuthService } from '@abp/ng.core';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import {
   RequestService,
@@ -21,33 +21,11 @@ import {
   getRequestTypeMeta,
   RequestTypeMeta,
 } from '../shared/constants/request-type.constant';
-import { ExcelExportService } from '../shared/services/excel-export.service';
+import { CurrentUserContextService, ExcelExportService } from '../shared/services';
+import { formatMoneyVnd } from '../shared/utils';
+import { DepartmentStatItem, StatusStatItem, TypeStatItem } from './models';
 
-export interface TypeStatItem {
-  type: RequestType;
-  label: string;
-  count: number;
-  amount: number;
-  percent: number;
-  color: string;
-}
-
-export interface DepartmentStatItem {
-  code: string;
-  name: string;
-  count: number;
-  totalAmount: number;
-  percent: number;
-  color: string;
-}
-
-export interface StatusStatItem {
-  meta: RequestStatusMeta;
-  count: number;
-  percent?: number;
-  subtext: string;
-}
-
+// Màn hình bảng điều khiển trung tâm (Dashboard) theo vai trò người dùng
 @Component({
   selector: 'app-home',
   templateUrl: './home.component.html',
@@ -57,7 +35,7 @@ export class HomeComponent implements OnInit {
   RequestType = RequestType;
   RequestStatus = RequestStatus;
 
-  // Danh mục trạng thái và loại đề xuất dùng chung (Single Source of Truth)
+  // Danh mục trạng thái và loại đề xuất dùng chung toàn hệ thống
   readonly statusList: RequestStatusMeta[] = REQUEST_STATUS_LIST;
   readonly typeList: RequestTypeMeta[] = REQUEST_TYPE_LIST;
   readonly statusConfig = REQUEST_STATUS_CONFIG;
@@ -76,12 +54,12 @@ export class HomeComponent implements OnInit {
   isApprover = false;
   isExporting = false;
 
-  // Tab góc nhìn theo vai trò hiện tại
+  // Góc nhìn hiển thị theo vai trò hiện tại
   activeRoleView: 'admin' | 'approver' | 'employee' = 'employee';
 
   allRequests: RequestDto[] = [];
 
-  // ================= ADMIN STATS (ĐỘNG THEO STATUS) =================
+  // Chỉ số thống kê dành cho Quản trị viên (Admin)
   adminTotalCount = 0;
   adminTotalAmount = 0;
   adminApprovedAmount = 0;
@@ -92,14 +70,14 @@ export class HomeComponent implements OnInit {
   selectedDepartmentFilter = 'all';
   adminRecentRequests: RequestDto[] = [];
 
-  // ================= APPROVER / MANAGER STATS =================
+  // Chỉ số thống kê dành cho Người phê duyệt (Approver / Manager)
   approverPendingCount = 0;
   approverApprovedCount = 0;
   approverRejectedCount = 0;
   approverTotalApprovedAmount = 0;
   approverActionableRequests: RequestDto[] = [];
 
-  // ================= EMPLOYEE / REQUESTER STATS (ĐỘNG THEO STATUS) =================
+  // Chỉ số thống kê dành cho Nhân viên (Employee / Requester)
   employeeTotalCount = 0;
   employeeTotalAmount = 0;
   employeeDraftCount = 0;
@@ -108,8 +86,7 @@ export class HomeComponent implements OnInit {
 
   constructor(
     private authService: AuthService,
-    private configState: ConfigStateService,
-    private permissionService: PermissionService,
+    private userContext: CurrentUserContextService,
     private requestService: RequestService,
     private router: Router,
     private excelExportService: ExcelExportService,
@@ -129,36 +106,20 @@ export class HomeComponent implements OnInit {
   }
 
   initUserInfo(): void {
-    const user = this.configState.getOne('currentUser');
-    if (user) {
-      this.currentUserId = user.id || null;
-      this.currentUserFullName = user.name
-        ? `${user.name} ${user.surName || ''}`.trim()
-        : user.userName || 'Người dùng';
-      this.currentUserEmail = user.email || '';
-      this.userRoles = user.roles || [];
+    this.currentUserId = this.userContext.userId;
+    this.currentUserFullName = this.userContext.fullName;
+    this.currentUserEmail = this.userContext.email;
+    this.userRoles = this.userContext.roles;
+    this.isAdmin = this.userContext.isAdmin();
+    this.isApprover = this.userContext.isApprover();
 
-      // Phân quyền vai trò: Admin là người giám sát/xem toàn bộ, KHÔNG tham gia duyệt đơn
-      const roleLower = this.userRoles.map(r => r.toLowerCase());
-      this.isAdmin =
-        roleLower.includes('admin') ||
-        user.userName?.toLowerCase() === 'admin' ||
-        this.permissionService.getGrantedPolicy('AbpIdentity.Roles');
-
-      const canApprovePolicy = this.permissionService.getGrantedPolicy('Requests.Approve');
-      this.isApprover =
-        !this.isAdmin &&
-        (canApprovePolicy ||
-          roleLower.some(r => r.includes('manager') || r.includes('leader') || r.includes('approver')));
-
-      // Đặt góc nhìn mặc định phù hợp với quyền cao nhất
-      if (this.isAdmin) {
-        this.activeRoleView = 'admin';
-      } else if (this.isApprover) {
-        this.activeRoleView = 'approver';
-      } else {
-        this.activeRoleView = 'employee';
-      }
+    // Thiết lập góc nhìn mặc định theo quyền hạn cao nhất của người dùng
+    if (this.isAdmin) {
+      this.activeRoleView = 'admin';
+    } else if (this.isApprover) {
+      this.activeRoleView = 'approver';
+    } else {
+      this.activeRoleView = 'employee';
     }
   }
 
@@ -191,7 +152,7 @@ export class HomeComponent implements OnInit {
     const requests = this.allRequests;
     const myId = this.currentUserId;
 
-    // 1. THỐNG KÊ QUẢN TRỊ VIÊN (ADMIN) - TÍNH HOÀN TOÀN ĐỘNG THEO STATUS_LIST
+    // 1. Thống kê góc nhìn Quản trị viên (Admin)
     this.adminTotalCount = requests.length;
     this.adminTotalAmount = requests.reduce((sum, r) => sum + (r.amount || 0), 0);
     this.adminApprovedAmount = requests
@@ -201,11 +162,14 @@ export class HomeComponent implements OnInit {
     const approvedCount = requests.filter(r => r.status === RequestStatus.Approved).length;
     const rejectedCount = requests.filter(r => r.status === RequestStatus.Rejected).length;
     const completedCount = approvedCount + rejectedCount;
-    this.adminApprovalRate = completedCount > 0
-      ? Math.round((approvedCount / completedCount) * 100)
-      : (approvedCount > 0 ? 100 : 0);
+    this.adminApprovalRate =
+      completedCount > 0
+        ? Math.round((approvedCount / completedCount) * 100)
+        : approvedCount > 0
+          ? 100
+          : 0;
 
-    // Xây dựng danh sách Card trạng thái động cho Admin (Submitted, Approved, Rejected, Draft)
+    // Tạo danh sách thẻ trạng thái động cho Admin
     this.adminStatusCards = this.statusList.map(st => {
       const count = requests.filter(r => r.status === st.value).length;
       let subtext = st.subtext;
@@ -223,32 +187,32 @@ export class HomeComponent implements OnInit {
     this.calculateDepartmentStats(requests);
     this.onDepartmentFilterChange(this.selectedDepartmentFilter);
 
-    // 2. THỐNG KÊ NGƯỜI PHÊ DUYỆT (APPROVER)
+    // 2. Thống kê góc nhìn Người phê duyệt (Approver)
     this.approverActionableRequests = requests
       .filter(r => r.status === RequestStatus.Submitted && (!myId || r.creatorId !== myId))
       .slice(0, 5);
 
     this.approverPendingCount = requests.filter(
-      r => r.status === RequestStatus.Submitted && (!myId || r.creatorId !== myId)
+      r => r.status === RequestStatus.Submitted && (!myId || r.creatorId !== myId),
     ).length;
 
     const approvedByMe = requests.filter(
-      r => r.status === RequestStatus.Approved && (!r.approverId || r.approverId === myId)
+      r => r.status === RequestStatus.Approved && (!r.approverId || r.approverId === myId),
     );
     this.approverApprovedCount = approvedByMe.length;
     this.approverTotalApprovedAmount = approvedByMe.reduce((sum, r) => sum + (r.amount || 0), 0);
 
     this.approverRejectedCount = requests.filter(
-      r => r.status === RequestStatus.Rejected && (!r.approverId || r.approverId === myId)
+      r => r.status === RequestStatus.Rejected && (!r.approverId || r.approverId === myId),
     ).length;
 
-    // 3. THỐNG KÊ CÁ NHÂN (EMPLOYEE / REQUESTER) - TÍNH HOÀN TOÀN ĐỘNG THEO STATUS_LIST
+    // 3. Thống kê góc nhìn Cá nhân (Employee / Requester)
     const myRequests = requests.filter(r => !myId || r.creatorId === myId);
     this.employeeTotalCount = myRequests.length;
     this.employeeTotalAmount = myRequests.reduce((sum, r) => sum + (r.amount || 0), 0);
     this.employeeDraftCount = myRequests.filter(r => r.status === RequestStatus.Draft).length;
 
-    // Xây dựng các thẻ trạng thái cá nhân động theo đúng danh mục trạng thái
+    // Tạo các thẻ trạng thái cá nhân động
     this.employeeStatusCards = this.statusList.map(st => {
       const count = myRequests.filter(r => r.status === st.value).length;
       return {
@@ -278,7 +242,10 @@ export class HomeComponent implements OnInit {
 
   private calculateDepartmentStats(requests: RequestDto[]): void {
     const total = requests.length || 1;
-    const deptMap = new Map<string, { code: string; name: string; count: number; totalAmount: number }>();
+    const deptMap = new Map<
+      string,
+      { code: string; name: string; count: number; totalAmount: number }
+    >();
     requests.forEach(r => {
       const code = r.departmentCode || 'OTHER';
       const name = r.departmentName || 'Chưa gán phòng ban';
@@ -287,17 +254,19 @@ export class HomeComponent implements OnInit {
       }
       const item = deptMap.get(code)!;
       item.count++;
-      item.totalAmount += (r.amount || 0);
+      item.totalAmount += r.amount || 0;
     });
 
-    this.adminDepartmentStats = Array.from(deptMap.values()).map(d => ({
-      code: d.code,
-      name: d.name,
-      count: d.count,
-      totalAmount: d.totalAmount,
-      percent: Math.round((d.count / total) * 100),
-      color: '#4b5563',
-    })).sort((a, b) => b.count - a.count);
+    this.adminDepartmentStats = Array.from(deptMap.values())
+      .map(d => ({
+        code: d.code,
+        name: d.name,
+        count: d.count,
+        totalAmount: d.totalAmount,
+        percent: Math.round((d.count / total) * 100),
+        color: '#4b5563',
+      }))
+      .sort((a, b) => b.count - a.count);
   }
 
   onDepartmentFilterChange(code: string): void {
@@ -312,12 +281,12 @@ export class HomeComponent implements OnInit {
     this.cdr.markForCheck();
   }
 
-  // Lấy số lượng theo trạng thái cho danh sách truyền vào
+  // Đếm số lượng đề xuất theo trạng thái trong danh sách truyền vào
   getStatusCount(requests: RequestDto[], status: RequestStatus): number {
     return requests.filter(r => r.status === status).length;
   }
 
-  // Navigation helpers
+  // Điều hướng nhanh sang trang quản lý đề xuất
   navigateToCreate(): void {
     this.router.navigate(['/requests'], { queryParams: { action: 'create' } });
   }
@@ -344,16 +313,21 @@ export class HomeComponent implements OnInit {
       this.activeRoleView === 'admin'
         ? 'Toàn hệ thống (Admin)'
         : this.activeRoleView === 'approver'
-        ? 'Người phê duyệt (Approver)'
-        : 'Cá nhân (Employee)';
+          ? 'Người phê duyệt (Approver)'
+          : 'Cá nhân (Employee)';
 
     try {
       this.excelExportService.exportDashboardReport({
-        totalCount: this.activeRoleView === 'admin' ? this.adminTotalCount : this.employeeTotalCount,
-        totalAmount: this.activeRoleView === 'admin' ? this.adminTotalAmount : this.employeeTotalAmount,
+        totalCount:
+          this.activeRoleView === 'admin' ? this.adminTotalCount : this.employeeTotalCount,
+        totalAmount:
+          this.activeRoleView === 'admin' ? this.adminTotalAmount : this.employeeTotalAmount,
         approvedAmount: this.activeRoleView === 'admin' ? this.adminApprovedAmount : 0,
         approvalRate: this.adminApprovalRate,
-        statusStats: (this.activeRoleView === 'admin' ? this.adminStatusCards : this.employeeStatusCards).map(s => ({
+        statusStats: (this.activeRoleView === 'admin'
+          ? this.adminStatusCards
+          : this.employeeStatusCards
+        ).map(s => ({
           label: s.meta.label,
           count: s.count,
         })),
@@ -376,7 +350,7 @@ export class HomeComponent implements OnInit {
     }
   }
 
-  // Helpers hiển thị đồng bộ từ Shared Config
+  // Các hàm hỗ trợ hiển thị nhãn và định dạng tiền tệ
   getTypeTag(type: RequestType): RequestTypeMeta {
     return getRequestTypeMeta(type);
   }
@@ -387,16 +361,20 @@ export class HomeComponent implements OnInit {
 
   getDepartmentColor(code?: string): string {
     switch ((code || '').toUpperCase()) {
-      case 'IT': return '#3b82f6';
-      case 'HR': return '#10b981';
-      case 'FINANCE': return '#f59e0b';
-      case 'SALES': return '#8b5cf6';
-      default: return '#64748b';
+      case 'IT':
+        return '#3b82f6';
+      case 'HR':
+        return '#10b981';
+      case 'FINANCE':
+        return '#f59e0b';
+      case 'SALES':
+        return '#8b5cf6';
+      default:
+        return '#64748b';
     }
   }
 
   formatMoney(amount?: number): string {
-    if (amount === undefined || amount === null) return '0 ₫';
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+    return formatMoneyVnd(amount);
   }
 }

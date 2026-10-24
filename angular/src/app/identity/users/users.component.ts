@@ -11,7 +11,9 @@ import { PermissionService } from '@abp/ng.core';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { finalize } from 'rxjs/operators';
 import { PermissionModalComponent } from '../components/permission-modal/permission-modal.component';
+import { extractErrorMessage } from '../../shared/utils';
 
+// Màn hình quản lý danh sách tài khoản người dùng và gán vai trò hệ thống
 @Component({
   selector: 'app-users',
   standalone: false,
@@ -52,7 +54,7 @@ export class UsersComponent implements OnInit {
     private userService: IdentityUserService,
     private permissionService: PermissionService,
     private fb: FormBuilder,
-    private message: NzMessageService
+    private message: NzMessageService,
   ) {
     this.userForm = this.fb.group({
       userName: ['', [Validators.required, Validators.maxLength(256)]],
@@ -71,10 +73,10 @@ export class UsersComponent implements OnInit {
     this.canEdit = this.permissionService.getGrantedPolicy('AbpIdentity.Users.Update');
     this.canDelete = this.permissionService.getGrantedPolicy('AbpIdentity.Users.Delete');
     this.canManagePermissions = this.permissionService.getGrantedPolicy(
-      'AbpIdentity.Users.ManagePermissions'
+      'AbpIdentity.Users.ManagePermissions',
     );
     this.canManageRoles = this.permissionService.getGrantedPolicy(
-      'AbpIdentity.Users.Update.ManageRoles'
+      'AbpIdentity.Users.Update.ManageRoles',
     );
 
     this.loadUsers();
@@ -251,11 +253,7 @@ export class UsersComponent implements OnInit {
             this.loadUsers();
           },
           error: err => {
-            const msg =
-              err?.error?.error?.message ||
-              err?.error?.message ||
-              'Không thể cập nhật tài khoản!';
-            this.message.error(msg);
+            this.message.error(extractErrorMessage(err, 'Không thể cập nhật tài khoản!'));
           },
         });
     } else {
@@ -281,11 +279,7 @@ export class UsersComponent implements OnInit {
             this.loadUsers();
           },
           error: err => {
-            const msg =
-              err?.error?.error?.message ||
-              err?.error?.message ||
-              'Không thể tạo tài khoản!';
-            this.message.error(msg);
+            this.message.error(extractErrorMessage(err, 'Không thể tạo tài khoản!'));
           },
         });
     }

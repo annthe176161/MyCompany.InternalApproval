@@ -1,6 +1,6 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { ConfigStateService, PermissionService } from '@abp/ng.core';
+import { ActivatedRoute } from '@angular/router';
+import { PermissionService } from '@abp/ng.core';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzTableQueryParams } from 'ng-zorro-antd/table';
 import {
@@ -23,16 +23,11 @@ import {
   getRequestTypeMeta,
   RequestTypeMeta,
 } from '../shared/constants/request-type.constant';
-import { ExcelExportService } from '../shared/services/excel-export.service';
+import { ColumnConfig } from '../shared/models';
+import { CurrentUserContextService, ExcelExportService } from '../shared/services';
+import { calculateLeaveDays, extractErrorMessage } from '../shared/utils';
 
-export interface ColumnConfig {
-  key: string;
-  label: string;
-  visible: boolean;
-  width: string;
-  required?: boolean;
-}
-
+// Màn hình quản lý danh sách đề xuất và quy trình xét duyệt
 @Component({
   selector: 'app-request',
   templateUrl: './request.component.html',
@@ -43,19 +38,20 @@ export class RequestComponent implements OnInit {
   @ViewChild('formModal') formModal?: RequestFormModalComponent;
   @ViewChild('employeeDrawer') employeeDrawer?: EmployeeDetailDrawerComponent;
 
+  // Mở ngăn kéo xem hồ sơ chi tiết của nhân viên
   openEmployeeDrawer(userId?: string): void {
     if (userId) {
       this.employeeDrawer?.open(userId);
     }
   }
 
-  // Enum & shared metadata references for template
+  // Tham chiếu enum và danh mục dùng chung cho template
   RequestType = RequestType;
   RequestStatus = RequestStatus;
   statusList: RequestStatusMeta[] = REQUEST_STATUS_LIST;
   typeList: RequestTypeMeta[] = REQUEST_TYPE_LIST;
 
-  // Cấu hình hiển thị cột & lưu trữ tùy chọn người dùng
+  // Cấu hình hiển thị cột và lưu trữ tùy chọn người dùng
   readonly COLUMN_STORAGE_KEY = 'internal_approval_request_table_columns';
 
   columns: ColumnConfig[] = [
@@ -67,15 +63,15 @@ export class RequestComponent implements OnInit {
     { key: 'action', label: 'Hành động', visible: true, width: '160px', required: true },
   ];
 
-  // Current user info & scope
+  // Thông tin người dùng hiện tại và phạm vi dữ liệu
   currentUserId: string | null = null;
   isAdmin = false;
   isApprover = false;
 
-  // Phạm vi dữ liệu: 'my' (Chỉ của tài khoản đăng nhập - MẶC ĐỊNH) hoặc 'all' (Toàn hệ thống cho Admin/Approver)
+  // Phạm vi dữ liệu: 'my' (cá nhân đăng nhập) hoặc 'all' (toàn hệ thống cho Admin/Approver)
   activeScope: 'my' | 'all' = 'my';
 
-  // Table state
+  // Trạng thái bảng dữ liệu
   requests: RequestDto[] = [];
   totalCount = 0;
   loading = false;
@@ -83,7 +79,7 @@ export class RequestComponent implements OnInit {
   pageSize = 10;
   sort = 'CreationTime desc';
 
-  // Filters
+  // Bộ lọc tìm kiếm
   searchTerm = '';
   selectedStatus: RequestStatus | null = null;
   selectedType: RequestType | null = null;
@@ -91,27 +87,17 @@ export class RequestComponent implements OnInit {
 
   constructor(
     private requestService: RequestService,
-    private configState: ConfigStateService,
+    private userContext: CurrentUserContextService,
     private permissionService: PermissionService,
     private message: NzMessageService,
     private excelExportService: ExcelExportService,
     private route: ActivatedRoute,
-    private router: Router,
   ) {}
 
   ngOnInit(): void {
-    const user = this.configState.getOne('currentUser');
-    this.currentUserId = user?.id || null;
-    const roles = (user?.roles || []).map(r => r.toLowerCase());
-    this.isAdmin =
-      roles.includes('admin') ||
-      user?.userName?.toLowerCase() === 'admin' ||
-      this.permissionService.getGrantedPolicy('AbpIdentity.Roles');
-    this.isApprover =
-      !this.isAdmin && (
-        this.permissionService.getGrantedPolicy('Requests.Approve') ||
-        roles.some(r => r.includes('manager') || r.includes('leader'))
-      );
+    this.currentUserId = this.userContext.userId;
+    this.isAdmin = this.userContext.isAdmin();
+    this.isApprover = this.userContext.isApprover();
 
     // Tải cấu hình cột đã lưu từ localStorage
     this.loadColumnsFromStorage();
@@ -168,7 +154,7 @@ export class RequestComponent implements OnInit {
         });
       }
     } catch {
-      // Bỏ qua nếu có lỗi parse JSON
+      // Bỏ qua nếu có lỗi đọc JSON từ localStorage
     }
   }
 
@@ -177,7 +163,7 @@ export class RequestComponent implements OnInit {
       const data = this.columns.map(c => ({ key: c.key, visible: c.visible }));
       localStorage.setItem(this.COLUMN_STORAGE_KEY, JSON.stringify(data));
     } catch {
-      // Bỏ qua lỗi lưu storage
+      // Bỏ qua lỗi lưu trữ localStorage
     }
   }
 
@@ -193,7 +179,7 @@ export class RequestComponent implements OnInit {
         if (this.detailDrawer) {
           this.detailDrawer.open(req);
         } else {
-          // Trường hợp detailDrawer chưa kịp render trong view
+          // Đợi detailDrawer khởi tạo xong trong view
           setTimeout(() => {
             this.detailDrawer?.open(req);
           }, 300);
@@ -231,8 +217,7 @@ export class RequestComponent implements OnInit {
       },
       error: err => {
         this.loading = false;
-        const msg = err.error?.error?.message || 'Không thể tải danh sách đề xuất!';
-        this.message.error(msg);
+        this.message.error(extractErrorMessage(err, 'Không thể tải danh sách đề xuất!'));
       },
     });
   }
@@ -258,10 +243,7 @@ export class RequestComponent implements OnInit {
           return;
         }
 
-        const user = this.configState.getOne('currentUser');
-        const exporterName = user?.name
-          ? `${user.name} ${user.surName || ''}`.trim()
-          : user?.userName || 'Người dùng';
+        const exporterName = this.userContext.fullName;
         const scopeName = this.activeScope === 'my' ? 'Đề xuất của tôi' : 'Toàn hệ thống';
 
         let filterText = '';
@@ -309,7 +291,7 @@ export class RequestComponent implements OnInit {
     this.loadData();
   }
 
-  // Row Actions: Submit & Delete
+  // Gửi đề xuất đi phê duyệt
   submit(req: RequestDto): void {
     this.requestService.submit(req.id).subscribe({
       next: () => {
@@ -320,12 +302,12 @@ export class RequestComponent implements OnInit {
         }
       },
       error: err => {
-        const msg = err.error?.error?.message || 'Không thể gửi phê duyệt đề xuất!';
-        this.message.error(msg);
+        this.message.error(extractErrorMessage(err, 'Không thể gửi phê duyệt đề xuất!'));
       },
     });
   }
 
+  // Xóa đề xuất ở trạng thái nháp
   delete(req: RequestDto): void {
     this.requestService.delete(req.id).subscribe({
       next: () => {
@@ -333,13 +315,12 @@ export class RequestComponent implements OnInit {
         this.loadData();
       },
       error: err => {
-        const msg = err.error?.error?.message || 'Không thể xóa đề xuất!';
-        this.message.error(msg);
+        this.message.error(extractErrorMessage(err, 'Không thể xóa đề xuất!'));
       },
     });
   }
 
-  // Helpers for display (Dùng chung từ config chuẩn hóa)
+  // Các hàm hỗ trợ hiển thị nhãn và tính số ngày nghỉ phép
   getTypeTag(type: RequestType): RequestTypeMeta {
     return getRequestTypeMeta(type);
   }
@@ -353,18 +334,11 @@ export class RequestComponent implements OnInit {
   }
 
   getLeaveDays(req: RequestDto): number | null {
-    if (!req || !req.startDate) return null;
-    const start = new Date(req.startDate);
-    const end = req.endDate ? new Date(req.endDate) : start;
-    start.setHours(0, 0, 0, 0);
-    end.setHours(0, 0, 0, 0);
-    const diffTime = end.getTime() - start.getTime();
-    const days = Math.round(diffTime / (1000 * 3600 * 24)) + 1;
-    return days > 0 ? days : 1;
+    return calculateLeaveDays(req?.startDate, req?.endDate);
   }
 
   hasOtherActions(data: RequestDto): boolean {
-    // Admin chỉ là người xem, không thực hiện các thao tác sửa/xóa/duyệt/từ chối
+    // Admin chỉ đóng vai trò giám sát, không trực tiếp thực hiện sửa/xóa/duyệt/từ chối
     if (this.isAdmin) {
       return false;
     }

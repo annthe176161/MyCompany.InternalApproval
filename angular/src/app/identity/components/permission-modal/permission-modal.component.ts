@@ -9,17 +9,15 @@ import {
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { finalize, switchMap } from 'rxjs/operators';
 import { of } from 'rxjs';
+import {
+  PERMISSION_GROUP_NAME_OVERRIDES,
+  PERMISSION_NAME_OVERRIDES,
+} from '../../../shared/constants';
+import { PermissionRowView } from '../../models';
 
-export interface PermissionRowView {
-  name: string;
-  displayName: string;
-  parentName?: string;
-  isGranted: boolean;
-  isDisabled: boolean;
-  grantedByRoles: string[];
-  level: number;
-}
+export { PermissionRowView } from '../../models';
 
+// Modal quản lý phân quyền chi tiết cho Vai trò (R) hoặc Người dùng (U)
 @Component({
   selector: 'app-permission-modal',
   standalone: false,
@@ -41,62 +39,24 @@ export class PermissionModalComponent {
   groups: PermissionGroupDto[] = [];
   selectedGroupIndex = 0;
 
-  // Mảng phẳng lưu toàn bộ quyền để tính toán nhanh, không đệ quy trong getter
+  // Mảng phẳng lưu toàn bộ quyền để tính toán nhanh
   allPermissions: PermissionGrantInfoDto[] = [];
   // Bản chụp ban đầu để chỉ gửi những quyền thực sự thay đổi khi bấm Lưu
   private initialGrantMap = new Map<string, boolean>();
-  // Mảng hiển thị của nhóm hiện tại (cập nhật tường minh mỗi khi đổi nhóm / tìm kiếm)
+  // Mảng hiển thị của nhóm hiện tại
   displayedPermissions: PermissionRowView[] = [];
 
-  private readonly groupNameOverrides: Record<string, string> = {
-    AbpIdentity: 'Tài khoản & Phân quyền',
-    IdentityManagement: 'Tài khoản & Phân quyền',
-    SettingManagement: 'Cài đặt quản lý',
-    InternalApproval: 'Quản lý Đề xuất Nội bộ',
-  };
-
-  private readonly permissionNameOverrides: Record<string, string> = {
-    'AbpIdentity.Roles': 'Quản lý vai trò',
-    'AbpIdentity.Roles.Create': 'Thêm mới',
-    'AbpIdentity.Roles.Update': 'Chỉnh sửa',
-    'AbpIdentity.Roles.Delete': 'Xóa',
-    'AbpIdentity.Roles.ManagePermissions': 'Phân quyền',
-
-    'AbpIdentity.Users': 'Quản lý tài khoản',
-    'AbpIdentity.Users.Create': 'Thêm mới',
-    'AbpIdentity.Users.Update': 'Chỉnh sửa thông tin',
-    'AbpIdentity.Users.Update.ManageRoles': 'Gán vai trò',
-    'AbpIdentity.Users.Delete': 'Xóa',
-    'AbpIdentity.Users.ManagePermissions': 'Phân quyền riêng',
-    'AbpIdentity.UserLookup': 'Tra cứu người dùng',
-
-    'Requests.Default': 'Quản lý đề xuất nội bộ',
-    'Requests.Create': 'Tạo đề xuất',
-    'Requests.Edit': 'Sửa đề xuất',
-    'Requests.Delete': 'Xóa đề xuất',
-    'Requests.Approve': 'Phê duyệt đề xuất',
-    'Requests.Reject': 'Từ chối đề xuất',
-
-    'Departments.Default': 'Quản lý phòng ban',
-    'Departments.Create': 'Thêm phòng ban',
-    'Departments.Edit': 'Sửa phòng ban',
-    'Departments.Delete': 'Xóa phòng ban',
-    'Departments.ManageMembers': 'Quản lý thành viên phòng ban',
-
-    'Employees.Default': 'Hồ sơ nhân viên',
-    'Employees.ViewAll': 'Xem toàn bộ nhân viên',
-    'Employees.Edit': 'Cập nhật hồ sơ',
-    'Employees.Analytics': 'Xem thống kê',
-  };
+  private readonly groupNameOverrides = PERMISSION_GROUP_NAME_OVERRIDES;
+  private readonly permissionNameOverrides = PERMISSION_NAME_OVERRIDES;
 
   constructor(
     private permissionsService: PermissionsService,
     private configState: ConfigStateService,
     private message: NzMessageService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
   ) {}
 
-  // Hàm mở modal trực tiếp (giống formModal.open(...) ở trang Đề xuất)
+  // Mở modal phân quyền theo đối tượng Vai trò hoặc Người dùng
   open(providerName: 'R' | 'U', providerKey: string, title?: string): void {
     if (!providerKey) return;
     this.providerName = providerName;
@@ -124,7 +84,7 @@ export class PermissionModalComponent {
         finalize(() => {
           this.isLoading = false;
           this.cdr.markForCheck();
-        })
+        }),
       )
       .subscribe({
         next: res => {
@@ -196,8 +156,11 @@ export class PermissionModalComponent {
       .map(p => p.providerKey as string);
   }
 
-  // Tính mức thụt lề (0 = Cha, 1 = Con, 2 = Cháu)
-  private calculateLevel(perm: PermissionGrantInfoDto, groupPerms: PermissionGrantInfoDto[]): number {
+  // Tính mức thụt lề theo phân cấp cha - con của quyền hạn
+  private calculateLevel(
+    perm: PermissionGrantInfoDto,
+    groupPerms: PermissionGrantInfoDto[],
+  ): number {
     let level = 0;
     let currentParentName = perm.parentName;
     while (currentParentName && level < 3) {
@@ -208,7 +171,7 @@ export class PermissionModalComponent {
     return level;
   }
 
-  // Cập nhật mảng hiển thị (chỉ chạy khi có tương tác, không tạo mảng mới trong template)
+  // Cập nhật mảng hiển thị quyền hạn khi đổi nhóm hoặc tìm kiếm
   rebuildDisplayedList(): void {
     const keyword = this.searchKeyword.trim().toLowerCase();
 
@@ -245,7 +208,7 @@ export class PermissionModalComponent {
     }));
   }
 
-  // Trạng thái "Cấp tất cả quyền"
+  // Kiểm tra trạng thái cấp toàn bộ quyền hệ thống
   get isAllGranted(): boolean {
     return this.allPermissions.length > 0 && this.allPermissions.every(p => p.isGranted);
   }
@@ -266,7 +229,7 @@ export class PermissionModalComponent {
     this.rebuildDisplayedList();
   }
 
-  // Trạng thái "Chọn tất cả trong nhóm"
+  // Kiểm tra trạng thái cấp toàn bộ quyền trong nhóm đang chọn
   get isCurrentGroupAllGranted(): boolean {
     const perms = this.groups[this.selectedGroupIndex]?.permissions || [];
     return perms.length > 0 && perms.every(p => p.isGranted);
@@ -290,7 +253,7 @@ export class PermissionModalComponent {
     this.rebuildDisplayedList();
   }
 
-  // Bật / tắt từng quyền đơn lẻ
+  // Bật hoặc tắt từng quyền đơn lẻ kèm đồng bộ quyền cha - con
   onTogglePermission(row: PermissionRowView, checked: boolean): void {
     if (row.isDisabled) return;
 
@@ -344,7 +307,7 @@ export class PermissionModalComponent {
   save(): void {
     if (this.isSaving) return;
 
-    // Chỉ lọc ra những quyền có thay đổi so với ban đầu
+    // Chỉ lọc ra những quyền thực sự thay đổi so với trạng thái ban đầu
     const changedPermissions: UpdatePermissionDto[] = this.allPermissions
       .filter(p => p.name && this.initialGrantMap.get(p.name) !== !!p.isGranted)
       .map(p => ({
@@ -363,12 +326,12 @@ export class PermissionModalComponent {
       .update(this.providerName, this.providerKey, { permissions: changedPermissions })
       .pipe(
         switchMap(() =>
-          this.shouldRefreshAppConfig() ? this.configState.refreshAppState() : of(null)
+          this.shouldRefreshAppConfig() ? this.configState.refreshAppState() : of(null),
         ),
         finalize(() => {
           this.isSaving = false;
           this.cdr.markForCheck();
-        })
+        }),
       )
       .subscribe({
         next: () => {

@@ -9,7 +9,10 @@ import {
   DepartmentUserLookupDto,
 } from '../proxy/departments/models';
 import { EmployeeDetailDrawerComponent } from '../shared/components/employee-detail-drawer/employee-detail-drawer.component';
+import { COMMON_DEPARTMENT_POSITIONS } from '../shared/constants';
+import { extractErrorMessage } from '../shared/utils';
 
+// Màn hình quản lý danh mục phòng ban và phân bổ nhân sự, chức vụ
 @Component({
   selector: 'app-department',
   templateUrl: './department.component.html',
@@ -23,19 +26,19 @@ export class DepartmentComponent implements OnInit {
   loading = false;
   searchKeyword = '';
 
-  // Phân quyền
+  // Quyền thao tác trên phòng ban
   canCreate = false;
   canEdit = false;
   canDelete = false;
   canManageMembers = false;
 
-  // Modal Thêm / Sửa Phòng ban
+  // Trạng thái modal thêm / sửa phòng ban
   isModalVisible = false;
   isModalSubmitting = false;
   selectedDepartment: DepartmentDto | null = null;
   deptForm!: FormGroup;
 
-  // Drawer Quản lý Nhân sự & Chức vụ
+  // Trạng thái ngăn kéo quản lý nhân sự và chức vụ phòng ban
   isDrawerVisible = false;
   isMembersLoading = false;
   activeDepartment: DepartmentDto | null = null;
@@ -45,23 +48,14 @@ export class DepartmentComponent implements OnInit {
   editingMemberId: string | null = null;
   editingPosition = '';
 
-  commonPositions = [
-    'Trưởng phòng',
-    'Phó phòng',
-    'Kỹ sư Phần mềm',
-    'Chuyên viên Tuyển dụng',
-    'Chuyên viên HR',
-    'Kế toán trưởng',
-    'Kế toán viên',
-    'Chuyên viên Kinh doanh',
-    'Nhân viên',
-  ];
+  // Danh sách chức vụ gợi ý dùng chung
+  readonly commonPositions = COMMON_DEPARTMENT_POSITIONS;
 
   constructor(
     private departmentService: DepartmentService,
     private fb: FormBuilder,
     private message: NzMessageService,
-    private permissionService: PermissionService
+    private permissionService: PermissionService,
   ) {}
 
   ngOnInit(): void {
@@ -93,19 +87,17 @@ export class DepartmentComponent implements OnInit {
 
   loadDepartments(): void {
     this.loading = true;
-    this.departmentService
-      .getList({ skipCount: 0, maxResultCount: 100 })
-      .subscribe({
-        next: res => {
-          this.departments = res.items || [];
-          this.filterDepartments();
-          this.loading = false;
-        },
-        error: err => {
-          this.message.error(err?.error?.message || 'Không thể tải danh sách phòng ban.');
-          this.loading = false;
-        },
-      });
+    this.departmentService.getList({ skipCount: 0, maxResultCount: 100 }).subscribe({
+      next: res => {
+        this.departments = res.items || [];
+        this.filterDepartments();
+        this.loading = false;
+      },
+      error: err => {
+        this.message.error(extractErrorMessage(err, 'Không thể tải danh sách phòng ban.'));
+        this.loading = false;
+      },
+    });
   }
 
   openEmployeeDrawer(userId?: string): void {
@@ -124,7 +116,7 @@ export class DepartmentComponent implements OnInit {
       d =>
         d.name.toLowerCase().includes(kw) ||
         d.code.toLowerCase().includes(kw) ||
-        (d.managerName && d.managerName.toLowerCase().includes(kw))
+        (d.managerName && d.managerName.toLowerCase().includes(kw)),
     );
   }
 
@@ -177,7 +169,7 @@ export class DepartmentComponent implements OnInit {
           this.loadDepartments();
         },
         error: err => {
-          this.message.error(err?.error?.message || 'Có lỗi xảy ra khi cập nhật phòng ban.');
+          this.message.error(extractErrorMessage(err, 'Có lỗi xảy ra khi cập nhật phòng ban.'));
           this.isModalSubmitting = false;
         },
       });
@@ -190,7 +182,7 @@ export class DepartmentComponent implements OnInit {
           this.loadDepartments();
         },
         error: err => {
-          this.message.error(err?.error?.message || 'Có lỗi xảy ra khi tạo phòng ban.');
+          this.message.error(extractErrorMessage(err, 'Có lỗi xảy ra khi tạo phòng ban.'));
           this.isModalSubmitting = false;
         },
       });
@@ -204,14 +196,12 @@ export class DepartmentComponent implements OnInit {
         this.loadDepartments();
       },
       error: err => {
-        this.message.error(err?.error?.message || 'Không thể xóa phòng ban.');
+        this.message.error(extractErrorMessage(err, 'Không thể xóa phòng ban.'));
       },
     });
   }
 
-  // ==========================================
-  // DRAWER QUẢN LÝ NHÂN SỰ & CHỨC VỤ PHÒNG BAN
-  // ==========================================
+  // Quản lý nhân sự và chức vụ trong ngăn kéo phòng ban
   openMembersDrawer(dept: DepartmentDto): void {
     this.activeDepartment = dept;
     this.isDrawerVisible = true;
@@ -226,7 +216,7 @@ export class DepartmentComponent implements OnInit {
   closeDrawer(): void {
     this.isDrawerVisible = false;
     this.activeDepartment = null;
-    this.loadDepartments(); // cập nhật lại số lượng nhân sự
+    this.loadDepartments();
   }
 
   loadMembersAndUsers(departmentId: string): void {
@@ -245,7 +235,9 @@ export class DepartmentComponent implements OnInit {
         });
       },
       error: err => {
-        this.message.error(err?.error?.message || 'Không thể tải danh sách nhân sự phòng ban.');
+        this.message.error(
+          extractErrorMessage(err, 'Không thể tải danh sách nhân sự phòng ban.'),
+        );
         this.isMembersLoading = false;
       },
     });
@@ -270,7 +262,7 @@ export class DepartmentComponent implements OnInit {
           this.loadMembersAndUsers(this.activeDepartment!.id);
         },
         error: err => {
-          this.message.error(err?.error?.message || 'Không thể thêm nhân sự.');
+          this.message.error(extractErrorMessage(err, 'Không thể thêm nhân sự.'));
         },
       });
   }
@@ -299,7 +291,7 @@ export class DepartmentComponent implements OnInit {
           this.editingMemberId = null;
         },
         error: err => {
-          this.message.error(err?.error?.message || 'Không thể cập nhật chức vụ.');
+          this.message.error(extractErrorMessage(err, 'Không thể cập nhật chức vụ.'));
         },
       });
   }
@@ -318,7 +310,7 @@ export class DepartmentComponent implements OnInit {
           this.loadMembersAndUsers(this.activeDepartment!.id);
         },
         error: err => {
-          this.message.error(err?.error?.message || 'Thao tác không thành công.');
+          this.message.error(extractErrorMessage(err, 'Thao tác không thành công.'));
         },
       });
   }
@@ -334,7 +326,7 @@ export class DepartmentComponent implements OnInit {
           this.loadMembersAndUsers(this.activeDepartment!.id);
         },
         error: err => {
-          this.message.error(err?.error?.message || 'Không thể xóa nhân sự khỏi phòng ban.');
+          this.message.error(extractErrorMessage(err, 'Không thể xóa nhân sự khỏi phòng ban.'));
         },
       });
   }
@@ -343,4 +335,3 @@ export class DepartmentComponent implements OnInit {
     this.addMemberForm.patchValue({ position: pos });
   }
 }
-

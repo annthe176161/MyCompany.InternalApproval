@@ -10,7 +10,9 @@ import { PermissionService } from '@abp/ng.core';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { finalize } from 'rxjs/operators';
 import { PermissionModalComponent } from '../components/permission-modal/permission-modal.component';
+import { extractErrorMessage } from '../../shared/utils';
 
+// Màn hình quản lý danh sách vai trò và cấu hình quyền hạn hệ thống
 @Component({
   selector: 'app-roles',
   standalone: false,
@@ -43,7 +45,7 @@ export class RolesComponent implements OnInit {
     private roleService: IdentityRoleService,
     private permissionService: PermissionService,
     private fb: FormBuilder,
-    private message: NzMessageService
+    private message: NzMessageService,
   ) {
     this.roleForm = this.fb.group({
       name: ['', [Validators.required, Validators.maxLength(256)]],
@@ -57,7 +59,7 @@ export class RolesComponent implements OnInit {
     this.canEdit = this.permissionService.getGrantedPolicy('AbpIdentity.Roles.Update');
     this.canDelete = this.permissionService.getGrantedPolicy('AbpIdentity.Roles.Delete');
     this.canManagePermissions = this.permissionService.getGrantedPolicy(
-      'AbpIdentity.Roles.ManagePermissions'
+      'AbpIdentity.Roles.ManagePermissions',
     );
     this.loadRoles();
   }
@@ -170,11 +172,7 @@ export class RolesComponent implements OnInit {
             this.loadRoles();
           },
           error: err => {
-            const msg =
-              err?.error?.error?.message ||
-              err?.error?.message ||
-              'Không thể cập nhật vai trò!';
-            this.message.error(msg);
+            this.message.error(extractErrorMessage(err, 'Không thể cập nhật vai trò!'));
           },
         });
     } else {
@@ -194,11 +192,7 @@ export class RolesComponent implements OnInit {
             this.loadRoles();
           },
           error: err => {
-            const msg =
-              err?.error?.error?.message ||
-              err?.error?.message ||
-              'Không thể thêm vai trò mới!';
-            this.message.error(msg);
+            this.message.error(extractErrorMessage(err, 'Không thể thêm vai trò mới!'));
           },
         });
     }

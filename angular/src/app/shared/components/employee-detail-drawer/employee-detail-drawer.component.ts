@@ -1,5 +1,5 @@
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
-import { ConfigStateService, PermissionService } from '@abp/ng.core';
+import { PermissionService } from '@abp/ng.core';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { EmployeeService } from '../../../proxy/employees/employee.service';
 import {
@@ -8,11 +8,7 @@ import {
   LeaveTimelineItemDto,
   UpdateEmployeeJoinDateDto,
 } from '../../../proxy/employees/models';
-import {
-  RequestDto,
-  RequestStatus,
-  RequestType,
-} from '../../../proxy/requests';
+import { RequestDto, RequestStatus, RequestType } from '../../../proxy/requests';
 import {
   REQUEST_STATUS_LIST,
   getRequestStatusMeta,
@@ -23,7 +19,10 @@ import {
   getRequestTypeMeta,
   RequestTypeMeta,
 } from '../../constants/request-type.constant';
+import { CurrentUserContextService } from '../../services';
+import { extractErrorMessage, getSingleInitial, getTenureMilestone } from '../../utils';
 
+// Ngăn kéo hiển thị hồ sơ nhân viên, lịch sử nghỉ phép, đề xuất và thống kê theo năm
 @Component({
   selector: 'app-employee-detail-drawer',
   templateUrl: './employee-detail-drawer.component.html',
@@ -37,16 +36,16 @@ export class EmployeeDetailDrawerComponent implements OnInit {
   loadingProfile = false;
   profile: EmployeeProfileDto | null = null;
 
-  // Tab navigation
+  // Điều hướng tab trong ngăn kéo
   selectedTabIndex = 0;
 
-  // Quyền cập nhật JoinDate
+  // Quyền và trạng thái cập nhật ngày vào làm
   canEditJoinDate = false;
   isEditingJoinDate = false;
   editJoinDate: Date | null = null;
   isSavingJoinDate = false;
 
-  // Tab 2: Leave Timeline
+  // Tab 2: Lịch sử nghỉ phép (Leave Timeline)
   loadingTimeline = false;
   leaveTimeline: LeaveTimelineItemDto[] = [];
   leaveStats = {
@@ -57,7 +56,7 @@ export class EmployeeDetailDrawerComponent implements OnInit {
     rejectedCount: 0,
   };
 
-  // Tab 3: Request History
+  // Tab 3: Lịch sử đề xuất (Request History)
   loadingRequests = false;
   requests: RequestDto[] = [];
   totalRequests = 0;
@@ -66,13 +65,13 @@ export class EmployeeDetailDrawerComponent implements OnInit {
   selectedStatus: RequestStatus | null = null;
   selectedType: RequestType | null = null;
 
-  // Tab 4: Yearly Stats
+  // Tab 4: Thống kê theo năm (Yearly Stats)
   loadingStats = false;
   selectedYear: number = new Date().getFullYear();
   availableYears: number[] = [2026, 2025, 2024, 2023];
   yearlyStats: EmployeeYearlyStatsDto | null = null;
 
-  // Constants
+  // Danh mục dùng chung cho template
   RequestType = RequestType;
   RequestStatus = RequestStatus;
   statusList: RequestStatusMeta[] = REQUEST_STATUS_LIST;
@@ -80,9 +79,9 @@ export class EmployeeDetailDrawerComponent implements OnInit {
 
   constructor(
     private employeeService: EmployeeService,
-    private configState: ConfigStateService,
+    private userContext: CurrentUserContextService,
     private permissionService: PermissionService,
-    private message: NzMessageService
+    private message: NzMessageService,
   ) {}
 
   ngOnInit(): void {
@@ -90,12 +89,7 @@ export class EmployeeDetailDrawerComponent implements OnInit {
   }
 
   private checkEditPermission(): void {
-    const user = this.configState.getOne('currentUser');
-    const roles = (user?.roles || []).map(r => r.toLowerCase());
-    const isAdmin =
-      roles.includes('admin') ||
-      user?.userName?.toLowerCase() === 'admin' ||
-      this.permissionService.getGrantedPolicy('AbpIdentity.Roles');
+    const isAdmin = this.userContext.isAdmin();
     const hasEditPermission = this.permissionService.getGrantedPolicy('Employees.Edit');
     this.canEditJoinDate = isAdmin || hasEditPermission;
   }
@@ -132,8 +126,7 @@ export class EmployeeDetailDrawerComponent implements OnInit {
       },
       error: err => {
         this.loadingProfile = false;
-        const msg = err.error?.error?.message || 'Không thể tải thông tin hồ sơ nhân viên!';
-        this.message.error(msg);
+        this.message.error(extractErrorMessage(err, 'Không thể tải thông tin hồ sơ nhân viên!'));
       },
     });
   }
@@ -167,8 +160,7 @@ export class EmployeeDetailDrawerComponent implements OnInit {
       },
       error: err => {
         this.isSavingJoinDate = false;
-        const msg = err.error?.error?.message || 'Không thể cập nhật ngày vào làm việc!';
-        this.message.error(msg);
+        this.message.error(extractErrorMessage(err, 'Không thể cập nhật ngày vào làm việc!'));
       },
     });
   }
@@ -267,7 +259,7 @@ export class EmployeeDetailDrawerComponent implements OnInit {
     this.loadLeaveTimeline();
   }
 
-  // Helpers
+  // Các hàm hỗ trợ hiển thị
   getTypeTag(type: RequestType): RequestTypeMeta {
     return getRequestTypeMeta(type);
   }
@@ -277,7 +269,7 @@ export class EmployeeDetailDrawerComponent implements OnInit {
   }
 
   trackRequestById(_: number, item: RequestDto): string {
-    return item.id;
+    return item.id ?? '';
   }
 
   trackTimelineById(_: number, item: LeaveTimelineItemDto): string {
@@ -285,28 +277,16 @@ export class EmployeeDetailDrawerComponent implements OnInit {
   }
 
   getAvatarInitial(): string {
-    if (!this.profile?.fullName) return 'U';
-    const parts = this.profile.fullName.trim().split(' ');
-    return parts[parts.length - 1].charAt(0).toUpperCase();
+    return getSingleInitial(this.profile?.fullName);
   }
 
   getTenureProgressPercentage(): number {
     const months = this.profile?.tenureMonths || 0;
-    // Cap at 36 months for 100%
+    // Giới hạn tối đa ở mốc 36 tháng (tương ứng 100%)
     return Math.min(100, Math.round((months / 36) * 100));
   }
 
   getTenureMilestoneLabel(): { label: string; color: string } {
-    const months = this.profile?.tenureMonths || 0;
-    if (months < 2) {
-      return { label: 'Thử việc (< 2 tháng)', color: '#8c8c8c' };
-    }
-    if (months < 12) {
-      return { label: 'Nhân viên chính thức (< 1 năm)', color: '#1890ff' };
-    }
-    if (months < 36) {
-      return { label: 'Nhân sự gắn bó (1 - 3 năm)', color: '#52c41a' };
-    }
-    return { label: 'Nhân sự kỳ cựu (> 3 năm)', color: '#722ed1' };
+    return getTenureMilestone(this.profile?.tenureMonths || 0);
   }
 }

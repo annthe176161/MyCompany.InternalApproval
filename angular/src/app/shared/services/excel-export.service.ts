@@ -1,72 +1,40 @@
 import { Injectable } from '@angular/core';
 import * as XLSX from 'xlsx';
-import { RequestDto, RequestStatus, RequestType } from '../../proxy/requests';
+import { RequestDto } from '../../proxy/requests';
 import type { EmployeeLeaveReportItemDto } from '../../proxy/employees/models';
 import { getRequestStatusMeta } from '../constants/request-status.constant';
 import { getRequestTypeMeta } from '../constants/request-type.constant';
+import { DashboardReportData } from '../models/dashboard-report-data.model';
+import { formatDateTimeFullVn, formatDateTimeShortVn, getFileTimestamp } from '../utils/date.util';
 
-export interface DashboardReportData {
-  totalCount: number;
-  totalAmount: number;
-  approvedAmount: number;
-  approvalRate: number;
-  statusStats: { label: string; count: number }[];
-  typeStats: { label: string; count: number; amount: number; percent: number }[];
-  requests: RequestDto[];
-  scopeName: string;
-  exporterName: string;
-}
+export { DashboardReportData } from '../models/dashboard-report-data.model';
 
+// Dịch vụ xuất báo cáo dữ liệu ra tập tin Excel (.xlsx)
 @Injectable({
   providedIn: 'root',
 })
 export class ExcelExportService {
-  constructor() {}
-
-  /**
-   * Định dạng ngày giờ dạng DD/MM/YYYY HH:mm
-   */
-  private formatDate(dateVal?: string | Date | null): string {
-    if (!dateVal) return '';
-    try {
-      const d = dateVal instanceof Date ? dateVal : new Date(dateVal);
-      if (isNaN(d.getTime())) return '';
-      const pad = (n: number) => (n < 10 ? '0' + n : '' + n);
-      return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-    } catch {
-      return '';
-    }
-  }
-
-  /**
-   * Tạo timestamp phục vụ đặt tên file: YYYYMMDD_HHmm
-   */
-  private getFileTimestamp(): string {
-    const d = new Date();
-    const pad = (n: number) => (n < 10 ? '0' + n : '' + n);
-    return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}`;
-  }
-
-  /**
-   * Xuất danh sách đề xuất ra file Excel (.xlsx)
-   */
+  // Xuất danh sách đề xuất chi tiết ra file Excel (.xlsx)
   exportRequests(
     requests: RequestDto[],
     exporterName: string = 'Người dùng',
     scopeName: string = 'Đề xuất của tôi',
-    filterText?: string
+    filterText?: string,
   ): void {
     const wb = XLSX.utils.book_new();
+    const printTimeStr = formatDateTimeShortVn(new Date());
 
-    const now = new Date();
-    const printTimeStr = this.formatDate(now.toISOString());
-
-    // Header thông tin báo cáo
+    // Dữ liệu tiêu đề và cấu trúc bảng báo cáo
     const aoaData: any[][] = [
       ['HỆ THỐNG QUẢN LÝ PHÊ DUYỆT NỘI BỘ (INTERNAL APPROVAL)'],
       ['BÁO CÁO DANH SÁCH ĐỀ XUẤT CHI TIẾT'],
-      [`Thời gian xuất: ${printTimeStr}`, `Người xuất: ${exporterName}`, `Phạm vi: ${scopeName}`, filterText ? `Bộ lọc: ${filterText}` : ''],
-      [], // Dòng trống
+      [
+        `Thời gian xuất: ${printTimeStr}`,
+        `Người xuất: ${exporterName}`,
+        `Phạm vi: ${scopeName}`,
+        filterText ? `Bộ lọc: ${filterText}` : '',
+      ],
+      [],
       [
         'STT',
         'Mã đề xuất',
@@ -97,15 +65,15 @@ export class ExcelExportService {
         typeMeta.label,
         amount > 0 ? amount : '',
         req.creatorName || 'N/A',
-        this.formatDate(req.creationTime),
+        formatDateTimeShortVn(req.creationTime),
         statusMeta.label,
         req.approverName || '',
-        this.formatDate(req.approvalTime),
+        formatDateTimeShortVn(req.approvalTime),
         req.rejectionReason || '',
       ]);
     });
 
-    // Dòng tổng kết
+    // Dòng tổng kết cuối bảng
     aoaData.push([]);
     aoaData.push([
       'TỔNG CỘNG',
@@ -123,40 +91,41 @@ export class ExcelExportService {
 
     const ws = XLSX.utils.aoa_to_sheet(aoaData);
 
-    // Cấu hình độ rộng các cột (Characters width)
+    // Cấu hình độ rộng các cột hiển thị
     ws['!cols'] = [
-      { wch: 6 },  // STT
-      { wch: 14 }, // Mã
-      { wch: 34 }, // Tiêu đề
-      { wch: 18 }, // Loại
-      { wch: 18 }, // Số tiền
-      { wch: 22 }, // Người tạo
-      { wch: 18 }, // Ngày tạo
-      { wch: 16 }, // Trạng thái
-      { wch: 22 }, // Người duyệt
-      { wch: 18 }, // Ngày duyệt
-      { wch: 30 }, // Ghi chú
+      { wch: 6 },
+      { wch: 14 },
+      { wch: 34 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 22 },
+      { wch: 18 },
+      { wch: 16 },
+      { wch: 22 },
+      { wch: 18 },
+      { wch: 30 },
     ];
 
     XLSX.utils.book_append_sheet(wb, ws, 'Danh sách đề xuất');
 
-    const fileName = `Bao_Cao_De_Xuat_${scopeName.replace(/\s+/g, '_')}_${this.getFileTimestamp()}.xlsx`;
+    const fileName = `Bao_Cao_De_Xuat_${scopeName.replace(/\s+/g, '_')}_${getFileTimestamp()}.xlsx`;
     XLSX.writeFile(wb, fileName);
   }
 
-  /**
-   * Xuất báo cáo tổng hợp Dashboard (2 Sheets: Tổng quan chỉ số + Danh sách chi tiết)
-   */
+  // Xuất báo cáo tổng hợp Dashboard gồm 2 Sheet: Tổng quan chỉ số và Danh sách chi tiết
   exportDashboardReport(data: DashboardReportData): void {
     const wb = XLSX.utils.book_new();
-    const now = new Date();
-    const printTimeStr = this.formatDate(now.toISOString());
+    const printTimeStr = formatDateTimeShortVn(new Date());
 
-    // ================= SHEET 1: TỔNG QUAN CHỈ SỐ =================
+    // Sheet 1: Tổng quan chỉ số vận hành
     const summaryAoa: any[][] = [
       ['HỆ THỐNG QUẢN LÝ PHÊ DUYỆT NỘI BỘ (INTERNAL APPROVAL)'],
       ['BÁO CÁO THỐNG KÊ TỔNG QUAN VẬN HÀNH (DASHBOARD)'],
-      [`Thời gian xuất: ${printTimeStr}`, `Người xuất: ${data.exporterName}`, `Góc nhìn: ${data.scopeName}`],
+      [
+        `Thời gian xuất: ${printTimeStr}`,
+        `Người xuất: ${data.exporterName}`,
+        `Góc nhìn: ${data.scopeName}`,
+      ],
       [],
       ['1. CÁC CHỈ SỐ HOẠT ĐỘNG CHÍNH (KEY METRICS)'],
       ['Chỉ số', 'Giá trị', 'Đơn vị tính'],
@@ -187,7 +156,7 @@ export class ExcelExportService {
     summaryWs['!cols'] = [{ wch: 32 }, { wch: 22 }, { wch: 22 }, { wch: 18 }];
     XLSX.utils.book_append_sheet(wb, summaryWs, 'Tổng quan chỉ số');
 
-    // ================= SHEET 2: DANH SÁCH CHI TIẾT =================
+    // Sheet 2: Danh sách hồ sơ đề xuất chi tiết
     const detailsAoa: any[][] = [
       ['DANH SÁCH HỒ SƠ ĐỀ XUẤT CHI TIẾT'],
       [],
@@ -216,10 +185,10 @@ export class ExcelExportService {
         typeMeta.label,
         req.amount || '',
         req.creatorName || 'N/A',
-        this.formatDate(req.creationTime),
+        formatDateTimeShortVn(req.creationTime),
         statusMeta.label,
         req.approverName || '',
-        this.formatDate(req.approvalTime),
+        formatDateTimeShortVn(req.approvalTime),
         req.rejectionReason || '',
       ]);
     });
@@ -240,37 +209,20 @@ export class ExcelExportService {
     ];
     XLSX.utils.book_append_sheet(wb, detailsWs, 'Danh sách chi tiết');
 
-    const fileName = `Bao_Cao_Tong_Quan_Dashboard_${this.getFileTimestamp()}.xlsx`;
+    const fileName = `Bao_Cao_Tong_Quan_Dashboard_${getFileTimestamp()}.xlsx`;
     XLSX.writeFile(wb, fileName);
   }
 
-  /**
-   * Định dạng ngày giờ dạng DD/MM/YYYY HH:mm:ss
-   */
-  private formatDateTime(dateVal?: string | Date | null): string {
-    if (!dateVal) return '';
-    try {
-      const d = dateVal instanceof Date ? dateVal : new Date(dateVal);
-      if (isNaN(d.getTime())) return '';
-      const pad = (n: number) => (n < 10 ? '0' + n : '' + n);
-      return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-    } catch {
-      return '';
-    }
-  }
-
-  /**
-   * Xuất báo cáo thống kê ngày nghỉ phép ra file Excel (.xlsx)
-   */
+  // Xuất báo cáo thống kê ngày nghỉ phép nhân sự ra file Excel (.xlsx)
   exportLeaveStatistics(
     data: EmployeeLeaveReportItemDto[],
     exporterName: string = 'Người dùng',
     scopeName: string = 'Toàn công ty',
     year: number = new Date().getFullYear(),
-    filterText?: string
+    filterText?: string,
   ): void {
     const wb = XLSX.utils.book_new();
-    const exportTimeStr = this.formatDateTime(new Date());
+    const exportTimeStr = formatDateTimeFullVn(new Date());
 
     const aoaData: any[][] = [
       ['BÁO CÁO THỐNG KÊ NGÀY NGHỈ PHÉP NHÂN VIÊN'],
@@ -322,7 +274,7 @@ export class ExcelExportService {
       ]);
     });
 
-    // Summary total row
+    // Dòng tổng cộng cuối bảng báo cáo nghỉ phép
     aoaData.push([
       'TỔNG CỘNG',
       '',
@@ -339,23 +291,21 @@ export class ExcelExportService {
     const ws = XLSX.utils.aoa_to_sheet(aoaData);
 
     ws['!cols'] = [
-      { wch: 6 },  // STT
-      { wch: 22 }, // Mã NV / Tên đăng nhập
-      { wch: 26 }, // Họ và tên
-      { wch: 28 }, // Email
-      { wch: 24 }, // Phòng ban
-      { wch: 20 }, // Chức vụ
-      { wch: 30 }, // Tổng ngày nghỉ phép (đã duyệt)
-      { wch: 14 }, // Số đợt gửi
-      { wch: 14 }, // Số đợt duyệt
-      { wch: 34 }, // Đợt nghỉ gần nhất
+      { wch: 6 },
+      { wch: 22 },
+      { wch: 26 },
+      { wch: 28 },
+      { wch: 24 },
+      { wch: 20 },
+      { wch: 30 },
+      { wch: 14 },
+      { wch: 14 },
+      { wch: 34 },
     ];
 
     XLSX.utils.book_append_sheet(wb, ws, 'Báo cáo ngày nghỉ phép');
 
-    const fileName = `BaoCao_NgayNghiPhep_${year}_${this.getFileTimestamp()}.xlsx`;
+    const fileName = `BaoCao_NgayNghiPhep_${year}_${getFileTimestamp()}.xlsx`;
     XLSX.writeFile(wb, fileName);
   }
 }
-
-

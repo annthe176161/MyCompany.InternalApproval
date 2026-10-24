@@ -1,12 +1,9 @@
 import { RequestType } from '../../proxy/requests/request-type.enum';
+import { RequestTypeMeta } from '../models/request-type-meta.model';
 
-export interface RequestTypeMeta {
-  value: RequestType;
-  label: string;
-  color: string;
-  chartColor: string;
-}
+export { RequestTypeMeta } from '../models/request-type-meta.model';
 
+// Cấu hình siêu dữ liệu hiển thị cho từng loại đề xuất
 export const REQUEST_TYPE_CONFIG: Record<RequestType, RequestTypeMeta> = {
   [RequestType.Leave]: {
     value: RequestType.Leave,
@@ -28,12 +25,14 @@ export const REQUEST_TYPE_CONFIG: Record<RequestType, RequestTypeMeta> = {
   },
 };
 
+// Danh sách loại đề xuất theo thứ tự hiển thị
 export const REQUEST_TYPE_LIST: RequestTypeMeta[] = [
   REQUEST_TYPE_CONFIG[RequestType.Leave],
   REQUEST_TYPE_CONFIG[RequestType.Equipment],
   REQUEST_TYPE_CONFIG[RequestType.AdvanceMoney],
 ];
 
+// Lấy thông tin cấu hình hiển thị theo mã loại đề xuất
 export function getRequestTypeMeta(type: RequestType): RequestTypeMeta {
   return (
     REQUEST_TYPE_CONFIG[type] || {
@@ -44,4 +43,3 @@ export function getRequestTypeMeta(type: RequestType): RequestTypeMeta {
     }
   );
 }
-
