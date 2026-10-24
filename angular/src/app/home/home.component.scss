@@ -1,12 +1,11 @@
 .dashboard-page-container {
-  height: calc(100vh - 70px);
-  max-height: calc(100vh - 70px);
-  overflow: hidden;
+  min-height: 100%;
   display: flex;
   flex-direction: column;
   padding: 0;
   margin: 0 auto;
   width: 100%;
+  padding-bottom: 24px;
 }
 
 .guest-welcome-container {
@@ -70,9 +69,7 @@
 .dashboard-content {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  gap: 8px;
+  gap: 12px;
 }
 
 /* ==========================================================================
@@ -247,27 +244,19 @@
    WRAPPER CONTAINER CỦA BODY DASHBOARD
    ========================================================================== */
 .dashboard-spin-wrapper {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  min-height: 0;
 
   ::ng-deep .ant-spin-container {
-    height: 100%;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
   }
 }
 
 .role-dashboard-view {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  overflow: hidden;
-  min-height: 0;
+  gap: 12px;
 }
 
 /* ==========================================================================
@@ -609,14 +598,13 @@
 }
 
 /* ==========================================================================
-   HÀNG 3: BẢNG DỮ LIỆU ĐỀ XUẤT GẦN ĐÂY TINH GỌN (CHIẾM TRỌN KHÔNG GIAN CÒN LẠI)
+   HÀNG 3: BẢNG DỮ LIỆU ĐỀ XUẤT GẦN ĐÂY TINH GỌN (BO VỪA NỘI DUNG BẢNG)
    ========================================================================== */
 .recent-table-panel {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
   overflow: hidden;
-  min-height: 0;
 
   ::ng-deep .ant-card-head {
     border-bottom: 1px solid #f1f5f9;
@@ -638,8 +626,7 @@
 
   ::ng-deep .ant-card-body {
     padding: 0;
-    flex: 1;
-    overflow-y: auto;
+    overflow: visible;
   }
 }
 
@@ -671,6 +658,10 @@
       font-size: 13px;
       border-bottom: 1px solid #f1f5f9;
       height: 42px;
+    }
+
+    .ant-table-tbody > tr:last-child > td {
+      border-bottom: none;
     }
 
     .ant-table-tbody > tr:hover > td {
