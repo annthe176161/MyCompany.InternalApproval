@@ -138,10 +138,11 @@ export class ExcelExportService {
       ['Trạng thái', 'Số lượng', 'Tỷ lệ (%)'],
     ];
 
-    const total = data.totalCount || 1;
+    const sumStatus = data.statusStats.reduce((s, x) => s + (x.count || 0), 0);
+    const total = Math.max(data.totalCount || 0, sumStatus) || 1;
     data.statusStats.forEach(st => {
-      const pct = Math.round((st.count / total) * 100);
-      summaryAoa.push([st.label, st.count, `${pct}%`]);
+      const pct = Math.round(((st.count || 0) / total) * 100);
+      summaryAoa.push([st.label, st.count || 0, `${pct}%`]);
     });
 
     summaryAoa.push([]);

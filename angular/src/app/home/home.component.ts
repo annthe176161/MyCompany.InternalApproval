@@ -75,6 +75,7 @@ export class HomeComponent implements OnInit {
   approverApprovedCount = 0;
   approverRejectedCount = 0;
   approverTotalApprovedAmount = 0;
+  approverApprovalRate = 0;
   approverActionableRequests: RequestDto[] = [];
 
   // Chỉ số thống kê dành cho Nhân viên (Employee / Requester)
@@ -210,6 +211,14 @@ export class HomeComponent implements OnInit {
       r => r.status === RequestStatus.Rejected && (!r.approverId || r.approverId === myId),
     ).length;
 
+    const approverCompleted = this.approverApprovedCount + this.approverRejectedCount;
+    this.approverApprovalRate =
+      approverCompleted > 0
+        ? Math.round((this.approverApprovedCount / approverCompleted) * 100)
+        : this.approverApprovedCount > 0
+          ? 100
+          : 0;
+
     // 3. Thống kê góc nhìn Cá nhân (Employee / Requester)
     const myRequests = requests.filter(r => !myId || r.creatorId === myId);
     this.employeeTotalCount = myRequests.length;
@@ -313,35 +322,104 @@ export class HomeComponent implements OnInit {
       return;
     }
     this.isExporting = true;
-    const scopeLabel =
-      this.activeRoleView === 'admin'
-        ? 'Toàn hệ thống (Admin)'
-        : this.activeRoleView === 'approver'
-          ? 'Người phê duyệt (Approver)'
-          : 'Cá nhân (Employee)';
+
+    const myId = this.currentUserId;
+    const myRequests = this.allRequests.filter(r => !myId || r.creatorId === myId);
+
+    let scopeLabel = 'Toàn hệ thống (Admin)';
+    let totalCount = this.adminTotalCount;
+    let totalAmount = this.adminTotalAmount;
+    let approvedAmount = this.adminApprovedAmount;
+    let approvalRate = this.adminApprovalRate;
+    let statusStats = this.adminStatusCards.map(s => ({
+      label: s.meta.label,
+      count: s.count,
+    }));
+    let typeStats = this.adminTypeStats.map(t => ({
+      label: t.label,
+      count: t.count,
+      amount: t.amount,
+      percent: t.percent,
+    }));
+    let exportRequests = this.allRequests;
+
+    if (this.activeRoleView === 'approver') {
+      scopeLabel = 'Người phê duyệt (Approver)';
+      exportRequests = this.allRequests;
+      totalCount = exportRequests.length;
+      totalAmount = exportRequests.reduce((sum, r) => sum + (r.amount || 0), 0);
+      approvedAmount = this.approverTotalApprovedAmount;
+      approvalRate = this.approverApprovalRate;
+
+      statusStats = this.statusList.map(st => {
+        let count = 0;
+        if (st.value === RequestStatus.Submitted) {
+          count = this.approverPendingCount;
+        } else if (st.value === RequestStatus.Approved) {
+          count = this.approverApprovedCount;
+        } else if (st.value === RequestStatus.Rejected) {
+          count = this.approverRejectedCount;
+        } else {
+          count = exportRequests.filter(r => r.status === st.value).length;
+        }
+        return {
+          label: st.label,
+          count,
+        };
+      });
+
+      const totalReq = exportRequests.length || 1;
+      typeStats = this.typeList.map(tp => {
+        const matching = exportRequests.filter(r => r.type === tp.value);
+        return {
+          label: tp.label,
+          count: matching.length,
+          amount: matching.reduce((s, r) => s + (r.amount || 0), 0),
+          percent: Math.round((matching.length / totalReq) * 100),
+        };
+      });
+    } else if (this.activeRoleView === 'employee') {
+      scopeLabel = 'Cá nhân (Employee)';
+      exportRequests = myRequests;
+      totalCount = myRequests.length;
+      totalAmount = myRequests.reduce((sum, r) => sum + (r.amount || 0), 0);
+      const myApproved = myRequests.filter(r => r.status === RequestStatus.Approved);
+      approvedAmount = myApproved.reduce((sum, r) => sum + (r.amount || 0), 0);
+      const myCompleted =
+        myApproved.length + myRequests.filter(r => r.status === RequestStatus.Rejected).length;
+      approvalRate =
+        myCompleted > 0
+          ? Math.round((myApproved.length / myCompleted) * 100)
+          : myApproved.length > 0
+            ? 100
+            : 0;
+
+      statusStats = this.employeeStatusCards.map(s => ({
+        label: s.meta.label,
+        count: s.count,
+      }));
+
+      const totalMy = myRequests.length || 1;
+      typeStats = this.typeList.map(tp => {
+        const matching = myRequests.filter(r => r.type === tp.value);
+        return {
+          label: tp.label,
+          count: matching.length,
+          amount: matching.reduce((s, r) => s + (r.amount || 0), 0),
+          percent: Math.round((matching.length / totalMy) * 100),
+        };
+      });
+    }
 
     try {
       this.excelExportService.exportDashboardReport({
-        totalCount:
-          this.activeRoleView === 'admin' ? this.adminTotalCount : this.employeeTotalCount,
-        totalAmount:
-          this.activeRoleView === 'admin' ? this.adminTotalAmount : this.employeeTotalAmount,
-        approvedAmount: this.activeRoleView === 'admin' ? this.adminApprovedAmount : 0,
-        approvalRate: this.adminApprovalRate,
-        statusStats: (this.activeRoleView === 'admin'
-          ? this.adminStatusCards
-          : this.employeeStatusCards
-        ).map(s => ({
-          label: s.meta.label,
-          count: s.count,
-        })),
-        typeStats: this.adminTypeStats.map(t => ({
-          label: t.label,
-          count: t.count,
-          amount: t.amount,
-          percent: t.percent,
-        })),
-        requests: this.allRequests,
+        totalCount,
+        totalAmount,
+        approvedAmount,
+        approvalRate,
+        statusStats,
+        typeStats,
+        requests: exportRequests,
         scopeName: scopeLabel,
         exporterName: this.currentUserFullName,
       });
