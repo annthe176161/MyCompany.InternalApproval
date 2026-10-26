@@ -19,7 +19,7 @@ namespace MyCompany.InternalApproval.Requests;
 
 // Dịch vụ quản lý các đề xuất nội bộ (CRUD, gửi duyệt, phê duyệt, từ chối và thêm bình luận)
 [RemoteService(IsEnabled = false)]
-[Authorize(InternalApprovalPermissions.Requests.Default)]
+[Authorize]
 public class RequestAppService : InternalApprovalAppService, IRequestAppService
 {
     private readonly IRequestRepository _requestRepository;

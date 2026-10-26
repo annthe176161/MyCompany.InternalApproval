@@ -108,6 +108,13 @@ export class UsersComponent implements OnInit {
     this.userService.getAssignableRoles().subscribe({
       next: res => {
         this.assignableRoles = res.items || [];
+        // Nếu modal tạo mới đang mở và chưa chọn vai trò nào, tự động chọn Employee
+        if (this.isUserModalVisible && !this.isEditMode && this.selectedRoleNames.size === 0) {
+          this.selectedRoleNames.add('Employee');
+          this.assignableRoles
+            .filter(r => r.isDefault && r.name)
+            .forEach(r => this.selectedRoleNames.add(r.name as string));
+        }
       },
     });
   }
@@ -154,6 +161,8 @@ export class UsersComponent implements OnInit {
     });
 
     this.selectedRoleNames.clear();
+    // Luôn chọn sẵn vai trò Employee làm mặc định cho tài khoản mới
+    this.selectedRoleNames.add('Employee');
     this.assignableRoles
       .filter(r => r.isDefault && r.name)
       .forEach(r => this.selectedRoleNames.add(r.name as string));
@@ -223,7 +232,11 @@ export class UsersComponent implements OnInit {
     }
 
     const raw = this.userForm.getRawValue();
-    const roleNames = Array.from(this.selectedRoleNames);
+    let roleNames = Array.from(this.selectedRoleNames);
+    if (!this.isEditMode && roleNames.length === 0) {
+      // Đảm bảo tài khoản mới luôn được cấp tối thiểu vai trò Employee
+      roleNames = ['Employee'];
+    }
     this.isSubmitting = true;
 
     if (this.isEditMode && this.selectedUser?.id) {

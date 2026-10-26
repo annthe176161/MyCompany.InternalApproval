@@ -12,7 +12,7 @@ namespace MyCompany.InternalApproval.Controllers;
 // Controller cung cấp các API RESTful cho tính năng Quản lý Đề xuất (/api/app/request)
 [RemoteService(Name = "Default")]
 [Route("api/app/request")]
-[Authorize(InternalApprovalPermissions.Requests.Default)]
+[Authorize]
 public class RequestController : InternalApprovalController, IRequestAppService
 {
     private readonly IRequestAppService _requestAppService;

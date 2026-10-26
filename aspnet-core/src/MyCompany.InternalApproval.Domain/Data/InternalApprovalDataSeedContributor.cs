@@ -242,14 +242,18 @@ public class InternalApprovalDataSeedContributor : IDataSeedContributor, ITransi
 
         var targetUserNames = userConfigs.Select(x => x.UserName).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        // 1. Xóa các tài khoản cũ không nằm trong danh sách chuẩn (dùng repository để tránh NRE của IdentitySecurityLogManager)
+        // 1. Đảm bảo tất cả các tài khoản hiện có trong hệ thống luôn có tối thiểu vai trò Employee
         var existingUsers = await _userRepository.GetListAsync(includeDetails: true);
-        foreach (var oldUser in existingUsers)
+        foreach (var existingUser in existingUsers)
         {
-            if (!targetUserNames.Contains(oldUser.UserName))
+            if (!targetUserNames.Contains(existingUser.UserName))
             {
-                Logger.LogInformation("Xóa tài khoản thử nghiệm cũ: {UserName}", oldUser.UserName);
-                await _userRepository.DeleteAsync(oldUser, autoSave: true);
+                var userRoles = await _userManager.GetRolesAsync(existingUser);
+                if (userRoles == null || userRoles.Count == 0)
+                {
+                    Logger.LogInformation("Tự động gán vai trò Employee cho tài khoản người dùng: {UserName}", existingUser.UserName);
+                    await _userManager.AddToRoleAsync(existingUser, RoleEmployee);
+                }
             }
         }
 

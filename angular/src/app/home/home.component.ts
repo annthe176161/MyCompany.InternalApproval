@@ -142,6 +142,8 @@ export class HomeComponent implements OnInit {
         this.cdr.markForCheck();
       },
       error: () => {
+        this.allRequests = [];
+        this.calculateStatistics();
         this.loading = false;
         this.cdr.markForCheck();
       },
