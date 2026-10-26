@@ -12,6 +12,7 @@ import { NzMessageService } from 'ng-zorro-antd/message';
 import { finalize } from 'rxjs/operators';
 import { PermissionModalComponent } from '../components/permission-modal/permission-modal.component';
 import { extractErrorMessage } from '../../shared/utils';
+import { EmployeeService } from '../../proxy/employees/employee.service';
 
 // Màn hình quản lý danh sách tài khoản người dùng và gán vai trò hệ thống
 @Component({
@@ -50,11 +51,17 @@ export class UsersComponent implements OnInit {
   readonly defaultPassword = 'Company@2026';
   passwordVisible = false;
 
+  // Không cho phép chọn ngày vào làm lớn hơn ngày hiện tại
+  disabledDate = (current: Date): boolean => {
+    return current && current.getTime() > Date.now();
+  };
+
   constructor(
     private userService: IdentityUserService,
     private permissionService: PermissionService,
     private fb: FormBuilder,
     private message: NzMessageService,
+    private employeeService: EmployeeService,
   ) {
     this.userForm = this.fb.group({
       userName: ['', [Validators.required, Validators.maxLength(256)]],
@@ -63,6 +70,7 @@ export class UsersComponent implements OnInit {
       name: ['', [Validators.maxLength(64)]],
       email: ['', [Validators.required, Validators.email, Validators.maxLength(256)]],
       phoneNumber: ['', [Validators.maxLength(16)]],
+      joinDate: [null],
       isActive: [true],
       lockoutEnabled: [false],
     });
@@ -156,6 +164,7 @@ export class UsersComponent implements OnInit {
       name: '',
       email: '',
       phoneNumber: '',
+      joinDate: null,
       isActive: true,
       lockoutEnabled: false,
     });
@@ -180,6 +189,12 @@ export class UsersComponent implements OnInit {
     this.userForm.get('password')?.clearValidators();
     this.userForm.get('password')?.updateValueAndValidity();
 
+    let initialJoinDate: Date | null = null;
+    const epJoinDate = (user.extraProperties as any)?.['JoinDate'] || (user.extraProperties as any)?.['joinDate'];
+    if (epJoinDate) {
+      initialJoinDate = new Date(epJoinDate);
+    }
+
     this.userForm.reset({
       userName: user.userName || '',
       password: '',
@@ -187,8 +202,22 @@ export class UsersComponent implements OnInit {
       name: user.name || '',
       email: user.email || '',
       phoneNumber: user.phoneNumber || '',
+      joinDate: initialJoinDate,
       isActive: user.isActive !== false,
       lockoutEnabled: false,
+    });
+
+    // Tải thông tin hồ sơ nhân viên để lấy chính xác mốc ngày vào làm việc (JoinDate)
+    this.employeeService.get(user.id).subscribe({
+      next: emp => {
+        const d = emp.rawJoinDate || emp.joinDate;
+        if (d) {
+          this.userForm.patchValue({ joinDate: new Date(d) });
+        }
+      },
+      error: () => {
+        // Bỏ qua nếu người dùng chưa có hồ sơ
+      },
     });
 
     this.selectedRoleNames.clear();
@@ -239,6 +268,8 @@ export class UsersComponent implements OnInit {
     }
     this.isSubmitting = true;
 
+    const joinDateIso = raw.joinDate ? new Date(raw.joinDate).toISOString() : undefined;
+
     if (this.isEditMode && this.selectedUser?.id) {
       const updateInput: IdentityUserUpdateDto = {
         userName: (raw.userName || '').trim(),
@@ -250,25 +281,41 @@ export class UsersComponent implements OnInit {
         lockoutEnabled: false,
         roleNames,
         concurrencyStamp: this.selectedUser.concurrencyStamp,
+        extraProperties: joinDateIso ? { JoinDate: joinDateIso } : {},
       };
 
       if (raw.password && raw.password.trim().length > 0) {
         updateInput.password = raw.password.trim();
       }
 
-      this.userService
-        .update(this.selectedUser.id, updateInput)
-        .pipe(finalize(() => (this.isSubmitting = false)))
-        .subscribe({
-          next: () => {
+      this.userService.update(this.selectedUser.id, updateInput).subscribe({
+        next: () => {
+          if (joinDateIso && this.selectedUser?.id) {
+            this.employeeService
+              .updateJoinDate(this.selectedUser.id, { joinDate: joinDateIso })
+              .pipe(
+                finalize(() => {
+                  this.isSubmitting = false;
+                  this.message.success('Đã cập nhật tài khoản thành công!');
+                  this.closeUserModal();
+                  this.loadUsers();
+                }),
+              )
+              .subscribe({
+                error: () => {},
+              });
+          } else {
+            this.isSubmitting = false;
             this.message.success('Đã cập nhật tài khoản thành công!');
             this.closeUserModal();
             this.loadUsers();
-          },
-          error: err => {
-            this.message.error(extractErrorMessage(err, 'Không thể cập nhật tài khoản!'));
-          },
-        });
+          }
+        },
+        error: err => {
+          this.isSubmitting = false;
+          this.message.error(extractErrorMessage(err, 'Không thể cập nhật tài khoản!'));
+        },
+      });
     } else {
       const createInput: IdentityUserCreateDto = {
         userName: (raw.userName || '').trim(),
@@ -280,21 +327,37 @@ export class UsersComponent implements OnInit {
         isActive: !!raw.isActive,
         lockoutEnabled: false,
         roleNames,
+        extraProperties: joinDateIso ? { JoinDate: joinDateIso } : {},
       };
 
-      this.userService
-        .create(createInput)
-        .pipe(finalize(() => (this.isSubmitting = false)))
-        .subscribe({
-          next: () => {
+      this.userService.create(createInput).subscribe({
+        next: res => {
+          if (joinDateIso && res.id) {
+            this.employeeService
+              .updateJoinDate(res.id, { joinDate: joinDateIso })
+              .pipe(
+                finalize(() => {
+                  this.isSubmitting = false;
+                  this.message.success('Đã thêm tài khoản mới thành công!');
+                  this.closeUserModal();
+                  this.loadUsers();
+                }),
+              )
+              .subscribe({
+                error: () => {},
+              });
+          } else {
+            this.isSubmitting = false;
             this.message.success('Đã thêm tài khoản mới thành công!');
             this.closeUserModal();
             this.loadUsers();
-          },
-          error: err => {
-            this.message.error(extractErrorMessage(err, 'Không thể tạo tài khoản!'));
-          },
-        });
+          }
+        },
+        error: err => {
+          this.isSubmitting = false;
+          this.message.error(extractErrorMessage(err, 'Không thể tạo tài khoản!'));
+        },
+      });
     }
   }
 
