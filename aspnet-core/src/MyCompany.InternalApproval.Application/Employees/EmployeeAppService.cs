@@ -183,7 +183,8 @@ public class EmployeeAppService : InternalApprovalAppService, IEmployeeAppServic
                         dept = d;
                     }
 
-                    var effectiveJoinDate = TenureCalculator.GetEffectiveJoinDate(member?.JoinDate, user.CreationTime);
+                    var rawJoinDate = member?.JoinDate ?? TenureCalculator.TryGetJoinDate(user.ExtraProperties);
+                    var effectiveJoinDate = TenureCalculator.GetEffectiveJoinDate(rawJoinDate, user.CreationTime);
                     var (years, months, totalMonths) = TenureCalculator.Calculate(effectiveJoinDate);
                     var tenureFormatted = TenureCalculator.FormatVietnamese(years, months);
 
@@ -264,7 +265,8 @@ public class EmployeeAppService : InternalApprovalAppService, IEmployeeAppServic
                 dept = await _departmentRepository.FindAsync(member.DepartmentId);
             }
 
-            var effectiveJoinDate = TenureCalculator.GetEffectiveJoinDate(member?.JoinDate, user.CreationTime);
+            var rawJoinDate = member?.JoinDate ?? TenureCalculator.TryGetJoinDate(user.ExtraProperties);
+            var effectiveJoinDate = TenureCalculator.GetEffectiveJoinDate(rawJoinDate, user.CreationTime);
             var (years, months, totalMonths) = TenureCalculator.Calculate(effectiveJoinDate);
             var tenureFormatted = TenureCalculator.FormatVietnamese(years, months);
 
@@ -307,7 +309,7 @@ public class EmployeeAppService : InternalApprovalAppService, IEmployeeAppServic
                 Position = member?.Position ?? string.Empty,
                 IsManager = dept != null && dept.ManagerId == user.Id,
                 JoinDate = effectiveJoinDate,
-                RawJoinDate = member?.JoinDate,
+                RawJoinDate = rawJoinDate,
                 CreationTime = user.CreationTime,
                 TenureMonths = totalMonths,
                 TenureFormatted = tenureFormatted,
@@ -355,18 +357,8 @@ public class EmployeeAppService : InternalApprovalAppService, IEmployeeAppServic
             }
             else
             {
-                var firstDept = await _departmentRepository.FirstOrDefaultAsync();
-                if (firstDept != null)
-                {
-                    var newMember = new DepartmentMember(
-                        GuidGenerator.Create(),
-                        firstDept.Id,
-                        id,
-                        "Nhân viên",
-                        input.JoinDate.Date
-                    );
-                    await _memberRepository.InsertAsync(newMember, autoSave: true);
-                }
+                user.ExtraProperties["JoinDate"] = input.JoinDate.Date;
+                await _userRepository.UpdateAsync(user, autoSave: true);
             }
 
             return await GetAsync(id);

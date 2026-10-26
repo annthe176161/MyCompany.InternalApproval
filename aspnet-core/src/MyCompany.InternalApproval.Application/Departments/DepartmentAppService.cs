@@ -360,7 +360,17 @@ public class DepartmentAppService : InternalApprovalAppService, IDepartmentAppSe
                 return;
             }
 
-            var member = new DepartmentMember(GuidGenerator.Create(), departmentId, input.UserId, input.Position.Trim(), input.JoinDate);
+            DateTime? joinDate = input.JoinDate;
+            if (!joinDate.HasValue)
+            {
+                var user = await _userRepository.FindAsync(input.UserId);
+                if (user != null)
+                {
+                    joinDate = TenureCalculator.TryGetJoinDate(user.ExtraProperties);
+                }
+            }
+
+            var member = new DepartmentMember(GuidGenerator.Create(), departmentId, input.UserId, input.Position.Trim(), joinDate);
             await _memberRepository.InsertAsync(member, autoSave: true);
         }
         catch (Exception ex) when (ex is not IBusinessException && ex is not EntityNotFoundException && ex is not AbpAuthorizationException && ex is not AbpValidationException)

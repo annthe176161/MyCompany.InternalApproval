@@ -100,21 +100,8 @@ public class InternalApprovalIdentityUserAppService : IdentityUserAppService
                 member.SetJoinDate(joinDate.Date);
                 await _memberRepository.UpdateAsync(member, autoSave: true);
             }
-            else
-            {
-                var firstDept = await _departmentRepository.FirstOrDefaultAsync();
-                if (firstDept != null)
-                {
-                    var newMember = new DepartmentMember(
-                        GuidGenerator.Create(),
-                        firstDept.Id,
-                        userId,
-                        "Nhân viên",
-                        joinDate.Date
-                    );
-                    await _memberRepository.InsertAsync(newMember, autoSave: true);
-                }
-            }
+            // Không tự động gán tài khoản mới vào bất kỳ phòng ban nào.
+            // Tài khoản mới sẽ ở trạng thái "Chưa phân bổ", người quản trị sẽ chủ động phân bổ vào phòng ban sau.
         }
     }
 }

@@ -11,6 +11,23 @@ public static class TenureCalculator
         return configuredJoinDate ?? userCreationTime;
     }
 
+    // Trích xuất JoinDate từ ExtraProperties của người dùng nếu có
+    public static DateTime? TryGetJoinDate(Volo.Abp.Data.ExtraPropertyDictionary? extraProperties)
+    {
+        if (extraProperties == null) return null;
+        if (extraProperties.TryGetValue("JoinDate", out var v1) && v1 != null)
+        {
+            if (v1 is DateTime dt) return dt.Date;
+            if (DateTime.TryParse(v1.ToString(), out var p1)) return p1.Date;
+        }
+        if (extraProperties.TryGetValue("joinDate", out var v2) && v2 != null)
+        {
+            if (v2 is DateTime dt) return dt.Date;
+            if (DateTime.TryParse(v2.ToString(), out var p2)) return p2.Date;
+        }
+        return null;
+    }
+
     // Tính toán số năm, số tháng lẻ và tổng số tháng làm việc tính đến thời điểm hiện tại
     public static (int Years, int Months, int TotalMonths) Calculate(DateTime joinDate, DateTime? now = null)
     {
