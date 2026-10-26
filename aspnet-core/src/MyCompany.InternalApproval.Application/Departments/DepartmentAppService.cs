@@ -144,9 +144,19 @@ public class DepartmentAppService : InternalApprovalAppService, IDepartmentAppSe
                 input.ManagerId
             );
 
-            // Nếu có chọn trưởng phòng, tự động thêm trưởng phòng vào danh sách thành viên với chức danh "Trưởng phòng"
+            // Nếu có chọn trưởng phòng, kiểm tra xem nhân sự này có thuộc phòng ban khác không
             if (input.ManagerId.HasValue)
             {
+                var otherMembership = await _memberRepository.FirstOrDefaultAsync(x => x.UserId == input.ManagerId.Value);
+                if (otherMembership != null)
+                {
+                    var otherDept = await _departmentRepository.FindAsync(otherMembership.DepartmentId);
+                    var otherDeptName = otherDept?.Name ?? "phòng ban khác";
+                    var user = await _userRepository.FindAsync(input.ManagerId.Value);
+                    var userName = user != null ? ((!string.IsNullOrWhiteSpace(user.Surname) ? user.Surname + " " : "") + user.Name) : "Nhân sự này";
+                    throw new UserFriendlyException($"Nhân sự '{userName}' hiện đang thuộc phòng ban '{otherDeptName}'. Mỗi nhân viên chỉ được thuộc duy nhất 1 phòng ban! Vui lòng gỡ nhân sự khỏi '{otherDeptName}' trước.");
+                }
+
                 dept.AddMember(GuidGenerator.Create(), input.ManagerId.Value, "Trưởng phòng");
             }
 
@@ -191,6 +201,16 @@ public class DepartmentAppService : InternalApprovalAppService, IDepartmentAppSe
 
             if (input.ManagerId.HasValue)
             {
+                var otherMembership = await _memberRepository.FirstOrDefaultAsync(x => x.UserId == input.ManagerId.Value && x.DepartmentId != id);
+                if (otherMembership != null)
+                {
+                    var otherDept = await _departmentRepository.FindAsync(otherMembership.DepartmentId);
+                    var otherDeptName = otherDept?.Name ?? "phòng ban khác";
+                    var user = await _userRepository.FindAsync(input.ManagerId.Value);
+                    var userName = user != null ? ((!string.IsNullOrWhiteSpace(user.Surname) ? user.Surname + " " : "") + user.Name) : "Nhân sự này";
+                    throw new UserFriendlyException($"Nhân sự '{userName}' hiện đang thuộc phòng ban '{otherDeptName}'. Mỗi nhân viên chỉ được thuộc duy nhất 1 phòng ban! Vui lòng gỡ nhân sự khỏi '{otherDeptName}' trước.");
+                }
+
                 var existingMember = await _memberRepository.FirstOrDefaultAsync(x => x.DepartmentId == id && x.UserId == input.ManagerId.Value);
                 if (existingMember == null)
                 {
@@ -309,13 +329,25 @@ public class DepartmentAppService : InternalApprovalAppService, IDepartmentAppSe
         }
     }
 
-    // Thêm nhân viên vào phòng ban
+    // Thêm nhân viên vào phòng ban (chặn nếu nhân sự đã thuộc phòng ban khác)
     [Authorize(InternalApprovalPermissions.Departments.ManageMembers)]
     public virtual async Task AddMemberAsync(Guid departmentId, AddDepartmentMemberDto input)
     {
         try
         {
             await _departmentRepository.GetAsync(departmentId);
+
+            // Kiểm tra xem nhân sự này đã thuộc phòng ban nào khác chưa
+            var existingOther = await _memberRepository.FirstOrDefaultAsync(x => x.UserId == input.UserId && x.DepartmentId != departmentId);
+            if (existingOther != null)
+            {
+                var otherDept = await _departmentRepository.FindAsync(existingOther.DepartmentId);
+                var otherDeptName = otherDept?.Name ?? "phòng ban khác";
+                var user = await _userRepository.FindAsync(input.UserId);
+                var userName = user != null ? ((!string.IsNullOrWhiteSpace(user.Surname) ? user.Surname + " " : "") + user.Name) : "Nhân sự này";
+                throw new UserFriendlyException($"Nhân sự '{userName}' hiện đang thuộc phòng ban '{otherDeptName}'. Mỗi nhân sự chỉ được thuộc duy nhất 1 phòng ban! Vui lòng gỡ nhân sự khỏi '{otherDeptName}' trước khi thêm vào phòng ban mới.");
+            }
+
             var existing = await _memberRepository.FirstOrDefaultAsync(x => x.DepartmentId == departmentId && x.UserId == input.UserId);
             if (existing != null)
             {
@@ -405,6 +437,17 @@ public class DepartmentAppService : InternalApprovalAppService, IDepartmentAppSe
 
             if (userId.HasValue)
             {
+                // Kiểm tra xem nhân sự này có đang thuộc phòng ban khác không
+                var otherMembership = await _memberRepository.FirstOrDefaultAsync(x => x.UserId == userId.Value && x.DepartmentId != departmentId);
+                if (otherMembership != null)
+                {
+                    var otherDept = await _departmentRepository.FindAsync(otherMembership.DepartmentId);
+                    var otherDeptName = otherDept?.Name ?? "phòng ban khác";
+                    var user = await _userRepository.FindAsync(userId.Value);
+                    var userName = user != null ? ((!string.IsNullOrWhiteSpace(user.Surname) ? user.Surname + " " : "") + user.Name) : "Nhân sự này";
+                    throw new UserFriendlyException($"Nhân sự '{userName}' hiện đang thuộc phòng ban '{otherDeptName}'. Mỗi nhân sự chỉ được thuộc duy nhất 1 phòng ban! Vui lòng gỡ nhân sự khỏi '{otherDeptName}' trước khi bổ nhiệm làm Trưởng phòng.");
+                }
+
                 var member = await _memberRepository.FirstOrDefaultAsync(x => x.DepartmentId == departmentId && x.UserId == userId.Value);
                 if (member == null)
                 {

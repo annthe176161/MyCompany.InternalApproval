@@ -256,6 +256,15 @@ export class DepartmentComponent implements OnInit {
     }
 
     const { userId, position } = this.addMemberForm.value;
+
+    const selectedUser = this.availableUsers.find(u => u.id === userId);
+    if (selectedUser?.currentDepartmentName && selectedUser.currentDepartmentName !== this.activeDepartment.name) {
+      this.message.error(
+        `Nhân sự "${selectedUser.fullName}" hiện đang thuộc phòng ban "${selectedUser.currentDepartmentName}". Mỗi nhân sự chỉ được thuộc duy nhất 1 phòng ban! Vui lòng gỡ khỏi phòng ban cũ trước khi thêm vào phòng ban mới.`,
+      );
+      return;
+    }
+
     this.isAddingMember = true;
     this.departmentService
       .addMember(this.activeDepartment.id, { userId, position })

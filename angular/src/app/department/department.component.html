@@ -261,7 +261,8 @@
                     <nz-option
                       *ngFor="let u of availableUsers"
                       [nzValue]="u.id"
-                      [nzLabel]="u.fullName + ' (' + u.userName + ')'"
+                      [nzLabel]="u.fullName + ' (' + u.userName + ')' + (u.currentDepartmentName ? ' — [Đang ở: ' + u.currentDepartmentName + ']' : '')"
+                      [nzDisabled]="!!u.currentDepartmentName && u.currentDepartmentName !== activeDepartment?.name"
                     >
                     </nz-option>
                   </nz-select>
