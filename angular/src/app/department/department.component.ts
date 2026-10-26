@@ -1,6 +1,7 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { NzMessageService } from 'ng-zorro-antd/message';
+import { finalize } from 'rxjs/operators';
 import { PermissionService } from '@abp/ng.core';
 import { DepartmentService } from '../proxy/departments/department.service';
 import {
@@ -41,6 +42,7 @@ export class DepartmentComponent implements OnInit {
   // Trạng thái ngăn kéo quản lý nhân sự và chức vụ phòng ban
   isDrawerVisible = false;
   isMembersLoading = false;
+  isAddingMember = false;
   activeDepartment: DepartmentDto | null = null;
   members: DepartmentMemberDto[] = [];
   availableUsers: DepartmentUserLookupDto[] = [];
@@ -244,6 +246,7 @@ export class DepartmentComponent implements OnInit {
   }
 
   submitAddMember(): void {
+    if (this.isAddingMember) return;
     if (this.addMemberForm.invalid || !this.activeDepartment) {
       Object.values(this.addMemberForm.controls).forEach(c => {
         c.markAsDirty();
@@ -253,8 +256,10 @@ export class DepartmentComponent implements OnInit {
     }
 
     const { userId, position } = this.addMemberForm.value;
+    this.isAddingMember = true;
     this.departmentService
       .addMember(this.activeDepartment.id, { userId, position })
+      .pipe(finalize(() => (this.isAddingMember = false)))
       .subscribe({
         next: () => {
           this.message.success('Đã thêm nhân sự vào phòng ban!');

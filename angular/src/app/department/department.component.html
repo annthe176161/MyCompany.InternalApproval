@@ -294,7 +294,7 @@
           </div>
 
           <div class="add-member-btn-row">
-            <button nz-button nzType="primary" class="btn-add-member" (click)="submitAddMember()">
+            <button nz-button nzType="primary" type="submit" class="btn-add-member" [nzLoading]="isAddingMember">
               <span nz-icon nzType="plus"></span>
               Thêm vào phòng ban
             </button>
