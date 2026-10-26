@@ -159,7 +159,7 @@
                 <th nzWidth="115px" nzAlign="center" nzColumnKey="currentYearRequestCount" [nzSortFn]="true">
                   Đề xuất {{ currentYear }}
                 </th>
-                <th nzWidth="90px" nzAlign="center">Thao tác</th>
+                <th nzWidth="110px" nzAlign="center">Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -219,17 +219,32 @@
 
                 <!-- Thao tác -->
                 <td nzAlign="center">
-                  <button
-                    nz-button
-                    nzType="text"
-                    nzShape="circle"
-                    class="action-icon-btn view"
-                    nz-tooltip
-                    nzTooltipTitle="Xem hồ sơ chi tiết"
-                    (click)="openEmployeeDrawer(emp.id)"
-                  >
-                    <span nz-icon nzType="eye"></span>
-                  </button>
+                  <div class="action-btn-group">
+                    <button
+                      nz-button
+                      nzType="text"
+                      nzShape="circle"
+                      class="action-icon-btn view"
+                      nz-tooltip
+                      nzTooltipTitle="Xem hồ sơ chi tiết"
+                      (click)="openEmployeeDrawer(emp.id)"
+                    >
+                      <span nz-icon nzType="eye"></span>
+                    </button>
+
+                    <button
+                      nz-button
+                      nzType="text"
+                      nzShape="circle"
+                      class="action-icon-btn excel"
+                      nz-tooltip
+                      nzTooltipTitle="Xuất Excel thống kê số lần nghỉ phép & đề xuất của nhân sự này"
+                      (click)="exportSingleEmployeeExcel(emp)"
+                      [nzLoading]="exportingEmployeeId === emp.id"
+                    >
+                      <span nz-icon nzType="file-excel"></span>
+                    </button>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -377,7 +392,7 @@
                   Đã duyệt / Đã gửi
                 </th>
                 <th>Đợt nghỉ gần nhất</th>
-                <th nzWidth="90px" nzAlign="center">Thao tác</th>
+                <th nzWidth="110px" nzAlign="center">Thao tác</th>
               </tr>
             </thead>
             <tbody>

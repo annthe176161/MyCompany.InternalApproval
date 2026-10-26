@@ -19,7 +19,7 @@ import {
   getRequestTypeMeta,
   RequestTypeMeta,
 } from '../../constants/request-type.constant';
-import { CurrentUserContextService } from '../../services';
+import { CurrentUserContextService, ExcelExportService } from '../../services';
 import { extractErrorMessage, getSingleInitial, getTenureMilestone } from '../../utils';
 
 // Ngăn kéo hiển thị hồ sơ nhân viên, lịch sử nghỉ phép, đề xuất và thống kê theo năm
@@ -77,11 +77,15 @@ export class EmployeeDetailDrawerComponent implements OnInit {
   statusList: RequestStatusMeta[] = REQUEST_STATUS_LIST;
   typeList: RequestTypeMeta[] = REQUEST_TYPE_LIST;
 
+  // Trạng thái xuất báo cáo Excel cá nhân
+  isExportingExcel = false;
+
   constructor(
     private employeeService: EmployeeService,
     private userContext: CurrentUserContextService,
     private permissionService: PermissionService,
     private message: NzMessageService,
+    private excelExportService: ExcelExportService,
   ) {}
 
   ngOnInit(): void {
@@ -288,5 +292,41 @@ export class EmployeeDetailDrawerComponent implements OnInit {
 
   getTenureMilestoneLabel(): { label: string; color: string } {
     return getTenureMilestone(this.profile?.tenureMonths || 0);
+  }
+
+  // Tải về file Excel thống kê chi tiết số lượt nghỉ phép và lịch sử đề xuất của nhân sự
+  exportExcel(): void {
+    if (!this.userId || !this.profile) {
+      this.message.warning('Không có thông tin nhân sự để xuất Excel!');
+      return;
+    }
+
+    this.isExportingExcel = true;
+    this.employeeService
+      .getRequests(this.userId, { skipCount: 0, maxResultCount: 1000 })
+      .subscribe({
+        next: res => {
+          const allRequests = res.items || [];
+          const currentUser = this.userContext.currentUser;
+          const exporterName = currentUser?.name || currentUser?.userName || 'Quản trị viên';
+
+          this.excelExportService.exportEmployeeDetailReport(
+            this.profile!,
+            this.yearlyStats,
+            allRequests,
+            this.leaveTimeline,
+            exporterName,
+          );
+
+          this.message.success(
+            `Đã xuất file Excel báo cáo cho nhân sự "${this.profile?.fullName}" thành công!`,
+          );
+          this.isExportingExcel = false;
+        },
+        error: err => {
+          this.isExportingExcel = false;
+          this.message.error(extractErrorMessage(err, 'Không thể xuất file Excel thống kê!'));
+        },
+      });
   }
 }

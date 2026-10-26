@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { Subject, Subscription } from 'rxjs';
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { Subject, Subscription, forkJoin } from 'rxjs';
+import { debounceTime, distinctUntilChanged, finalize } from 'rxjs/operators';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzTableQueryParams } from 'ng-zorro-antd/table';
 import { EmployeeService } from '../proxy/employees/employee.service';
@@ -87,6 +87,9 @@ export class EmployeeComponent implements OnInit, OnDestroy {
 
   // Trạng thái xuất Excel báo cáo nghỉ phép
   isExportingLeaveExcel = false;
+
+  // ID của nhân viên đang được xuất file Excel cá nhân
+  exportingEmployeeId: string | null = null;
 
   constructor(
     private employeeService: EmployeeService,
@@ -357,6 +360,40 @@ export class EmployeeComponent implements OnInit, OnDestroy {
         this.message.error(extractErrorMessage(err, 'Không thể xuất file Excel báo cáo!'));
       },
     });
+  }
+
+  // Xuất file Excel báo cáo chi tiết cá nhân: số lần nghỉ phép và toàn bộ đề xuất của 1 nhân sự
+  exportSingleEmployeeExcel(emp: EmployeeListItemDto): void {
+    if (!emp?.id) return;
+
+    this.exportingEmployeeId = emp.id;
+    forkJoin({
+      profile: this.employeeService.get(emp.id),
+      yearlyStats: this.employeeService.getYearlyStats(emp.id, this.currentYear),
+      requests: this.employeeService.getRequests(emp.id, { skipCount: 0, maxResultCount: 1000 }),
+      leaveTimeline: this.employeeService.getLeaveTimeline(emp.id, this.currentYear),
+    })
+      .pipe(finalize(() => (this.exportingEmployeeId = null)))
+      .subscribe({
+        next: ({ profile, yearlyStats, requests, leaveTimeline }) => {
+          const exporter = this.currentUserFullName || this.currentUserName || 'Quản lý';
+          this.excelExportService.exportEmployeeDetailReport(
+            profile,
+            yearlyStats,
+            requests.items || [],
+            leaveTimeline || [],
+            exporter,
+          );
+          this.message.success(
+            `Đã xuất file Excel báo cáo thống kê cho nhân sự "${profile.fullName}" thành công!`,
+          );
+        },
+        error: err => {
+          this.message.error(
+            extractErrorMessage(err, 'Không thể xuất file Excel thống kê của nhân sự này!'),
+          );
+        },
+      });
   }
 
   // Điều hướng tab và làm mới dữ liệu

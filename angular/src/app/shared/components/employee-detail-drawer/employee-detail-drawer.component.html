@@ -24,6 +24,21 @@
           <span *ngIf="profile?.position">{{ profile?.position }}</span>
         </div>
       </div>
+      <div class="header-actions-box" *ngIf="profile">
+        <button
+          nz-button
+          nzType="primary"
+          nzSize="small"
+          class="export-excel-header-btn"
+          (click)="exportExcel()"
+          [nzLoading]="isExportingExcel"
+          nz-tooltip
+          nzTooltipTitle="Tải file Excel thống kê số lần nghỉ phép và tất cả đề xuất của nhân sự này"
+        >
+          <span nz-icon nzType="file-excel"></span>
+          Xuất Excel
+        </button>
+      </div>
     </div>
   </ng-template>
 

@@ -1,7 +1,12 @@
 import { Injectable } from '@angular/core';
 import * as XLSX from 'xlsx';
 import { RequestDto } from '../../proxy/requests';
-import type { EmployeeLeaveReportItemDto } from '../../proxy/employees/models';
+import type {
+  EmployeeLeaveReportItemDto,
+  EmployeeProfileDto,
+  EmployeeYearlyStatsDto,
+  LeaveTimelineItemDto,
+} from '../../proxy/employees/models';
 import { getRequestStatusMeta } from '../constants/request-status.constant';
 import { getRequestTypeMeta } from '../constants/request-type.constant';
 import { DashboardReportData } from '../models/dashboard-report-data.model';
@@ -307,6 +312,203 @@ export class ExcelExportService {
     XLSX.utils.book_append_sheet(wb, ws, 'Báo cáo ngày nghỉ phép');
 
     const fileName = `BaoCao_NgayNghiPhep_${year}_${getFileTimestamp()}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+  }
+
+  // Xuất báo cáo thống kê chi tiết và lịch sử đề xuất của riêng 1 nhân sự (.xlsx)
+  exportEmployeeDetailReport(
+    profile: EmployeeProfileDto,
+    yearlyStats: EmployeeYearlyStatsDto | null,
+    requests: RequestDto[],
+    leaveTimeline: LeaveTimelineItemDto[],
+    exporterName: string = 'Người dùng',
+  ): void {
+    const wb = XLSX.utils.book_new();
+    const exportTimeStr = formatDateTimeFullVn(new Date());
+    const year = yearlyStats?.year || new Date().getFullYear();
+
+    // 1. SHEET 1: THỐNG KÊ TỔNG QUAN
+    const summaryAoa: any[][] = [
+      ['HỆ THỐNG QUẢN LÝ PHÊ DUYỆT NỘI BỘ (INTERNAL APPROVAL)'],
+      ['BÁO CÁO THỐNG KÊ CHI TIẾT NHÂN SỰ & ĐỀ XUẤT'],
+      [],
+      ['Người xuất báo cáo:', exporterName],
+      ['Thời gian xuất file:', exportTimeStr],
+      ['Năm thống kê:', year],
+      [],
+      ['1. THÔNG TIN NHÂN SỰ:'],
+      ['Họ và tên:', profile.fullName || '—'],
+      ['Tên tài khoản (Username):', profile.userName || '—'],
+      ['Địa chỉ Email:', profile.email || '—'],
+      ['Phòng ban:', profile.departmentName ? `${profile.departmentName} (${profile.departmentCode})` : 'Chưa phân bổ'],
+      ['Chức danh / Vị trí:', profile.position || 'Nhân viên'],
+      ['Vai trò quản lý:', profile.isManager ? 'Trưởng phòng' : 'Thành viên'],
+      ['Ngày vào làm việc:', profile.joinDate ? formatDateTimeShortVn(profile.joinDate) : 'Chưa cập nhật'],
+      ['Thâm niên công tác:', profile.tenureFormatted || '0 tháng'],
+      [],
+      ['2. TỔNG HỢP SỐ LƯỢNG ĐỀ XUẤT & NGHỈ PHÉP (NĂM ' + year + '):'],
+      ['Chỉ số thống kê', 'Giá trị', 'Đơn vị tính'],
+      ['Tổng số đơn đề xuất đã gửi lên', yearlyStats?.totalRequests ?? requests.length, 'Đơn'],
+      ['Số đơn đề xuất đã được phê duyệt', yearlyStats?.approvedCount ?? 0, 'Đơn'],
+      ['Số đơn đề xuất đang chờ phê duyệt', yearlyStats?.submittedCount ?? 0, 'Đơn'],
+      ['Số đơn đề xuất bị từ chối', yearlyStats?.rejectedCount ?? 0, 'Đơn'],
+      ['Tổng số đợt gửi đơn nghỉ phép', leaveTimeline.length, 'Đợt'],
+      ['Tổng số ngày nghỉ phép đã duyệt', yearlyStats?.leaveDaysTotal ?? 0, 'Ngày'],
+      ['Tổng số tiền đã đề xuất', yearlyStats?.totalAmountRequested ?? 0, 'VNĐ'],
+      ['Tổng số tiền đã được giải ngân', yearlyStats?.totalAmountDisbursed ?? 0, 'VNĐ'],
+      [],
+      ['3. PHÂN BỔ ĐỀ XUẤT THEO TỪNG LOẠI HÌNH:'],
+      ['Loại hình đề xuất', 'Số lượng đơn', 'Tổng số tiền (VNĐ)'],
+    ];
+
+    if (yearlyStats?.breakdownByType?.length) {
+      yearlyStats.breakdownByType.forEach(item => {
+        summaryAoa.push([item.typeName, item.count, item.totalAmount]);
+      });
+    } else {
+      summaryAoa.push(['Không có dữ liệu phân loại', 0, 0]);
+    }
+
+    const summaryWs = XLSX.utils.aoa_to_sheet(summaryAoa);
+    summaryWs['!cols'] = [{ wch: 36 }, { wch: 28 }, { wch: 20 }];
+    XLSX.utils.book_append_sheet(wb, summaryWs, 'Thống kê tổng quan');
+
+    // 2. SHEET 2: DANH SÁCH TẤT CẢ ĐỀ XUẤT
+    const requestsAoa: any[][] = [
+      ['DANH SÁCH TẤT CẢ ĐỀ XUẤT ĐÃ GỬI LÊN'],
+      [`Nhân sự: ${profile.fullName} (@${profile.userName}) - Phòng ban: ${profile.departmentName || 'N/A'}`],
+      [],
+      [
+        'STT',
+        'Mã đề xuất',
+        'Tiêu đề đề xuất',
+        'Loại hình',
+        'Số tiền (VNĐ)',
+        'Ngày tạo đơn',
+        'Trạng thái',
+        'Người phê duyệt',
+        'Ngày phê duyệt',
+        'Lý do từ chối / Ghi chú',
+      ],
+    ];
+
+    let totalAmount = 0;
+    requests.forEach((req, idx) => {
+      const typeMeta = getRequestTypeMeta(req.type);
+      const statusMeta = getRequestStatusMeta(req.status);
+      const amt = req.amount || 0;
+      totalAmount += amt;
+
+      requestsAoa.push([
+        idx + 1,
+        req.id ? '#' + req.id.substring(0, 8).toUpperCase() : '',
+        req.title || '',
+        typeMeta.label,
+        amt > 0 ? amt : 0,
+        formatDateTimeShortVn(req.creationTime),
+        statusMeta.label,
+        req.approverName || '',
+        formatDateTimeShortVn(req.approvalTime),
+        req.rejectionReason || '',
+      ]);
+    });
+
+    requestsAoa.push([]);
+    requestsAoa.push([
+      'TỔNG CỘNG',
+      `${requests.length} đề xuất`,
+      '',
+      '',
+      totalAmount,
+      '',
+      '',
+      '',
+      '',
+      '',
+    ]);
+
+    const requestsWs = XLSX.utils.aoa_to_sheet(requestsAoa);
+    requestsWs['!cols'] = [
+      { wch: 6 },
+      { wch: 14 },
+      { wch: 34 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 16 },
+      { wch: 22 },
+      { wch: 18 },
+      { wch: 32 },
+    ];
+    XLSX.utils.book_append_sheet(wb, requestsWs, 'Lịch sử đề xuất');
+
+    // 3. SHEET 3: CHI TIẾT CÁC ĐỢT NGHỈ PHÉP
+    const leaveAoa: any[][] = [
+      ['CHI TIẾT LỊCH SỬ NGHỈ PHÉP'],
+      [`Nhân sự: ${profile.fullName} (@${profile.userName})`],
+      [],
+      [
+        'STT',
+        'Mã đơn',
+        'Tiêu đề',
+        'Từ ngày',
+        'Đến ngày',
+        'Số ngày nghỉ',
+        'Lý do nghỉ phép',
+        'Trạng thái',
+        'Người phê duyệt',
+        'Ngày phê duyệt',
+      ],
+    ];
+
+    let totalLeaveDays = 0;
+    leaveTimeline.forEach((leave, idx) => {
+      totalLeaveDays += leave.days || 0;
+      leaveAoa.push([
+        idx + 1,
+        leave.requestId ? '#' + leave.requestId.substring(0, 8).toUpperCase() : '',
+        leave.title || '',
+        leave.startDate ? formatDateTimeShortVn(leave.startDate) : '',
+        leave.endDate ? formatDateTimeShortVn(leave.endDate) : '',
+        leave.days || 0,
+        leave.reason || '',
+        leave.statusName || '',
+        leave.approverName || '',
+        leave.approvalTime ? formatDateTimeShortVn(leave.approvalTime) : '',
+      ]);
+    });
+
+    leaveAoa.push([]);
+    leaveAoa.push([
+      'TỔNG CỘNG',
+      `${leaveTimeline.length} đợt nghỉ`,
+      '',
+      '',
+      '',
+      totalLeaveDays,
+      '',
+      '',
+      '',
+      '',
+    ]);
+
+    const leaveWs = XLSX.utils.aoa_to_sheet(leaveAoa);
+    leaveWs['!cols'] = [
+      { wch: 6 },
+      { wch: 14 },
+      { wch: 30 },
+      { wch: 16 },
+      { wch: 16 },
+      { wch: 14 },
+      { wch: 32 },
+      { wch: 16 },
+      { wch: 22 },
+      { wch: 18 },
+    ];
+    XLSX.utils.book_append_sheet(wb, leaveWs, 'Chi tiết nghỉ phép');
+
+    const cleanName = (profile.userName || 'NhanVien').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const fileName = `BaoCao_NhanSu_${cleanName}_${getFileTimestamp()}.xlsx`;
     XLSX.writeFile(wb, fileName);
   }
 }

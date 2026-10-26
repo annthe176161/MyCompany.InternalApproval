@@ -231,6 +231,12 @@
   }
 }
 
+.action-btn-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 /* NÚT THAO TÁC TRÒN ĐỒNG BỘ */
 .action-icon-btn {
   width: 32px !important;
@@ -250,6 +256,17 @@
     &:hover {
       background-color: #2563eb;
       color: #ffffff;
+    }
+  }
+
+  &.excel {
+    color: #107c41;
+    background-color: #f0fdf4;
+    border-color: #bbf7d0 !important;
+    &:hover {
+      background-color: #107c41;
+      color: #ffffff;
+      border-color: #107c41 !important;
     }
   }
 }
