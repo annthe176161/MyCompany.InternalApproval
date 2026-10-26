@@ -163,6 +163,7 @@ public class EmployeeAppService : InternalApprovalAppService, IEmployeeAppServic
                 : null;
 
             var employeeList = users
+                .Where(user => !string.Equals(user.UserName, "admin", StringComparison.OrdinalIgnoreCase))
                 .Where(user =>
                 {
                     if (scope.IsGlobal) return true;
@@ -216,7 +217,12 @@ public class EmployeeAppService : InternalApprovalAppService, IEmployeeAppServic
                         CurrentYearRequestCount = reqCount
                     };
                 })
-                .Where(item => !input.DepartmentId.HasValue || item.DepartmentId == input.DepartmentId.Value)
+                .Where(item =>
+                {
+                    if (!input.DepartmentId.HasValue) return true;
+                    if (input.DepartmentId.Value == Guid.Empty) return !item.DepartmentId.HasValue;
+                    return item.DepartmentId == input.DepartmentId.Value;
+                })
                 .Where(item => string.IsNullOrEmpty(filterKeyword)
                     || item.FullName.ToLowerInvariant().Contains(filterKeyword)
                     || item.UserName.ToLowerInvariant().Contains(filterKeyword)
@@ -586,15 +592,19 @@ public class EmployeeAppService : InternalApprovalAppService, IEmployeeAppServic
                 .ToDictionary(g => g.Key, g => g.First());
             var deptDict = departments.ToDictionary(x => x.Id, x => x);
 
-            // 1. Thống kê tổng quan công ty
+            // 1. Thống kê tổng quan công ty (Loại bỏ tài khoản kỹ thuật admin)
+            var nonAdminUsers = users
+                .Where(u => !string.Equals(u.UserName, "admin", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
             var assignedDeptIds = departments.Select(d => d.Id).ToHashSet();
             var assignedMembers = members.Where(m => assignedDeptIds.Contains(m.DepartmentId)).ToList();
             var assignedUserIds = assignedMembers.Select(x => x.UserId).ToHashSet();
-            var assignedUsers = users.Where(u => assignedUserIds.Contains(u.Id)).ToList();
-            var totalEmployees = assignedUsers.Count;
+            var assignedUsers = nonAdminUsers.Where(u => assignedUserIds.Contains(u.Id)).ToList();
+            var totalEmployees = nonAdminUsers.Count;
             var totalDepartments = departments.Count;
 
-            var tenureMonthsList = assignedUsers.Select(u =>
+            var tenureMonthsList = nonAdminUsers.Select(u =>
             {
                 memberDict.TryGetValue(u.Id, out var m);
                 var effectiveJoin = TenureCalculator.GetEffectiveJoinDate(m?.JoinDate, u.CreationTime);
@@ -620,7 +630,7 @@ public class EmployeeAppService : InternalApprovalAppService, IEmployeeAppServic
                     .Where(x => x.DepartmentId == dept.Id)
                     .Select(x => x.UserId)
                     .ToHashSet();
-                var deptUsers = users.Where(x => memberUserIds.Contains(x.Id)).ToList();
+                var deptUsers = nonAdminUsers.Where(x => memberUserIds.Contains(x.Id)).ToList();
 
                 var headcount = deptUsers.Count;
                 var percentage = totalEmployees > 0 ? Math.Round((double)headcount / totalEmployees * 100, 1) : 0;
@@ -670,6 +680,23 @@ public class EmployeeAppService : InternalApprovalAppService, IEmployeeAppServic
                 );
             }).ToList();
 
+            // Thống kê nhân sự chưa phân bổ phòng ban
+            var unassignedUsers = nonAdminUsers.Where(u => !assignedUserIds.Contains(u.Id)).ToList();
+            var unassignedCount = unassignedUsers.Count;
+            var headcountList = deptStats.Select(x => x.Headcount).ToList();
+            if (unassignedCount > 0)
+            {
+                var unassignedPercentage = totalEmployees > 0 ? Math.Round((double)unassignedCount / totalEmployees * 100, 1) : 0;
+                headcountList.Add(new DepartmentHeadcountDto
+                {
+                    DepartmentId = Guid.Empty,
+                    DepartmentCode = "Chưa phân bổ",
+                    DepartmentName = "Chưa phân bổ phòng ban",
+                    Headcount = unassignedCount,
+                    Percentage = unassignedPercentage
+                });
+            }
+
             // 3. Danh sách nhân sự gửi nhiều đề xuất nhất
             var userDict = users.ToDictionary(x => x.Id, x => x);
             var topRequesters = allRequests
@@ -710,7 +737,7 @@ public class EmployeeAppService : InternalApprovalAppService, IEmployeeAppServic
                     TotalRequestsThisYear = totalRequestsThisYear,
                     TotalDisbursedAmountThisYear = totalDisbursedThisYear
                 },
-                HeadcountByDepartment = deptStats.Select(x => x.Headcount).ToList(),
+                HeadcountByDepartment = headcountList,
                 TenureByDepartment = deptStats.Select(x => x.Tenure).ToList(),
                 RequestFrequencyByDepartment = deptStats.Select(x => x.Frequency).ToList(),
                 TopRequesters = topRequesters
@@ -834,6 +861,7 @@ public class EmployeeAppService : InternalApprovalAppService, IEmployeeAppServic
                 : null;
 
             var reportItems = users
+                .Where(user => !string.Equals(user.UserName, "admin", StringComparison.OrdinalIgnoreCase))
                 .Where(user =>
                 {
                     if (scope.IsGlobal) return true;
@@ -849,6 +877,7 @@ public class EmployeeAppService : InternalApprovalAppService, IEmployeeAppServic
                 {
                     if (!input.DepartmentId.HasValue) return true;
                     memberDict.TryGetValue(user.Id, out var member);
+                    if (input.DepartmentId.Value == Guid.Empty) return member == null;
                     return member != null && member.DepartmentId == input.DepartmentId.Value;
                 })
                 .Select(user =>

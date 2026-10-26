@@ -122,6 +122,7 @@
                 [nzValue]="dept.id"
                 [nzLabel]="dept.name + ' (' + dept.code + ')'"
               ></nz-option>
+              <nz-option *ngIf="isAdmin" [nzValue]="'00000000-0000-0000-0000-000000000000'" nzLabel="Chưa phân bổ"></nz-option>
             </nz-select>
 
             <div class="filter-info">
@@ -288,6 +289,7 @@
                   [nzValue]="dept.id"
                   [nzLabel]="dept.name + ' (' + dept.code + ')'"
                 ></nz-option>
+                <nz-option *ngIf="isAdmin" [nzValue]="'00000000-0000-0000-0000-000000000000'" nzLabel="Chưa phân bổ"></nz-option>
               </nz-select>
             </div>
 
