@@ -97,8 +97,8 @@
               {{ dept.memberCount }} nhân sự
             </span>
           </td>
-          <td class="text-secondary text-truncate" [nz-tooltip]="dept.description" data-verbatim>
-            {{ dept.description || '—' }}
+          <td class="text-secondary text-truncate" [nz-tooltip]="dept.description || null" data-verbatim>
+            {{ dept.description || '' }}
           </td>
           <td nzAlign="center">
             <div class="action-btn-group">
