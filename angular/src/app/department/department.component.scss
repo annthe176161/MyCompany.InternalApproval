@@ -31,6 +31,38 @@
     .search-input {
       width: 260px;
     }
+
+    .btn-create-dept {
+      background: #111827;
+      border-color: #111827;
+      color: #ffffff;
+      font-weight: 500;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      line-height: 1;
+
+      ::ng-deep {
+        .anticon {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          vertical-align: 0;
+          line-height: 1;
+
+          svg {
+            display: block;
+          }
+        }
+      }
+
+      &:hover {
+        background: #1f2937;
+        border-color: #1f2937;
+      }
+    }
   }
 }
 
@@ -265,8 +297,29 @@
     .btn-add-member {
       background: #111827;
       border-color: #111827;
+      color: #ffffff;
       font-weight: 500;
       border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      line-height: 1;
+
+      ::ng-deep {
+        .anticon {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          vertical-align: 0;
+          line-height: 1;
+
+          svg {
+            display: block;
+          }
+        }
+      }
+
       &:hover {
         background: #1f2937;
         border-color: #1f2937;

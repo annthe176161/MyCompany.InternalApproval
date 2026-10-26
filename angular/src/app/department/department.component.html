@@ -30,9 +30,11 @@
         *ngIf="canCreate"
         nz-button
         nzType="primary"
+        class="btn-create-dept"
         (click)="openCreateModal()"
       >
-        Thêm phòng ban
+        <span nz-icon nzType="plus"></span>
+        <span>Thêm phòng ban</span>
       </button>
     </div>
   </div>
@@ -296,7 +298,7 @@
           <div class="add-member-btn-row">
             <button nz-button nzType="primary" type="submit" class="btn-add-member" [nzLoading]="isAddingMember">
               <span nz-icon nzType="plus"></span>
-              Thêm vào phòng ban
+              <span>Thêm vào phòng ban</span>
             </button>
           </div>
         </form>
