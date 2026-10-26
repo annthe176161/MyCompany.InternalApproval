@@ -73,6 +73,12 @@ export class RequestDetailDrawerComponent {
     });
   }
 
+  // Cập nhật nội dung bình luận ngay lập tức khi gõ phím
+  onCommentInput(event: Event): void {
+    const target = event.target as HTMLTextAreaElement;
+    this.newCommentText = target ? target.value : '';
+  }
+
   sendComment(): void {
     if (!this.detailRequest || !this.newCommentText.trim()) return;
 

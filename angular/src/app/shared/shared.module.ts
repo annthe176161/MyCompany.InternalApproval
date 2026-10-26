@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { COMPOSITION_BUFFER_MODE, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { CoreModule } from '@abp/ng.core';
 import { ThemeSharedModule } from '@abp/ng.theme.shared';
 import { NgbDropdownModule } from '@ng-bootstrap/ng-bootstrap';
@@ -98,6 +98,8 @@ const SHARED_ZORRO_MODULES = [
     ...SHARED_ZORRO_MODULES,
     EmployeeDetailDrawerComponent,
   ],
-  providers: [],
+  providers: [
+    { provide: COMPOSITION_BUFFER_MODE, useValue: false },
+  ],
 })
 export class SharedModule {}

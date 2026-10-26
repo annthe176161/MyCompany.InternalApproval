@@ -165,6 +165,7 @@
             nz-input
             rows="3"
             [(ngModel)]="newCommentText"
+            (input)="onCommentInput($event)"
             placeholder="Viết bình luận hoặc phản hồi..."
           ></textarea>
           <div style="display: flex; justify-content: flex-end;">
@@ -172,7 +173,7 @@
               nz-button
               nzType="primary"
               [nzLoading]="isSendingComment"
-              [disabled]="!newCommentText.trim()"
+              [disabled]="!newCommentText || !newCommentText.trim()"
               (click)="sendComment()"
             >
               <span nz-icon nzType="send"></span> Gửi bình luận
