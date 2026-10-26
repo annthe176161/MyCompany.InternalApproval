@@ -104,9 +104,7 @@ export class RequestComponent implements OnInit {
 
     // Lắng nghe queryParams để tự động mở chi tiết đề xuất hoặc tạo mới từ Dashboard
     this.route.queryParams.subscribe(params => {
-      if (this.isAdmin) {
-        this.activeScope = 'all';
-      } else if (params['scope'] === 'all' && this.isApprover) {
+      if (this.isAdmin || this.isApprover) {
         this.activeScope = 'all';
       } else if (params['scope'] === 'my') {
         this.activeScope = 'my';
@@ -116,7 +114,7 @@ export class RequestComponent implements OnInit {
       if (targetRequestId) {
         this.openDetailById(targetRequestId);
       }
-      if (params['action'] === 'create') {
+      if (params['action'] === 'create' && !this.isAdmin && !this.isApprover) {
         setTimeout(() => {
           this.formModal?.openCreate();
         }, 300);

@@ -4,30 +4,15 @@
     <div>
       <h2>Quản lý Đề xuất Nội bộ</h2>
       <p class="header-subtitle">
-        {{ activeScope === 'my' ? 'Danh sách các đề xuất của tài khoản đăng nhập' : 'Danh sách toàn bộ đề xuất trên hệ thống' }}
+        {{ (isAdmin || isApprover) ? 'Danh sách toàn bộ đề xuất trên hệ thống' : 'Danh sách các đề xuất của tài khoản đăng nhập' }}
       </p>
     </div>
     <div class="header-actions">
-      <!-- Bộ chọn phạm vi: Chỉ hiển thị cho Approver (Admin luôn là Tất cả đề xuất, Nhân viên luôn là Đề xuất của tôi) -->
-      <nz-radio-group
-        *ngIf="isApprover && !isAdmin"
-        [(ngModel)]="activeScope"
-        (ngModelChange)="onScopeChange($event)"
-        nzButtonStyle="solid"
-      >
-        <label nz-radio-button nzValue="my">
-          Đề xuất của tôi
-        </label>
-        <label nz-radio-button nzValue="all">
-          Tất cả đề xuất
-        </label>
-      </nz-radio-group>
-
       <button
         nz-button
         nzType="primary"
         class="btn-primary-action"
-        *ngIf="!isAdmin"
+        *ngIf="!isAdmin && !isApprover"
         (click)="formModal.openCreate()"
       >
         <span nz-icon nzType="plus"></span>

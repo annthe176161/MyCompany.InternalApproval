@@ -126,6 +126,8 @@ export class HomeComponent implements OnInit {
   loadDashboardData(): void {
     if (this.isAdmin && this.activeRoleView === 'employee') {
       this.activeRoleView = 'admin';
+    } else if (this.isApprover && this.activeRoleView === 'employee') {
+      this.activeRoleView = 'approver';
     }
     this.loading = true;
     const input: GetRequestListInput = {

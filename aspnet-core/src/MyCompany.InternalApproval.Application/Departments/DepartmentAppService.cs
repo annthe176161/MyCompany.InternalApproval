@@ -464,6 +464,12 @@ public class DepartmentAppService : InternalApprovalAppService, IDepartmentAppSe
                     await _permissionManager.SetForUserAsync(oldUser.Id, InternalApprovalPermissions.Requests.Approve, false);
                     await _permissionManager.SetForUserAsync(oldUser.Id, InternalApprovalPermissions.Requests.Reject, false);
                     await _permissionManager.SetForUserAsync(oldUser.Id, InternalApprovalPermissions.Employees.Edit, false);
+
+                    // Khôi phục quyền tạo, chỉnh sửa và xóa đề xuất của nhân viên
+                    await _permissionManager.SetForUserAsync(oldUser.Id, InternalApprovalPermissions.Requests.Default, true);
+                    await _permissionManager.SetForUserAsync(oldUser.Id, InternalApprovalPermissions.Requests.Create, true);
+                    await _permissionManager.SetForUserAsync(oldUser.Id, InternalApprovalPermissions.Requests.Edit, true);
+                    await _permissionManager.SetForUserAsync(oldUser.Id, InternalApprovalPermissions.Requests.Delete, true);
                 }
             }
         }
@@ -479,17 +485,24 @@ public class DepartmentAppService : InternalApprovalAppService, IDepartmentAppSe
                 {
                     await _userManager.AddToRoleAsync(newUser, "Manager");
                 }
+                if (newRoles.Contains("Employee", StringComparer.OrdinalIgnoreCase))
+                {
+                    await _userManager.RemoveFromRoleAsync(newUser, "Employee");
+                }
 
+                // Cấp quyền xem, phê duyệt và từ chối đề xuất cho Trưởng phòng
                 await _permissionManager.SetForUserAsync(newUser.Id, InternalApprovalPermissions.Requests.Default, true);
-                await _permissionManager.SetForUserAsync(newUser.Id, InternalApprovalPermissions.Requests.Create, true);
-                await _permissionManager.SetForUserAsync(newUser.Id, InternalApprovalPermissions.Requests.Edit, true);
-                await _permissionManager.SetForUserAsync(newUser.Id, InternalApprovalPermissions.Requests.Delete, true);
                 await _permissionManager.SetForUserAsync(newUser.Id, InternalApprovalPermissions.Requests.Approve, true);
                 await _permissionManager.SetForUserAsync(newUser.Id, InternalApprovalPermissions.Requests.Reject, true);
                 await _permissionManager.SetForUserAsync(newUser.Id, InternalApprovalPermissions.Departments.Default, true);
                 await _permissionManager.SetForUserAsync(newUser.Id, InternalApprovalPermissions.Employees.Default, true);
                 await _permissionManager.SetForUserAsync(newUser.Id, InternalApprovalPermissions.Employees.Edit, true);
                 await _permissionManager.SetForUserAsync(newUser.Id, InternalApprovalPermissions.Employees.Analytics, true);
+
+                // Loại bỏ quyền tạo, sửa, xóa đề xuất (vì Trưởng phòng chỉ có nhiệm vụ duyệt và từ chối đề xuất)
+                await _permissionManager.SetForUserAsync(newUser.Id, InternalApprovalPermissions.Requests.Create, false);
+                await _permissionManager.SetForUserAsync(newUser.Id, InternalApprovalPermissions.Requests.Edit, false);
+                await _permissionManager.SetForUserAsync(newUser.Id, InternalApprovalPermissions.Requests.Delete, false);
             }
         }
     }

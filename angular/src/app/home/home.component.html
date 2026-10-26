@@ -31,26 +31,13 @@
         </div>
       </div>
 
-      <!-- Cụm giữa: Chuyển đổi góc nhìn vai trò (Chỉ hiển thị cho người duyệt để chuyển sang Đề xuất của tôi) -->
-      <div class="topbar-role-switcher" *ngIf="!isAdmin && isApprover">
-        <nz-radio-group [(ngModel)]="activeRoleView" nzButtonStyle="solid" nzSize="small" class="role-radio-compact">
-          <label nz-radio-button nzValue="approver">
-            <span>Người phê duyệt</span>
-            <span *ngIf="approverPendingCount > 0" class="role-badge-count">{{ approverPendingCount }}</span>
-          </label>
-          <label nz-radio-button nzValue="employee">
-            <span>Đề xuất của tôi</span>
-          </label>
-        </nz-radio-group>
-      </div>
-
       <!-- Cụm phải: Thao tác nhanh -->
       <div class="topbar-actions">
-        <button *ngIf="!isAdmin" nz-button nzType="primary" nzSize="small" (click)="navigateToCreate()" class="action-btn btn-primary-black">
+        <button *ngIf="!isAdmin && !isApprover" nz-button nzType="primary" nzSize="small" (click)="navigateToCreate()" class="action-btn btn-primary-black">
           <span>+ Tạo đề xuất</span>
         </button>
-        <button nz-button nzSize="small" (click)="navigateToRequests(undefined, activeRoleView === 'admin' ? 'all' : 'my')" class="action-btn btn-outline">
-          <span>{{ isAdmin ? 'Danh sách đề xuất' : 'Xem tất cả' }}</span>
+        <button nz-button nzSize="small" (click)="navigateToRequests(undefined, (isAdmin || isApprover) ? 'all' : 'my')" class="action-btn btn-outline">
+          <span>{{ (isAdmin || isApprover) ? 'Danh sách đề xuất' : 'Xem tất cả' }}</span>
         </button>
         <button nz-button nzSize="small" (click)="exportDashboardReport()" [nzLoading]="isExporting" class="action-btn btn-outline" nz-tooltip nzTooltipTitle="Xuất báo cáo Excel">
           <span>Xuất Excel</span>
