@@ -152,6 +152,14 @@ export class RolesComponent implements OnInit {
       return;
     }
 
+    // Không cho phép bỏ chọn mặc định nếu đây là vai trò mặc định duy nhất hiện tại
+    if (this.isEditMode && this.selectedRole?.isDefault && !rawValues.isDefault) {
+      this.message.warning(
+        'Hệ thống luôn cần duy trì 1 vai trò mặc định. Để đổi vai trò mặc định, vui lòng chọn "Mặc định" ở vai trò bạn muốn thay thế.',
+      );
+      return;
+    }
+
     this.isSubmitting = true;
 
     if (this.isEditMode && this.selectedRole?.id) {
@@ -200,6 +208,11 @@ export class RolesComponent implements OnInit {
 
   deleteRole(role: IdentityRoleDto): void {
     if (!role.id || role.isStatic) return;
+
+    if (role.isDefault) {
+      this.message.warning('Không thể xóa vai trò mặc định! Vui lòng chỉ định một vai trò khác làm mặc định trước khi xóa.');
+      return;
+    }
 
     this.isLoading = true;
     this.roleService

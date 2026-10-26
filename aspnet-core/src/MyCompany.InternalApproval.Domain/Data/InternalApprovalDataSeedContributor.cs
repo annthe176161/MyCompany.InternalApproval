@@ -143,8 +143,13 @@ public class InternalApprovalDataSeedContributor : IDataSeedContributor, ITransi
         }
         else if (!employeeRole.IsDefault)
         {
-            employeeRole.IsDefault = true;
-            await _roleManager.UpdateAsync(employeeRole);
+            // Chỉ đặt lại Employee làm mặc định nếu hiện tại hệ thống chưa có vai trò nào được đặt làm mặc định
+            var hasAnyDefaultRole = (await _roleRepository.GetListAsync(r => r.IsDefault)).Any();
+            if (!hasAnyDefaultRole)
+            {
+                employeeRole.IsDefault = true;
+                await _roleManager.UpdateAsync(employeeRole);
+            }
         }
         roleDict[RoleEmployee] = employeeRole;
 

@@ -97,7 +97,7 @@
               </button>
 
               <button
-                *ngIf="canDelete && !role.isStatic"
+                *ngIf="canDelete && !role.isStatic && !role.isDefault"
                 nz-button
                 nzType="text"
                 nzShape="circle"
@@ -149,8 +149,16 @@
       <div class="checkbox-group-box">
         <div class="checkbox-item">
           <label nz-checkbox formControlName="isDefault">
-            <strong>Mặc định</strong> (Tự động gán vai trò này khi tạo tài khoản mới)
+            <strong>Mặc định</strong> (Tự động gán cho tài khoản mới - chỉ 1 vai trò duy nhất)
           </label>
+          <div *ngIf="roleForm.get('isDefault')?.value && (!isEditMode || !selectedRole?.isDefault)" class="text-primary mt-1" style="font-size: 12px;">
+            <span nz-icon nzType="info-circle" nzTheme="outline"></span>
+            Khi đặt vai trò này làm mặc định, vai trò mặc định hiện tại sẽ tự động chuyển thành vai trò thường.
+          </div>
+          <div *ngIf="isEditMode && selectedRole?.isDefault && !roleForm.get('isDefault')?.value" class="text-danger mt-1" style="font-size: 12px;">
+            <span nz-icon nzType="exclamation-circle" nzTheme="outline"></span>
+            Hệ thống luôn cần 1 vai trò mặc định. Để đổi vai trò mặc định, hãy chọn "Mặc định" ở vai trò bạn muốn thay thế.
+          </div>
         </div>
 
         <div class="checkbox-item">

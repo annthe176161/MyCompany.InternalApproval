@@ -116,12 +116,14 @@ export class UsersComponent implements OnInit {
     this.userService.getAssignableRoles().subscribe({
       next: res => {
         this.assignableRoles = res.items || [];
-        // Nếu modal tạo mới đang mở và chưa chọn vai trò nào, tự động chọn Employee
+        // Nếu modal tạo mới đang mở và chưa chọn vai trò nào, tự động chọn vai trò mặc định duy nhất
         if (this.isUserModalVisible && !this.isEditMode && this.selectedRoleNames.size === 0) {
-          this.selectedRoleNames.add('Employee');
-          this.assignableRoles
-            .filter(r => r.isDefault && r.name)
-            .forEach(r => this.selectedRoleNames.add(r.name as string));
+          const defaultRole = this.assignableRoles.find(r => r.isDefault && r.name);
+          if (defaultRole?.name) {
+            this.selectedRoleNames.add(defaultRole.name);
+          } else {
+            this.selectedRoleNames.add('Employee');
+          }
         }
       },
     });
@@ -170,11 +172,13 @@ export class UsersComponent implements OnInit {
     });
 
     this.selectedRoleNames.clear();
-    // Luôn chọn sẵn vai trò Employee làm mặc định cho tài khoản mới
-    this.selectedRoleNames.add('Employee');
-    this.assignableRoles
-      .filter(r => r.isDefault && r.name)
-      .forEach(r => this.selectedRoleNames.add(r.name as string));
+    // Tự động chọn vai trò mặc định duy nhất của hệ thống cho tài khoản mới
+    const defaultRole = this.assignableRoles.find(r => r.isDefault && r.name);
+    if (defaultRole?.name) {
+      this.selectedRoleNames.add(defaultRole.name);
+    } else {
+      this.selectedRoleNames.add('Employee');
+    }
 
     this.isUserModalVisible = true;
   }

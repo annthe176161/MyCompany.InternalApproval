@@ -35,22 +35,26 @@ public class InternalApprovalIdentityUserAppService : IdentityUserAppService
 
     public override async Task<IdentityUserDto> CreateAsync(IdentityUserCreateDto input)
     {
-        // Nếu admin chưa chọn vai trò nào khi tạo mới tài khoản, tự động gán vai trò Employee mặc định
+        // Lấy vai trò mặc định đang kích hoạt trong hệ thống (mặc định là Employee nếu chưa tìm thấy)
+        var defaultRole = (await RoleRepository.GetDefaultOnesAsync()).FirstOrDefault();
+        var defaultRoleName = defaultRole?.Name ?? "Employee";
+
+        // Nếu admin chưa chọn vai trò nào khi tạo mới tài khoản, tự động gán vai trò mặc định duy nhất của hệ thống
         if (input.RoleNames == null || input.RoleNames.Length == 0)
         {
-            input.RoleNames = new[] { "Employee" };
+            input.RoleNames = new[] { defaultRoleName };
         }
 
         var result = await base.CreateAsync(input);
 
-        // Đảm bảo người dùng luôn có tối thiểu vai trò Employee trong hệ thống nếu chưa có bất kỳ vai trò nào
+        // Đảm bảo người dùng luôn có vai trò mặc định trong hệ thống nếu chưa có bất kỳ vai trò nào
         var user = await UserManager.FindByIdAsync(result.Id.ToString());
         if (user != null)
         {
             var currentRoles = await UserManager.GetRolesAsync(user);
             if (currentRoles == null || currentRoles.Count == 0)
             {
-                await UserManager.AddToRoleAsync(user, "Employee");
+                await UserManager.AddToRoleAsync(user, defaultRoleName);
             }
         }
 
