@@ -50,4 +50,7 @@ public static class InternalApprovalDomainErrorCodes
 
     // Nhân viên không tồn tại trong phòng ban
     public const string DepartmentMemberNotFound = "InternalApproval:00016";
+
+    // Trưởng phòng chỉ được xem và xét duyệt các đề xuất thuộc phòng ban do mình quản lý
+    public const string OnlyDepartmentManagerCanApprove = "InternalApproval:00017";
 }

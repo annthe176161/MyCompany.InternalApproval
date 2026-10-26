@@ -18,6 +18,7 @@ public interface IRequestRepository : IRepository<Request, Guid>
         string? sorting = null,
         int maxResultCount = int.MaxValue,
         int skipCount = 0,
+        List<Guid>? creatorIds = null,
         CancellationToken cancellationToken = default);
 
     // Đếm tổng số đề xuất thỏa mãn điều kiện lọc
@@ -26,6 +27,7 @@ public interface IRequestRepository : IRepository<Request, Guid>
         RequestStatus? status = null,
         RequestType? type = null,
         Guid? creatorId = null,
+        List<Guid>? creatorIds = null,
         CancellationToken cancellationToken = default);
 
     // Lấy chi tiết đề xuất kèm bình luận theo Id

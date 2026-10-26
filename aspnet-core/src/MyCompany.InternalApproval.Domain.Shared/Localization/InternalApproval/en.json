@@ -83,6 +83,7 @@
     "InternalApproval:00014": "Join date cannot be in the future.",
     "InternalApproval:00015": "Department code '{Code}' already exists.",
     "InternalApproval:00016": "Employee does not exist in this department.",
+    "InternalApproval:00017": "You can only view and approve requests within the department you manage.",
     "LeaveFrom": "Leave From",
     "LeaveUntil": "Leave Until",
     "LeaveDuration": "Leave Duration",

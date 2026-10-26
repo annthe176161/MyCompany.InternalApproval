@@ -28,6 +28,7 @@ public class EfCoreRequestRepository : EfCoreRepository<InternalApprovalDbContex
         string? sorting = null,
         int maxResultCount = int.MaxValue,
         int skipCount = 0,
+        List<Guid>? creatorIds = null,
         CancellationToken cancellationToken = default)
     {
         var dbSet = await GetDbSetAsync();
@@ -37,6 +38,7 @@ public class EfCoreRequestRepository : EfCoreRepository<InternalApprovalDbContex
             .WhereIf(status.HasValue, x => x.Status == status!.Value)
             .WhereIf(type.HasValue, x => x.Type == type!.Value)
             .WhereIf(creatorId.HasValue, x => x.CreatorId == creatorId!.Value)
+            .WhereIf(creatorIds != null, x => x.CreatorId.HasValue && creatorIds!.Contains(x.CreatorId.Value))
             .OrderBy(string.IsNullOrWhiteSpace(sorting) ? $"{nameof(Request.CreationTime)} desc" : sorting)
             .PageBy(skipCount, maxResultCount)
             .ToListAsync(GetCancellationToken(cancellationToken));
@@ -48,6 +50,7 @@ public class EfCoreRequestRepository : EfCoreRepository<InternalApprovalDbContex
         RequestStatus? status = null,
         RequestType? type = null,
         Guid? creatorId = null,
+        List<Guid>? creatorIds = null,
         CancellationToken cancellationToken = default)
     {
         var dbSet = await GetDbSetAsync();
@@ -56,6 +59,7 @@ public class EfCoreRequestRepository : EfCoreRepository<InternalApprovalDbContex
             .WhereIf(status.HasValue, x => x.Status == status!.Value)
             .WhereIf(type.HasValue, x => x.Type == type!.Value)
             .WhereIf(creatorId.HasValue, x => x.CreatorId == creatorId!.Value)
+            .WhereIf(creatorIds != null, x => x.CreatorId.HasValue && creatorIds!.Contains(x.CreatorId.Value))
             .LongCountAsync(GetCancellationToken(cancellationToken));
     }
 

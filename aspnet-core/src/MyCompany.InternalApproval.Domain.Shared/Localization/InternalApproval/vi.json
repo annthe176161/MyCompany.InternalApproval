@@ -83,6 +83,7 @@
     "InternalApproval:00014": "Ngày vào làm việc không thể là ngày trong tương lai.",
     "InternalApproval:00015": "Mã phòng ban '{Code}' đã tồn tại trong hệ thống.",
     "InternalApproval:00016": "Nhân viên không tồn tại trong phòng ban này.",
+    "InternalApproval:00017": "Bạn chỉ có thể xem và xét duyệt các đề xuất thuộc phòng ban do mình quản lý.",
     "LeaveFrom": "Nghỉ từ ngày",
     "LeaveUntil": "Đến hết ngày",
     "LeaveDuration": "Thời gian xin nghỉ",

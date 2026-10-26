@@ -47,22 +47,56 @@ public class RequestAppService : InternalApprovalAppService, IRequestAppService
     {
         try
         {
-            var canApprove = await AuthorizationService.IsGrantedAsync(InternalApprovalPermissions.Requests.Approve);
+            var currentUserId = CurrentUser.Id;
             var isAdmin = CurrentUser.IsInRole("admin") || string.Equals(CurrentUser.UserName, "admin", StringComparison.OrdinalIgnoreCase);
 
             Guid? targetCreatorId = input.CreatorId;
+            List<Guid>? allowedCreatorIds = null;
 
-            // Nếu người dùng không có quyền phê duyệt và không phải Admin, bắt buộc chỉ lấy đề xuất của tài khoản đăng nhập
-            if (!canApprove && !isAdmin)
+            if (!isAdmin)
             {
-                targetCreatorId = CurrentUser.Id;
+                // Kiểm tra xem người dùng hiện tại có phải là Trưởng phòng của phòng ban nào không
+                var managedDepts = currentUserId.HasValue
+                    ? await _departmentRepository.GetListAsync(d => d.ManagerId == currentUserId.Value)
+                    : new List<Department>();
+
+                if (managedDepts.Count > 0)
+                {
+                    // Lấy danh sách thành viên thuộc các phòng ban do Trưởng phòng này quản lý
+                    var managedDeptIds = managedDepts.Select(d => d.Id).ToList();
+                    var deptMembers = await _memberRepository.GetListAsync(m => managedDeptIds.Contains(m.DepartmentId));
+                    var deptUserIds = deptMembers.Select(m => m.UserId).Distinct().ToList();
+
+                    // Đảm bảo trưởng phòng cũng xem được đề xuất của chính mình nếu có
+                    if (currentUserId.HasValue && !deptUserIds.Contains(currentUserId.Value))
+                    {
+                        deptUserIds.Add(currentUserId.Value);
+                    }
+
+                    allowedCreatorIds = deptUserIds;
+
+                    // Nếu truyền targetCreatorId cụ thể, kiểm tra xem người đó có thuộc phòng ban quản lý không
+                    if (targetCreatorId.HasValue)
+                    {
+                        if (!allowedCreatorIds.Contains(targetCreatorId.Value))
+                        {
+                            return new PagedResultDto<RequestDto>(0, new List<RequestDto>());
+                        }
+                    }
+                }
+                else
+                {
+                    // Nhân viên thông thường chỉ xem được đề xuất của chính mình
+                    targetCreatorId = currentUserId;
+                }
             }
 
             var totalCount = await _requestRepository.GetCountAsync(
                 input.Filter,
                 input.Status,
                 input.Type,
-                targetCreatorId
+                targetCreatorId,
+                allowedCreatorIds
             );
 
             var requests = await _requestRepository.GetListWithDetailsAsync(
@@ -72,7 +106,8 @@ public class RequestAppService : InternalApprovalAppService, IRequestAppService
                 targetCreatorId,
                 input.Sorting,
                 input.MaxResultCount,
-                input.SkipCount
+                input.SkipCount,
+                allowedCreatorIds
             );
 
             var userIds = requests
@@ -166,6 +201,35 @@ public class RequestAppService : InternalApprovalAppService, IRequestAppService
             if (request == null)
             {
                 throw new EntityNotFoundException(typeof(Request), id);
+            }
+
+            var currentUserId = CurrentUser.Id;
+            var isAdmin = CurrentUser.IsInRole("admin") || string.Equals(CurrentUser.UserName, "admin", StringComparison.OrdinalIgnoreCase);
+
+            if (!isAdmin)
+            {
+                var isCreator = request.CreatorId.HasValue && request.CreatorId == currentUserId;
+                if (!isCreator)
+                {
+                    var canAccess = false;
+                    if (currentUserId.HasValue && request.CreatorId.HasValue)
+                    {
+                        var member = await _memberRepository.FirstOrDefaultAsync(x => x.UserId == request.CreatorId.Value);
+                        if (member != null)
+                        {
+                            var dept = await _departmentRepository.FindAsync(member.DepartmentId);
+                            if (dept != null && dept.ManagerId == currentUserId.Value)
+                            {
+                                canAccess = true;
+                            }
+                        }
+                    }
+
+                    if (!canAccess)
+                    {
+                        throw new BusinessException(InternalApprovalDomainErrorCodes.OnlyDepartmentManagerCanApprove);
+                    }
+                }
             }
 
             var userIds = new[] { request.CreatorId, request.ApproverId }
@@ -350,7 +414,16 @@ public class RequestAppService : InternalApprovalAppService, IRequestAppService
                 throw new EntityNotFoundException(typeof(Request), id);
             }
 
-            await _requestManager.ApproveAsync(request, CurrentUser.GetId(), input.Note);
+            var currentUserId = CurrentUser.GetId();
+            var isAdmin = CurrentUser.IsInRole("admin") || string.Equals(CurrentUser.UserName, "admin", StringComparison.OrdinalIgnoreCase);
+
+            // Trưởng phòng chỉ được phê duyệt đề xuất thuộc phòng ban do mình quản lý
+            if (!isAdmin)
+            {
+                await CheckManagerDepartmentScopeAsync(request, currentUserId);
+            }
+
+            await _requestManager.ApproveAsync(request, currentUserId, input.Note);
 
             if (!string.IsNullOrWhiteSpace(input.Note))
             {
@@ -385,7 +458,16 @@ public class RequestAppService : InternalApprovalAppService, IRequestAppService
                 throw new EntityNotFoundException(typeof(Request), id);
             }
 
-            await _requestManager.RejectAsync(request, CurrentUser.GetId(), input.Reason);
+            var currentUserId = CurrentUser.GetId();
+            var isAdmin = CurrentUser.IsInRole("admin") || string.Equals(CurrentUser.UserName, "admin", StringComparison.OrdinalIgnoreCase);
+
+            // Trưởng phòng chỉ được từ chối đề xuất thuộc phòng ban do mình quản lý
+            if (!isAdmin)
+            {
+                await CheckManagerDepartmentScopeAsync(request, currentUserId);
+            }
+
+            await _requestManager.RejectAsync(request, currentUserId, input.Reason);
             await _requestRepository.UpdateAsync(request, autoSave: true);
 
             return await GetAsync(request.Id);
@@ -413,6 +495,35 @@ public class RequestAppService : InternalApprovalAppService, IRequestAppService
                 throw new EntityNotFoundException(typeof(Request), id);
             }
 
+            var currentUserId = CurrentUser.Id;
+            var isAdmin = CurrentUser.IsInRole("admin") || string.Equals(CurrentUser.UserName, "admin", StringComparison.OrdinalIgnoreCase);
+
+            if (!isAdmin)
+            {
+                var isCreator = request.CreatorId.HasValue && request.CreatorId == currentUserId;
+                if (!isCreator)
+                {
+                    var isDeptManager = false;
+                    if (currentUserId.HasValue && request.CreatorId.HasValue)
+                    {
+                        var member = await _memberRepository.FirstOrDefaultAsync(x => x.UserId == request.CreatorId.Value);
+                        if (member != null)
+                        {
+                            var dept = await _departmentRepository.FindAsync(member.DepartmentId);
+                            if (dept != null && dept.ManagerId == currentUserId.Value)
+                            {
+                                isDeptManager = true;
+                            }
+                        }
+                    }
+
+                    if (!isDeptManager)
+                    {
+                        throw new BusinessException(InternalApprovalDomainErrorCodes.OnlyDepartmentManagerCanApprove);
+                    }
+                }
+            }
+
             var comment = request.AddComment(GuidGenerator.Create(), input.Content);
             await _requestRepository.UpdateAsync(request, autoSave: true);
 
@@ -425,6 +536,27 @@ public class RequestAppService : InternalApprovalAppService, IRequestAppService
         {
             Logger.LogError(ex, "Lỗi xảy ra trong AddCommentAsync cho Id {Id}: {Message}", id, ex.Message);
             throw new BusinessException("InternalApproval:00000");
+        }
+    }
+
+    // Kiểm tra xem đề xuất có thuộc phòng ban do trưởng phòng hiện tại quản lý hay không
+    private async Task CheckManagerDepartmentScopeAsync(Request request, Guid currentUserId)
+    {
+        if (!request.CreatorId.HasValue)
+        {
+            throw new BusinessException(InternalApprovalDomainErrorCodes.OnlyDepartmentManagerCanApprove);
+        }
+
+        var member = await _memberRepository.FirstOrDefaultAsync(x => x.UserId == request.CreatorId.Value);
+        if (member == null)
+        {
+            throw new BusinessException(InternalApprovalDomainErrorCodes.OnlyDepartmentManagerCanApprove);
+        }
+
+        var dept = await _departmentRepository.FindAsync(member.DepartmentId);
+        if (dept == null || dept.ManagerId != currentUserId)
+        {
+            throw new BusinessException(InternalApprovalDomainErrorCodes.OnlyDepartmentManagerCanApprove);
         }
     }
 
