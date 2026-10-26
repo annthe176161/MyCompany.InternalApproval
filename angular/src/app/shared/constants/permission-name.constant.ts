@@ -2,7 +2,6 @@
 export const PERMISSION_GROUP_NAME_OVERRIDES: Record<string, string> = {
   AbpIdentity: 'Tài khoản & Phân quyền',
   IdentityManagement: 'Tài khoản & Phân quyền',
-  SettingManagement: 'Cài đặt quản lý',
   InternalApproval: 'Quản lý Đề xuất Nội bộ',
 };
 

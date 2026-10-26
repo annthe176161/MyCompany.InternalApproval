@@ -88,7 +88,10 @@ export class PermissionModalComponent {
       )
       .subscribe({
         next: res => {
-          this.groups = (res.groups || []).filter(g => g.permissions && g.permissions.length > 0);
+          // Loại bỏ nhóm Cài đặt quản lý (SettingManagement) vì hệ thống không sử dụng tính năng cấu hình email/múi giờ qua UI
+          this.groups = (res.groups || []).filter(
+            g => g.permissions && g.permissions.length > 0 && g.name !== 'SettingManagement',
+          );
           this.allPermissions = [];
           this.initialGrantMap.clear();
 

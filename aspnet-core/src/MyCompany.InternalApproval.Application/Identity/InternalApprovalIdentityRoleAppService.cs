@@ -74,3 +74,4 @@ public class InternalApprovalIdentityRoleAppService : IdentityRoleAppService
         await base.DeleteAsync(id);
     }
 }
+
