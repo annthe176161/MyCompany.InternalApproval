@@ -417,6 +417,12 @@ public class RequestAppService : InternalApprovalAppService, IRequestAppService
             var currentUserId = CurrentUser.GetId();
             var isAdmin = CurrentUser.IsInRole("admin") || string.Equals(CurrentUser.UserName, "admin", StringComparison.OrdinalIgnoreCase);
 
+            // Chống tự duyệt: Người tạo không thể tự phê duyệt đề xuất của chính mình
+            if (request.CreatorId.HasValue && request.CreatorId.Value == currentUserId)
+            {
+                throw new BusinessException(InternalApprovalDomainErrorCodes.CannotApproveOwnRequest);
+            }
+
             // Trưởng phòng chỉ được phê duyệt đề xuất thuộc phòng ban do mình quản lý
             if (!isAdmin)
             {
@@ -460,6 +466,12 @@ public class RequestAppService : InternalApprovalAppService, IRequestAppService
 
             var currentUserId = CurrentUser.GetId();
             var isAdmin = CurrentUser.IsInRole("admin") || string.Equals(CurrentUser.UserName, "admin", StringComparison.OrdinalIgnoreCase);
+
+            // Chống tự thao tác: Người tạo không thể tự từ chối đề xuất của chính mình
+            if (request.CreatorId.HasValue && request.CreatorId.Value == currentUserId)
+            {
+                throw new BusinessException(InternalApprovalDomainErrorCodes.CannotApproveOwnRequest);
+            }
 
             // Trưởng phòng chỉ được từ chối đề xuất thuộc phòng ban do mình quản lý
             if (!isAdmin)
