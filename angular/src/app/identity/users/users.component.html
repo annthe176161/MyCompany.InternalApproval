@@ -155,8 +155,11 @@
             </nz-form-item>
 
             <nz-form-item>
-              <nz-form-label [nzRequired]="!isEditMode">
-                {{ isEditMode ? 'Mật khẩu mới (để trống nếu giữ nguyên)' : 'Mật khẩu' }}
+              <nz-form-label
+                [nzRequired]="!isEditMode"
+                [nzTooltipTitle]="isEditMode ? 'Để trống nếu giữ nguyên mật khẩu cũ' : null"
+              >
+                {{ isEditMode ? 'Mật khẩu mới' : 'Mật khẩu' }}
               </nz-form-label>
               <nz-form-control nzErrorTip="Vui lòng nhập mật khẩu (ít nhất 6 ký tự)!">
                 <nz-input-group [nzSuffix]="pwdSuffix">
@@ -164,7 +167,7 @@
                     [type]="passwordVisible ? 'text' : 'password'"
                     nz-input
                     formControlName="password"
-                    [placeholder]="isEditMode ? 'Nhập nếu muốn đổi mật khẩu...' : 'Mặc định: ' + defaultPassword"
+                    [placeholder]="isEditMode ? 'Để trống nếu giữ nguyên...' : 'Mặc định: ' + defaultPassword"
                   />
                 </nz-input-group>
                 <ng-template #pwdSuffix>
