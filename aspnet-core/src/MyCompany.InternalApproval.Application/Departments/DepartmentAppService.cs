@@ -12,6 +12,7 @@ using Volo.Abp.Authorization;
 using Volo.Abp.Domain.Entities;
 using Volo.Abp.Domain.Repositories;
 using Volo.Abp.Identity;
+using Volo.Abp.PermissionManagement;
 using Volo.Abp.Validation;
 
 namespace MyCompany.InternalApproval.Departments;
@@ -24,15 +25,21 @@ public class DepartmentAppService : InternalApprovalAppService, IDepartmentAppSe
     private readonly IDepartmentRepository _departmentRepository;
     private readonly IRepository<DepartmentMember, Guid> _memberRepository;
     private readonly IRepository<IdentityUser, Guid> _userRepository;
+    private readonly IdentityUserManager _userManager;
+    private readonly IPermissionManager _permissionManager;
 
     public DepartmentAppService(
         IDepartmentRepository departmentRepository,
         IRepository<DepartmentMember, Guid> memberRepository,
-        IRepository<IdentityUser, Guid> userRepository)
+        IRepository<IdentityUser, Guid> userRepository,
+        IdentityUserManager userManager,
+        IPermissionManager permissionManager)
     {
         _departmentRepository = departmentRepository;
         _memberRepository = memberRepository;
         _userRepository = userRepository;
+        _userManager = userManager;
+        _permissionManager = permissionManager;
     }
 
     // Lấy danh sách phòng ban có phân trang và sắp xếp
@@ -145,6 +152,11 @@ public class DepartmentAppService : InternalApprovalAppService, IDepartmentAppSe
 
             await _departmentRepository.InsertAsync(dept, autoSave: true);
 
+            if (input.ManagerId.HasValue)
+            {
+                await SyncManagerRoleAndPermissionsAsync(null, input.ManagerId, dept.Id);
+            }
+
             return await GetAsync(dept.Id);
         }
         catch (Exception ex) when (ex is not IBusinessException && ex is not EntityNotFoundException && ex is not AbpAuthorizationException && ex is not AbpValidationException)
@@ -161,6 +173,7 @@ public class DepartmentAppService : InternalApprovalAppService, IDepartmentAppSe
         try
         {
             var dept = await _departmentRepository.GetAsync(id);
+            var oldManagerId = dept.ManagerId;
 
             var existing = await _departmentRepository.FirstOrDefaultAsync(x => x.Code == input.Code.Trim() && x.Id != id);
             if (existing != null)
@@ -184,7 +197,24 @@ public class DepartmentAppService : InternalApprovalAppService, IDepartmentAppSe
                     var member = new DepartmentMember(GuidGenerator.Create(), dept.Id, input.ManagerId.Value, "Trưởng phòng");
                     await _memberRepository.InsertAsync(member, autoSave: true);
                 }
+                else
+                {
+                    existingMember.SetPosition("Trưởng phòng");
+                    await _memberRepository.UpdateAsync(existingMember, autoSave: true);
+                }
             }
+
+            if (oldManagerId.HasValue && oldManagerId != input.ManagerId)
+            {
+                var oldMember = await _memberRepository.FirstOrDefaultAsync(x => x.DepartmentId == id && x.UserId == oldManagerId.Value);
+                if (oldMember != null && oldMember.Position == "Trưởng phòng")
+                {
+                    oldMember.SetPosition("Nhân viên");
+                    await _memberRepository.UpdateAsync(oldMember, autoSave: true);
+                }
+            }
+
+            await SyncManagerRoleAndPermissionsAsync(oldManagerId, input.ManagerId, id);
 
             return await GetAsync(dept.Id);
         }
@@ -201,6 +231,9 @@ public class DepartmentAppService : InternalApprovalAppService, IDepartmentAppSe
     {
         try
         {
+            var dept = await _departmentRepository.GetAsync(id);
+            var oldManagerId = dept.ManagerId;
+
             var members = await _memberRepository.GetListAsync(x => x.DepartmentId == id);
             if (members.Any())
             {
@@ -208,6 +241,11 @@ public class DepartmentAppService : InternalApprovalAppService, IDepartmentAppSe
             }
 
             await _departmentRepository.DeleteAsync(id, autoSave: true);
+
+            if (oldManagerId.HasValue)
+            {
+                await SyncManagerRoleAndPermissionsAsync(oldManagerId, null, id);
+            }
         }
         catch (Exception ex) when (ex is not IBusinessException && ex is not EntityNotFoundException && ex is not AbpAuthorizationException && ex is not AbpValidationException)
         {
@@ -337,6 +375,7 @@ public class DepartmentAppService : InternalApprovalAppService, IDepartmentAppSe
             {
                 dept.SetManager(null);
                 await _departmentRepository.UpdateAsync(dept, autoSave: true);
+                await SyncManagerRoleAndPermissionsAsync(userId, null, departmentId);
             }
 
             var member = await _memberRepository.FirstOrDefaultAsync(x => x.DepartmentId == departmentId && x.UserId == userId);
@@ -359,6 +398,8 @@ public class DepartmentAppService : InternalApprovalAppService, IDepartmentAppSe
         try
         {
             var dept = await _departmentRepository.GetAsync(departmentId);
+            var oldManagerId = dept.ManagerId;
+
             dept.SetManager(userId);
             await _departmentRepository.UpdateAsync(dept, autoSave: true);
 
@@ -370,17 +411,86 @@ public class DepartmentAppService : InternalApprovalAppService, IDepartmentAppSe
                     var newMember = new DepartmentMember(GuidGenerator.Create(), departmentId, userId.Value, "Trưởng phòng");
                     await _memberRepository.InsertAsync(newMember, autoSave: true);
                 }
-                else if (string.IsNullOrWhiteSpace(member.Position) || member.Position == "Nhân viên")
+                else
                 {
                     member.SetPosition("Trưởng phòng");
                     await _memberRepository.UpdateAsync(member, autoSave: true);
                 }
             }
+
+            // Nếu hủy hoặc thay đổi trưởng phòng, chuyển chức danh của người cũ về Nhân viên
+            if (oldManagerId.HasValue && oldManagerId != userId)
+            {
+                var oldMember = await _memberRepository.FirstOrDefaultAsync(x => x.DepartmentId == departmentId && x.UserId == oldManagerId.Value);
+                if (oldMember != null && oldMember.Position == "Trưởng phòng")
+                {
+                    oldMember.SetPosition("Nhân viên");
+                    await _memberRepository.UpdateAsync(oldMember, autoSave: true);
+                }
+            }
+
+            // Đồng bộ vai trò Manager và toàn bộ quyền phê duyệt tương ứng
+            await SyncManagerRoleAndPermissionsAsync(oldManagerId, userId, departmentId);
         }
         catch (Exception ex) when (ex is not IBusinessException && ex is not EntityNotFoundException && ex is not AbpAuthorizationException && ex is not AbpValidationException)
         {
             Logger.LogError(ex, "Lỗi xảy ra trong SetManagerAsync phòng ban {DepartmentId}: {Message}", departmentId, ex.Message);
             throw new BusinessException("InternalApproval:00000");
+        }
+    }
+
+    // Đồng bộ vai trò và quyền hạn khi bổ nhiệm hoặc hủy quyền Trưởng phòng
+    protected virtual async Task SyncManagerRoleAndPermissionsAsync(Guid? oldManagerId, Guid? newManagerId, Guid departmentId)
+    {
+        // 1. Thu hồi quyền Trưởng phòng nếu có người quản lý cũ và người đó không còn quản lý phòng ban nào khác
+        if (oldManagerId.HasValue && oldManagerId != newManagerId)
+        {
+            var otherDepts = await _departmentRepository.GetListAsync(d => d.Id != departmentId && d.ManagerId == oldManagerId.Value);
+            if (!otherDepts.Any())
+            {
+                var oldUser = await _userManager.FindByIdAsync(oldManagerId.Value.ToString());
+                if (oldUser != null && !string.Equals(oldUser.UserName, "admin", StringComparison.OrdinalIgnoreCase))
+                {
+                    var oldRoles = await _userManager.GetRolesAsync(oldUser);
+                    if (oldRoles.Contains("Manager", StringComparer.OrdinalIgnoreCase))
+                    {
+                        await _userManager.RemoveFromRoleAsync(oldUser, "Manager");
+                    }
+                    if (!oldRoles.Contains("Employee", StringComparer.OrdinalIgnoreCase))
+                    {
+                        await _userManager.AddToRoleAsync(oldUser, "Employee");
+                    }
+
+                    await _permissionManager.SetForUserAsync(oldUser.Id, InternalApprovalPermissions.Requests.Approve, false);
+                    await _permissionManager.SetForUserAsync(oldUser.Id, InternalApprovalPermissions.Requests.Reject, false);
+                    await _permissionManager.SetForUserAsync(oldUser.Id, InternalApprovalPermissions.Employees.Edit, false);
+                }
+            }
+        }
+
+        // 2. Cấp vai trò Manager và toàn bộ quyền hạn Trưởng phòng cho người được bổ nhiệm mới
+        if (newManagerId.HasValue)
+        {
+            var newUser = await _userManager.FindByIdAsync(newManagerId.Value.ToString());
+            if (newUser != null && !string.Equals(newUser.UserName, "admin", StringComparison.OrdinalIgnoreCase))
+            {
+                var newRoles = await _userManager.GetRolesAsync(newUser);
+                if (!newRoles.Contains("Manager", StringComparer.OrdinalIgnoreCase))
+                {
+                    await _userManager.AddToRoleAsync(newUser, "Manager");
+                }
+
+                await _permissionManager.SetForUserAsync(newUser.Id, InternalApprovalPermissions.Requests.Default, true);
+                await _permissionManager.SetForUserAsync(newUser.Id, InternalApprovalPermissions.Requests.Create, true);
+                await _permissionManager.SetForUserAsync(newUser.Id, InternalApprovalPermissions.Requests.Edit, true);
+                await _permissionManager.SetForUserAsync(newUser.Id, InternalApprovalPermissions.Requests.Delete, true);
+                await _permissionManager.SetForUserAsync(newUser.Id, InternalApprovalPermissions.Requests.Approve, true);
+                await _permissionManager.SetForUserAsync(newUser.Id, InternalApprovalPermissions.Requests.Reject, true);
+                await _permissionManager.SetForUserAsync(newUser.Id, InternalApprovalPermissions.Departments.Default, true);
+                await _permissionManager.SetForUserAsync(newUser.Id, InternalApprovalPermissions.Employees.Default, true);
+                await _permissionManager.SetForUserAsync(newUser.Id, InternalApprovalPermissions.Employees.Edit, true);
+                await _permissionManager.SetForUserAsync(newUser.Id, InternalApprovalPermissions.Employees.Analytics, true);
+            }
         }
     }
 

@@ -174,12 +174,13 @@ public class InternalApprovalDataSeedContributor : IDataSeedContributor, ITransi
             _currentTenant.Id
         );
 
-        // Phân quyền cho Role Manager: Xem, Tạo, Sửa, Phê duyệt, Từ chối và Xem phòng ban, Xem và sửa hồ sơ, xem báo cáo phân tích
+        // Phân quyền cho Role Manager: Xem, Tạo, Sửa, Xóa bản nháp, Phê duyệt, Từ chối và Xem phòng ban, Xem và sửa hồ sơ, xem báo cáo phân tích
         var managerPermissions = new[]
         {
             RequestPermissions.Default,
             RequestPermissions.Create,
             RequestPermissions.Edit,
+            RequestPermissions.Delete,
             RequestPermissions.Approve,
             RequestPermissions.Reject,
             DepartmentPermissions.Default,
